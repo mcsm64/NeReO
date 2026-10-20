@@ -1,5 +1,7 @@
 # Translating NeReO
 
+*Version française : [README_fr.md](README_fr.md)*
+
 Thank you for helping! NeReO's interface is in English and Italian; other languages are **community translations**: you translate, the author checks and includes your work in the next release, and you are credited.
 
 You do **not** need to know Android or programming. You edit one plain text file.
