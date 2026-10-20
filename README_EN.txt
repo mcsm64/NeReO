@@ -1,8 +1,14 @@
 ======================================================================
- NeReO 1.5.5 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.5.6 - Ne(ws) Re(ader) O(pen-source)
  Text-only Usenet (NNTP) newsreader for Android
- NeReO 1.5.5 (versionCode 173) - By MCSM - 2026/10/18
+ NeReO 1.5.6 (versionCode 174) - By MCSM - 2026/10/19
 ======================================================================
+ ***  VERSION 1.5.6  ***
+
+ A report from Roxy on his TV box, the day after 1.5.5.
+
+  * NO MORE CRASHES ON TV BOXES WITHOUT A FILE PICKER. Many Android TV boxes lack the system screen for choosing where to save or what to open, and NeReO closed instantly when it tried to show it (for instance with "Export configuration"). Now it says so instead, in all nine places that use it. Exporting and restoring the configuration work anyway: without a picker the backup is saved in NeReO's folder (Android/data/org.openusenet.reader/files, the path is shown) and restoring lists the backups found there. Copy the backup somewhere else: uninstalling NeReO deletes that folder.
+
  ***  VERSION 1.5.5  ***
 
  Three entries from the to-do notebook: a known defect and two small confusions met by users. Plus a new look for the author of a message, and the themed icon; and a fix to 1.5.4 reported by a user.

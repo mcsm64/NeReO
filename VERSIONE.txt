@@ -1,7 +1,7 @@
 NeReO (Ne(ws) Re(ader) O(pen-source))
 (package interno org.openusenet.reader: invariato di proposito)
-Versione sorgenti: 1.5.5 (versionCode 173)
-Data build: 2026-10-18
+Versione sorgenti: 1.5.6 (versionCode 174)
+Data build: 2026-10-19
 
 Questo file e' GENERATO automaticamente a ogni build da
 app/build.gradle.kts: non modificarlo a mano, le modifiche

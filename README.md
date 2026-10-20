@@ -6,9 +6,9 @@ Scritto da zero in Kotlin + Jetpack Compose. Nasce dal MOD 17 di *Newsreader* di
 
 Il package interno resta `org.openusenet.reader` — invariato di proposito, per non rompere gli aggiornamenti già installati.
 
-**Versione 1.5.5** (versionCode 173) — 18 ottobre 2026
+**Versione 1.5.6** (versionCode 174) — 19 ottobre 2026
 
-## Funzioni (1.5.5)
+## Funzioni (1.5.6)
 
 - Multi-server NNTP con SSL/TLS implicito **o STARTTLS** (RFC 3977 + RFC 4643 + RFC 4642) e autenticazione, con **verifica del nome host sul certificato** (RFC 6125) e fallback automatico IPv6/IPv4; CAPABILITIES letto e loggato alla connessione; riuso della connessione durante la lettura di un thread; **allarme se un server che offriva STARTTLS smette di annunciarlo** (RFC 4642 §5)
 - Ricerca e sottoscrizione gruppi, sync incrementale delle headline con `OVER` e ripiego automatico su `XOVER` per i server che non riconoscono `OVER` (es. Astraweb)
@@ -22,6 +22,12 @@ Il package interno resta `org.openusenet.reader` — invariato di proposito, per
 - Backup e ripristino della configurazione, con cifratura opzionale
 - Material 3, tema chiaro/scuro/di sistema, dynamic color, tinte e dimensioni del testo, layout a pannelli per schermi larghi
 - Interfaccia in italiano e inglese, con **interruttore lingua dentro l'app** (Aspetto → Lingua) oltre alla voce di sistema su Android 13+
+
+## Novità della 1.5.6
+
+> Una segnalazione di Roxy dal suo box TV, il giorno dopo la 1.5.5.
+
+- **Niente più chiusure sui box TV senza selettore di file** *(Roxy, Beelink GT King, Android 9)*. «Esporta configurazione» chiudeva l'app all'istante: molti box Android TV non hanno il selettore di sistema (DocumentsUI), e `ActivityResultLauncher.launch()` lancia `ActivityNotFoundException` se nessuno risponde all'Intent. I punti che lo aprivano senza protezione erano **nove** (backup, ripristino, log NNTP, log crash, `.eml`, tre in «Conserva», la Face nell'identità): ora passano tutti da `ui/SelettoreSicuro.kt`, che avvisa invece di chiudere e scrive una riga nel log di diagnostica. Backup e ripristino della configurazione hanno un ripiego: senza selettore il backup si salva nella cartella dell'app (`Android/data/org.openusenet.reader/files/`, nessun permesso; percorso mostrato per esteso, con l'avviso che disinstallando si cancella), e il ripristino elenca i backup trovati lì. Scartata la cartella Download: su Android 9 richiederebbe un permesso nuovo. Nomi dei backup provati con `kotlinc` (11 asserzioni)
 
 ## Novità della 1.5.5
 

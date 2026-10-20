@@ -17,6 +17,7 @@
     <string name="common_delete">Elimina</string>
     <string name="common_copy">Copia</string>
     <string name="common_ok">OK</string>
+    <string name="common_no_picker">Questo dispositivo non ha il selettore di file di Android: qui non si può scegliere dove salvare o cosa aprire.</string>
 
     <!-- ===== Informazioni ===== -->
     <string name="about_title">Informazioni</string>
@@ -279,6 +280,11 @@
     <string name="mnt_backup_enc_ok">Backup cifrato esportato</string>
     <string name="mnt_backup_ok">Backup esportato (senza password server)</string>
     <string name="mnt_export_err">Errore export: %s</string>
+    <string name="mnt_local_saved_title">Backup salvato nella cartella di NeReO</string>
+    <string name="mnt_local_saved_text">Questo dispositivo non ha il selettore di file, quindi il backup è stato salvato qui:\n\n%1$s\n\nCopialo altrove con un gestore file o col cavo USB: se disinstalli NeReO, questa cartella viene cancellata.</string>
+    <string name="mnt_local_import_title">Backup nella cartella di NeReO</string>
+    <string name="mnt_local_import_note">Questo dispositivo non ha il selettore di file: ecco i backup salvati nella cartella di NeReO, il più recente per primo.</string>
+    <string name="mnt_local_import_empty">Questo dispositivo non ha il selettore di file, e nella cartella di NeReO non ci sono backup. Per ripristinarne uno, copia qui il file .json con un gestore file o col cavo USB:\n\n%1$s</string>
     <string name="mnt_file_unreadable">File illeggibile</string>
     <string name="mnt_file_unreadable_note">Il selettore ha consegnato il file, ma il sistema non e\' riuscito ad aprirlo. Non c\'entra il contenuto del backup: non e\' mai stato letto. Il dettaglio tecnico qui sotto e\' quello che serve a una segnalazione: copialo e allegalo.</string>
     <string name="mnt_backup_section">Backup configurazione</string>
@@ -1046,6 +1052,8 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">Le X-Face si vedono. La classica faccina in bianco e nero di Usenet (l\'intestazione X-Face, mandata da MesNews e da molti lettori tradizionali) compare ora accanto al nome dell\'autore, dove finora compariva solo la Face a colori. Toccala per ingrandirla: resta nitida, a quadretti. L\'ordine è: prima la Face, poi la X-Face, poi le iniziali colorate. NeReO mostra le X-Face ma non le invia.</string>
     <string name="rn_v155_l8">I messaggi nuovi restano davvero in vista. La correzione della 1.5.4 funzionava solo quando NeReO ti aveva appena riportato dove eri rimasto: al primo ingresso nel gruppo dopo aver aperto l\'app, o quando la lista era già in cima, i messaggi che arrivavano con la sincronizzazione potevano ancora finire sopra il bordo dello schermo. Ora, ogni volta che apri un gruppo, se arrivano messaggi nuovi e non hai ancora spostato la lista col dito, sale in cima a mostrarli. Con gli ordinamenti \"dai più recenti\" si accorge anche di una risposta dentro la discussione che è già in cima. Con gli ordinamenti \"dai più vecchi\", dove i nuovi stanno in fondo, resti dove sei. Anche nella vista a pannelli.</string>
+    <string name="rn_v156_title">Novità della 1.5.6</string>
+    <string name="rn_v156_l1">Niente più chiusure sui box TV senza selettore di file. Molti box Android TV non hanno la schermata di sistema per scegliere dove salvare o cosa aprire, e NeReO si chiudeva all\'istante cercando di mostrarla. Ora lo dice, in tutti e nove i punti che la usano. Esportare e ripristinare la configurazione funziona comunque: senza selettore il backup si salva nella cartella di NeReO (il percorso viene mostrato), e il ripristino elenca i backup trovati lì.</string>
     <string name="rn_v155_title">Novità della 1.5.5</string>
     <string name="rn_v155_l1">La ricerca dice dove ha trovato la parola. Se sta solo nel testo del messaggio, il risultato mostra un breve estratto con la parola evidenziata in giallo. Prima un risultato così non aveva nessun giallo e sembrava sbagliato.</string>
     <string name="rn_v155_l2">Quando il server rifiuta un messaggio col codice 441, alla sua risposta segue ora una riga in italiano. Per il caso più comune, \"Article must contain real content\", dice cosa fare: scrivere qualcosa in più.</string>

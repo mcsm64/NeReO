@@ -46,6 +46,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import org.openusenet.reader.ui.apriSeEsiste
 import org.openusenet.reader.ui.icone.ArrowBack
 import org.openusenet.reader.ui.icone.Add
 import org.openusenet.reader.ui.icone.Delete
@@ -477,7 +478,15 @@ fun IdentityEditScreen(repo: NewsRepository, nav: NavHostController, identityId:
                     } else {
                         Text(stringResource(R.string.id_face_none), style = MaterialTheme.typography.bodySmall)
                     }
-                    TextButton(onClick = { facePicker.launch("image/*") }, modifier = Modifier.padding(start = 12.dp)) {
+                    TextButton(
+                        onClick = {
+                            // 1.5.6 / 174: senza selettore (box TV) si avvisa, non ci si chiude.
+                            if (!facePicker.apriSeEsiste("image/*")) {
+                                scope.launch { snackbar.showSnackbar(ctx.getString(R.string.common_no_picker)) }
+                            }
+                        },
+                        modifier = Modifier.padding(start = 12.dp),
+                    ) {
                         Text(stringResource(R.string.id_face_choose))
                     }
                     if (faceB64 != null) {

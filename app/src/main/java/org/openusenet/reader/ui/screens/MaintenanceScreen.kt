@@ -68,11 +68,13 @@ import org.openusenet.reader.AppSettings
 import org.openusenet.reader.CrashLog
 import org.openusenet.reader.R
 import org.openusenet.reader.backup.BackupCrypto
+import org.openusenet.reader.backup.BackupLocale
 import org.openusenet.reader.backup.BackupManager
 import org.openusenet.reader.data.NewsRepository
 import org.openusenet.reader.nntp.NntpLog
 import org.openusenet.reader.ui.cartellaConservaSalvata
 import org.openusenet.reader.ui.descriviCartellaConserva
+import org.openusenet.reader.ui.apriSeEsiste
 import org.openusenet.reader.ui.indietroSicuro
 import org.openusenet.reader.ui.rememberConserva
 import org.openusenet.reader.update.UpdateChecker
@@ -104,6 +106,14 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
     var rapportoDb by remember { mutableStateOf<String?>(null) }
     var dbInCorso by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
+    /*
+     * 1.5.6 / 174 (Roxy, box TV senza selettore di file): il percorso del
+     * backup appena salvato nella cartella dell'app, da mostrare; e l'elenco dei
+     * backup presenti li', quando il ripristino non puo' aprire il selettore.
+     * Vedi BackupLocale.kt.
+     */
+    var backupLocaleSalvato by remember { mutableStateOf<String?>(null) }
+    var backupLocali by remember { mutableStateOf<List<java.io.File>?>(null) }
     // 1.2.5 (Bingo3331): controllo aggiornamenti manuale.
     var aggiornamentoTrovato by remember { mutableStateOf<String?>(null) }
     var controlloInCorso by remember { mutableStateOf(false) }
@@ -191,14 +201,20 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
             .onFailure { snackbar.showSnackbar(ctx.getString(R.string.mnt_import_err, it.message ?: "")) }
     }
 
+    // 1.5.6 / 174: il contenuto del backup, un posto solo per le due strade
+    // (selettore di sistema, o cartella dell'app quando il selettore manca).
+    suspend fun contenutoBackup(pw: String): String {
+        val json = BackupManager.export(repo, ctx, includePasswords = pw.isNotBlank())
+        return if (pw.isNotBlank()) BackupCrypto.encrypt(json, pw) else json
+    }
+
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
     ) { uri ->
         if (uri != null) scope.launch {
             val pw = backupPw
             runCatching {
-                val json = BackupManager.export(repo, ctx, includePasswords = pw.isNotBlank())
-                val out = if (pw.isNotBlank()) BackupCrypto.encrypt(json, pw) else json
+                val out = contenutoBackup(pw)
                 ctx.contentResolver.openOutputStream(uri)?.use { it.write(out.toByteArray()) }
             }.onSuccess {
                 snackbar.showSnackbar(
@@ -232,6 +248,26 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
             }.onFailure { snackbar.showSnackbar(ctx.getString(R.string.mnt_export_err, it.message ?: "")) }
         }
     }
+    /*
+     * 1.5.6 / 174: cosa fare col testo di un backup appena letto, un posto solo
+     * per le due strade (selettore di sistema, o elenco della cartella
+     * dell'app). La logica e' quella della 1.3.7, spostata qui non ricopiata:
+     * [nulloSenzaEccezione] e' la frase per il caso «nessun testo, nessuna
+     * eccezione», che dipende da come si e' letto.
+     */
+    fun instradaBackupLetto(esito: Result<String?>, nulloSenzaEccezione: String) {
+        val text = esito.getOrNull()
+        if (text == null) {
+            erroreLettura = esito.exceptionOrNull()
+                ?.let { "${it.javaClass.simpleName}: ${it.message ?: "(nessun messaggio)"}" }
+                ?: nulloSenzaEccezione
+        } else if (BackupCrypto.isEncrypted(text)) {
+            pendingEncrypted = text
+        } else {
+            pendingImport = text
+        }
+    }
+
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
@@ -258,19 +294,12 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
              * null SENZA lanciare nulla. E' un caso distinto e va detto, non
              * confuso con un'eccezione.
              */
-            val esito = runCatching {
-                ctx.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
-            }
-            val text = esito.getOrNull()
-            if (text == null) {
-                erroreLettura = esito.exceptionOrNull()
-                    ?.let { "${it.javaClass.simpleName}: ${it.message ?: "(nessun messaggio)"}" }
-                    ?: "openInputStream: null"
-            } else if (BackupCrypto.isEncrypted(text)) {
-                pendingEncrypted = text
-            } else {
-                pendingImport = text
-            }
+            instradaBackupLetto(
+                runCatching {
+                    ctx.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                },
+                "openInputStream: null",
+            )
         }
     }
 
@@ -316,7 +345,10 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
                     Text(stringResource(R.string.mnt_export))
                 }
                 FilledTonalButton(onClick = {
-                    importLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                    // 1.5.6 / 174: senza selettore, i backup della cartella dell'app.
+                    if (!importLauncher.apriSeEsiste(arrayOf("application/json", "text/*", "*/*"))) {
+                        backupLocali = BackupLocale.elenco(ctx)
+                    }
                 }) {
                     Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
                     Text(stringResource(R.string.mnt_restore))
@@ -821,7 +853,9 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
                     if (NntpLog.snapshot().isBlank()) {
                         scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_diag_empty)) }
                     } else {
-                        exportLogLauncher.launch("${Branding.APP_NAME}-NNTP-log.txt")
+                        if (!exportLogLauncher.apriSeEsiste("${Branding.APP_NAME}-NNTP-log.txt")) {
+                            scope.launch { snackbar.showSnackbar(ctx.getString(R.string.common_no_picker)) }
+                        }
                     }
                 }) { Text(stringResource(R.string.mnt_diag_export)) }
             }
@@ -942,7 +976,9 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
                     if (CrashLog.snapshot(ctx).isBlank()) {
                         scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_crash_empty)) }
                     } else {
-                        exportCrashLogLauncher.launch("${Branding.APP_NAME}-crash-log.txt")
+                        if (!exportCrashLogLauncher.apriSeEsiste("${Branding.APP_NAME}-crash-log.txt")) {
+                            scope.launch { snackbar.showSnackbar(ctx.getString(R.string.common_no_picker)) }
+                        }
                     }
                 }) { Text(stringResource(R.string.mnt_crash_export)) }
                 TextButton(onClick = {
@@ -990,10 +1026,68 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
                     // data rende i backup distinguibili e ordinabili tra loro.
                     val data = java.time.LocalDate.now()
                         .format(java.time.format.DateTimeFormatter.ofPattern("yy-MM-dd"))
-                    exportLauncher.launch("${Branding.APP_NAME}-Backup-$data.json")
+                    val nome = "${Branding.APP_NAME}-Backup-$data.json"
+                    // 1.5.6 / 174 (Roxy): senza selettore, nella cartella dell'app.
+                    if (!exportLauncher.apriSeEsiste(nome)) {
+                        val pw = backupPw
+                        scope.launch {
+                            runCatching { BackupLocale.salva(ctx, nome, contenutoBackup(pw)) }
+                                .onSuccess { backupLocaleSalvato = it.absolutePath }
+                                .onFailure { snackbar.showSnackbar(ctx.getString(R.string.mnt_export_err, it.message ?: "")) }
+                        }
+                    }
                 }) { Text(stringResource(R.string.mnt_export)) }
             },
             dismissButton = { TextButton(onClick = { showExportDialog = false }) { Text(stringResource(R.string.common_cancel)) } },
+        )
+    }
+
+    // 1.5.6 / 174: DOVE e' finito il backup, per esteso. Un avviso a comparsa
+    // e' troppo breve per un percorso da ricopiare in un gestore file.
+    backupLocaleSalvato?.let { percorso ->
+        AlertDialog(
+            onDismissRequest = { backupLocaleSalvato = null },
+            title = { Text(stringResource(R.string.mnt_local_saved_title)) },
+            text = { Text(stringResource(R.string.mnt_local_saved_text, percorso)) },
+            confirmButton = { TextButton(onClick = { backupLocaleSalvato = null }) { Text(stringResource(R.string.common_ok)) } },
+        )
+    }
+
+    // 1.5.6 / 174: il ripristino senza selettore — i backup della cartella
+    // dell'app, il piu' recente per primo. Una riga per file: col telecomando
+    // del box si scorre e si sceglie come con le dita.
+    backupLocali?.let { files ->
+        AlertDialog(
+            onDismissRequest = { backupLocali = null },
+            title = { Text(stringResource(R.string.mnt_local_import_title)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    if (files.isEmpty()) {
+                        Text(
+                            stringResource(
+                                R.string.mnt_local_import_empty,
+                                BackupLocale.cartella(ctx)?.absolutePath ?: "Android/data/${ctx.packageName}/files",
+                            ),
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.mnt_local_import_note),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                        files.forEach { f ->
+                            TextButton(
+                                onClick = {
+                                    backupLocali = null
+                                    instradaBackupLetto(runCatching { f.readText(Charsets.UTF_8) }, f.absolutePath)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text(f.name, modifier = Modifier.fillMaxWidth()) }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { backupLocali = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 

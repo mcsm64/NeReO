@@ -215,6 +215,7 @@ fun rememberConserva(): ControlliConserva {
     val esitoKo = stringResource(R.string.cns_failed)
     val cartellaPersa = stringResource(R.string.cns_folder_lost)
     val cartellaScelta = stringResource(R.string.cns_folder_set)
+    val senzaSelettore = stringResource(R.string.common_no_picker)
 
     fun avvisa(testo: String) {
         android.widget.Toast.makeText(ctx, testo, android.widget.Toast.LENGTH_LONG).show()
@@ -280,12 +281,21 @@ fun rememberConserva(): ControlliConserva {
         }
     }
 
+    // 1.5.6 / 174: un box TV senza selettore di file avvisa, non si chiude.
+    // Le tre aperture del selettore qui sotto passano tutte di qui.
+    fun apriSelettore() {
+        if (!selettore.apriSeEsiste(null)) {
+            inAttesa = null
+            avvisa(senzaSelettore)
+        }
+    }
+
     return ControlliConserva(
         conserva = { nome, testo ->
             val albero = cartellaConservaSalvata()
             if (albero == null) {
                 inAttesa = nome to testo
-                selettore.launch(null)
+                apriSelettore()
             } else {
                 when (scrivi(albero, nome, testo)) {
                     EsitoScrittura.OK -> avvisa(esitoOk)
@@ -296,7 +306,7 @@ fun rememberConserva(): ControlliConserva {
                         dimenticaCartella()
                         avvisa(cartellaPersa)
                         inAttesa = nome to testo
-                        selettore.launch(null)
+                        apriSelettore()
                     }
                     EsitoScrittura.FALLITA -> avvisa(esitoKo)
                 }
@@ -304,7 +314,7 @@ fun rememberConserva(): ControlliConserva {
         },
         scegliCartella = {
             inAttesa = null
-            selettore.launch(null)
+            apriSelettore()
         },
     )
 }

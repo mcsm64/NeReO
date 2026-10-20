@@ -2024,8 +2024,18 @@ android {
         // SorveglianzaNovita.kt). Estesa ai pannelli (piano B con estensione,
         // scelto da Marco). versionName INVARIATO: 1.5.5 non pubblicata.
         // Zip: da 123 a 125 file.
-        versionCode = 173
-        versionName = "1.5.5"
+        // 1.5.5 / 173 PUBBLICATA il 19 ottobre 2026 (SourceForge + GitHub).
+        // versionCode 174 (19 ottobre 2026) - versionName CAMBIA: la 1.5.5 e'
+        // pubblica. NIENTE PIU' CHIUSURE SENZA SELETTORE DI FILE (Roxy, box TV
+        // Beelink GT King, Android 9: «Esporta configurazione» chiudeva l'app;
+        // log crash: ActivityNotFoundException su CREATE_DOCUMENT). Nove punti
+        // aprivano il selettore di sistema senza protezione: ora passano tutti
+        // da ui/SelettoreSicuro.kt. Piano B (Marco): backup e ripristino della
+        // configurazione hanno un ripiego nella cartella dell'app
+        // (backup/BackupLocale.kt), senza permessi nuovi.
+        // Zip: da 125 a 128 file.
+        versionCode = 174
+        versionName = "1.5.6"
     }
 
     buildTypes {

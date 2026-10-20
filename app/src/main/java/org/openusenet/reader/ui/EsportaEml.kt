@@ -156,6 +156,7 @@ fun rememberSalvaEml(): (String, String) -> Unit {
     var daScrivere by remember { mutableStateOf("") }
     val esitoOk = stringResource(R.string.art_eml_saved)
     val esitoKo = stringResource(R.string.art_eml_failed)
+    val senzaSelettore = stringResource(R.string.common_no_picker)
     val selettore = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("message/rfc822"),
     ) { uri ->
@@ -171,6 +172,9 @@ fun rememberSalvaEml(): (String, String) -> Unit {
     }
     return { nomeProposto, testo ->
         daScrivere = testo
-        selettore.launch(nomeProposto)
+        // 1.5.6 / 174: un box TV senza selettore di file avvisa, non si chiude.
+        if (!selettore.apriSeEsiste(nomeProposto)) {
+            android.widget.Toast.makeText(ctx, senzaSelettore, android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 }

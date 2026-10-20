@@ -8,7 +8,7 @@
 
 Written from scratch in Kotlin + Jetpack Compose. Its interface follows Piao Hong's *Newsreader* (MOD 17); its goal is to combine that familiarity with the depth of configuration of MesNews.
 
-**Latest version: 1.5.5** (versionCode 173) — 18 October 2026 · Android 8.0 or later
+**Latest version: 1.5.6** (versionCode 174) — 19 October 2026 · Android 8.0 or later
 
 ## Download
 
@@ -49,4 +49,3 @@ The name **"NeReO"** and its logo are reserved by the author (MCSM): modified ve
 ## Reports
 
 For a useful report, three things are enough: what you were doing when it happened; a screenshot, if the problem is visible; the block from **About → Technical data** (there is a Copy button).
-

@@ -26,7 +26,7 @@ object ReleaseNotes {
      * corretto. Ad ogni bump di versione in build.gradle.kts, aggiornare
      * SEMPRE anche questa riga e le [sections] sotto.
      */
-    const val VERSION = "1.5.5"
+    const val VERSION = "1.5.6"
 
     /**
      * Novità della versione corrente, in blocchi titolo → righe.
@@ -39,6 +39,12 @@ object ReleaseNotes {
      * strings.xml (tutte e tre le cartelle).
      */
     val sections: List<Pair<Int, List<Int>>> = listOf(
+        // 1.5.6 (19 ottobre 2026, versionCode 174). Chiavi rn_v156_* verificate
+        // libere nelle tre cartelle prima di usarle.
+        //  - l1  niente piu' chiusure senza selettore di file (Roxy, box TV)
+        R.string.rn_v156_title to listOf(
+            R.string.rn_v156_l1,
+        ),
         // 1.5.5 (17 ottobre 2026, versionCode 169). Chiavi rn_v155_* verificate
         // libere nelle tre cartelle prima di usarle.
         //  - l1  la ricerca mostra l'estratto del testo

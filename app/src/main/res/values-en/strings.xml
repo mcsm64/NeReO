@@ -19,6 +19,7 @@
     <string name="common_delete">Delete</string>
     <string name="common_copy">Copy</string>
     <string name="common_ok">OK</string>
+    <string name="common_no_picker">This device has no Android file picker, so you cannot choose here where to save or what to open.</string>
     <string name="about_title">About</string>
     <string name="drafts_title">Drafts</string>
     <string name="drafts_title_group">Drafts — %1$s</string>
@@ -273,6 +274,11 @@
     <string name="mnt_backup_enc_ok">Encrypted backup exported</string>
     <string name="mnt_backup_ok">Backup exported (without server passwords)</string>
     <string name="mnt_export_err">Export error: %s</string>
+    <string name="mnt_local_saved_title">Backup saved in NeReO\'s folder</string>
+    <string name="mnt_local_saved_text">This device has no file picker, so the backup was saved here:\n\n%1$s\n\nCopy it somewhere else with a file manager or a USB cable: if you uninstall NeReO, this folder is deleted.</string>
+    <string name="mnt_local_import_title">Backups in NeReO\'s folder</string>
+    <string name="mnt_local_import_note">This device has no file picker: here are the backups saved in NeReO\'s folder, newest first.</string>
+    <string name="mnt_local_import_empty">This device has no file picker, and there are no backups in NeReO\'s folder. To restore one, copy the .json file here with a file manager or a USB cable:\n\n%1$s</string>
     <string name="mnt_file_unreadable">Unreadable file</string>
     <string name="mnt_file_unreadable_note">The file picker handed the file over, but the system could not open it. This is not about the backup\'s contents: it was never read. The technical detail below is what a bug report needs - copy it and send it along.</string>
     <string name="mnt_backup_section">Configuration backup</string>
@@ -1040,6 +1046,8 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">X-Faces are shown. The classic black-and-white Usenet face (the X-Face header, sent by MesNews and many traditional newsreaders) now appears next to the author\'s name, where until now only the colour Face did. Tap it to enlarge it: it stays sharp, square by square. Order: Face first, then X-Face, then the coloured initials. NeReO shows X-Faces but does not send them.</string>
     <string name="rn_v155_l8">New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the \"newest first\" orders it also notices a reply inside the thread that is already at the top. With the \"oldest first\" orders, where new messages are at the bottom, you stay where you were. In the panel view too.</string>
+    <string name="rn_v156_title">New in 1.5.6</string>
+    <string name="rn_v156_l1">No more crash on TV boxes without a file picker. Many Android TV boxes lack the system screen for choosing where to save or what to open, and NeReO closed instantly when it tried to show it. Now it says so instead, in all nine places that use it. Exporting and restoring the configuration work anyway: without a picker the backup is saved in NeReO\'s own folder (the path is shown), and restoring lists the backups found there.</string>
     <string name="rn_v155_title">New in 1.5.5</string>
     <string name="rn_v155_l1">Search tells you where it found the word. When it is only in the text of the message, the result shows a short excerpt with the word highlighted in yellow. Before, such a result had no highlight at all and looked wrong.</string>
     <string name="rn_v155_l2">When the server refuses a message with code 441, its reply is now followed by a line in your language. For the most common case, \"Article must contain real content\", it says what to do: write a little more.</string>
