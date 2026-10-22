@@ -196,6 +196,28 @@ object MimeUtil {
     }
 
     /**
+     * 1.5.7 / 175 — CIO' CHE I FILTRI LEGGONO DALLE INTESTAZIONI COMPLETE, in
+     * una passata sola: il lettore di news (campo NEWSREADER) e tutte le
+     * intestazioni, «nome: valore» una per riga, nomi in minuscolo (campo
+     * HEADERS). Due campi, un'analisi: chi ha il testo non lo divide due volte.
+     */
+    data class IntestazioniFiltri(val lettore: String?, val tutte: String?)
+
+    fun intestazioniPerFiltri(headers: Map<String, String>): IntestazioniFiltri =
+        IntestazioniFiltri(
+            lettore = lettoreDiNews(headers),
+            tutte = headers.entries
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString("\n") { (nome, valore) -> "${nome.lowercase()}: ${valore.trim()}" },
+        )
+
+    fun intestazioniPerFiltri(headersRaw: String?): IntestazioniFiltri {
+        if (headersRaw.isNullOrBlank()) return IntestazioniFiltri(null, null)
+        val (headers, _) = splitArticle(headersRaw.lines() + "")
+        return intestazioniPerFiltri(headers)
+    }
+
+    /**
      * Divide un articolo grezzo in (headers, body) e "unfolda" gli header
      * su più righe (continuazione con spazio/tab, RFC 5322 §2.2.3).
      */

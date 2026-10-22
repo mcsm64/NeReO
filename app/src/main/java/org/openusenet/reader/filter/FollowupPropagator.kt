@@ -37,6 +37,8 @@
  */
 package org.openusenet.reader.filter
 
+import org.openusenet.reader.thread.Threader
+
 /** Articolo "visto" dal propagatore: solo ciò che serve a risalire l'albero. */
 data class PropagationInput(
     val messageId: String,
@@ -49,12 +51,22 @@ data class PropagationInput(
 
 object FollowupPropagator {
 
-    /** Stesso pattern usato da Threader: un solo modo di riconoscere un message-id. */
-    private val MSG_ID = Regex("""<[^<>\s]+>""")
-
-    /** Estrae i message-id dalla catena References:, nell'ordine dichiarato. */
+    /**
+     * Estrae i message-id dalla catena References:, nell'ordine dichiarato.
+     *
+     * 1.5.7 / 175 (voce 6-bis del quaderno, trovata il 18/10 rileggendo il
+     * References in uscita): questa era una SECONDA copia del lettore di
+     * identificativi, con la stessa regex di Threader ma SENZA il suo tetto di
+     * sicurezza (audit 1.2.12: un References di decine di migliaia di id e' un
+     * vettore reale, e qui passano i messaggi IN ARRIVO). Ora delega a
+     * [Threader.idNelleReferences]: un solo lettore, un solo tetto.
+     *
+     * Il taglio tiene la radice e gli ultimi 99, cioe' il padre diretto: e' cio'
+     * che serve alla chiusura transitiva qui sotto, che gia' regge la perdita
+     * degli anelli centrali (vedi IL TRABOCCHETTO in testa al file).
+     */
     fun parseReferences(references: String): List<String> =
-        MSG_ID.findAll(references).map { it.value }.toList()
+        Threader.idNelleReferences(references)
 
     /**
      * Ritorna i messageId degli articoli colpiti PER PROPAGAZIONE.

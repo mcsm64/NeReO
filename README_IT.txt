@@ -1,8 +1,24 @@
 ======================================================================
- NeReO 1.5.6 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.5.7 - Ne(ws) Re(ader) O(pen-source)
  Newsreader Usenet (NNTP) solo testo per Android
- NeReO 1.5.6 (versionCode 174) - By MCSM - 2026/10/19
+ NeReO 1.5.7 (versionCode 175) - By MCSM - 2026/10/22
 ======================================================================
+ ***  VERSIONE 1.5.7  ***
+
+ Le richieste di una settimana: utenti, collaudatori e Marco.
+
+  * LA DISSOLVENZA TRA LE SCHERMATE SI PUO' SPEGNERE. In Aspetto, "Animazione tra le schermate" e' accesa di default e si comporta come prima; spenta, messaggi e schermate si aprono all'istante, senza il breve lampeggio.
+
+  * FILTRI CONTRO CHI SI CREA UN'IDENTITA' NUOVA PER OGNI POST. Il tipo di confronto "nick = indirizzo", per il campo "da", scatta quando il nickname e' l'indirizzo e-mail spezzato in due (Coltivatore Diretto <colti@vatorediret.to>) e lavora prima dello scarico. Il campo nuovo "Intestazioni" cerca in tutte le intestazioni del messaggio. Con il punteggio, piu' indizi deboli si sommano: nessuno nasconde da solo, insieme si'.
+
+  * VEDERE CHI DA' CORDA A UN TROLL. Una regola che nasconde un autore ed e' estesa alle risposte puo' ora EVIDENZIARE le risposte invece di nasconderle: l'autore sparisce e vedi chi continua a rispondergli.
+
+  * I TASTI DEL VOLUME POSSONO SFOGLIARE I MESSAGGI. In Aspetto c'e' un interruttore nuovo, spento di default: quando e' acceso, nella lettura a schermo intero volume giu' apre il messaggio successivo e volume su il precedente. Altrove i tasti regolano il volume come sempre.
+
+  * PIU' ROBUSTO CONTRO I MESSAGGI COSTRUITI MALE: i filtri che si estendono alle risposte leggono ora la riga References con lo stesso limite di sicurezza del resto dell'app.
+
+  * LE VIRGOLETTE SI VEDONO DI NUOVO. In una cinquantina di testi dell'app le parole che dovevano comparire fra virgolette comparivano senza, per come quei testi erano scritti. Corretto ovunque, con un controllo che impedisce che si ripresenti.
+
  ***  VERSIONE 1.5.6  ***
 
  Una segnalazione di Roxy dal suo box TV, il giorno dopo la 1.5.5.

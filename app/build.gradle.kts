@@ -2034,8 +2034,14 @@ android {
         // configurazione hanno un ripiego nella cartella dell'app
         // (backup/BackupLocale.kt), senza permessi nuovi.
         // Zip: da 125 a 128 file.
-        versionCode = 174
-        versionName = "1.5.6"
+        // 1.5.6 / 174 PUBBLICATA il 20 ottobre 2026 (SourceForge + GitHub v1.5.6).
+        // versionCode 175 (20 ottobre 2026) - versionName CAMBIA (1.5.6 pubblica;
+        // nome 1.5.7 PROVVISORIO, lo decide Marco). LE VIRGOLETTE SI VEDONO: 38
+        // stringhe EN e 17 IT avevano " (o &quot;) non protette, che Android
+        // tratta come delimitatori e toglie a schermo. Ora \" ovunque; nuovo
+        // controllo 5-bis nella suite. Scoperto provando controlli/traduzioni.py.
+        versionCode = 175
+        versionName = "1.5.7"
     }
 
     buildTypes {

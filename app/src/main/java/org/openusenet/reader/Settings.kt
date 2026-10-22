@@ -73,6 +73,19 @@ object AppSettings {
     var collapseBlankLines by mutableStateOf(false)
 
     /**
+     * 1.5.7 / 175 (F8): nella lettura a schermo intero, volume giu' = messaggio
+     * successivo, volume su = precedente. Spento di default. Vedi ui/TastiVolume.kt.
+     */
+    var tastiVolume by mutableStateOf(false)
+
+    /**
+     * 1.5.7 / 175: dissolvenza tra le schermate (quella predefinita di
+     * Navigation Compose, 700 ms). Acceso di default: spento, le schermate
+     * cambiano di colpo. Vedi il NavHost in MainActivity.
+     */
+    var animazioni by mutableStateOf(true)
+
+    /**
      * Riflusso testo (de-wrap): ricompone i capoversi spezzati dall'a-capo
      * forzato a ~72 caratteri, così su schermo stretto non restano righe con
      * una-due parole orfane. Solo in LETTURA; le righe corte intenzionali
@@ -912,6 +925,8 @@ object AppSettings {
         uiPalette = prefs.getString("ui_palette", "default") ?: "default"
         paneListScale = prefs.getFloat("pane_list_scale", 1.0f)
         collapseBlankLines = prefs.getBoolean("collapse_blank_lines", false)
+        tastiVolume = prefs.getBoolean("volume_keys", false)
+        animazioni = prefs.getBoolean("screen_animations", true)
         reflowText = prefs.getBoolean("reflow_text", false)
         // 1.4.8 (par. B6b): spento di default, vedi la nota sulla proprieta'
         formatFlowedInUscita = prefs.getBoolean("format_flowed_out", false)
@@ -1055,6 +1070,8 @@ object AppSettings {
             .putString("ui_palette", uiPalette)
             .putFloat("pane_list_scale", paneListScale)
             .putBoolean("collapse_blank_lines", collapseBlankLines)
+            .putBoolean("volume_keys", tastiVolume)
+            .putBoolean("screen_animations", animazioni)
             .putBoolean("reflow_text", reflowText)
             .putBoolean("format_flowed_out", formatFlowedInUscita)
             .putBoolean("solo_icona_aggiorna_pannelli", soloIconaAggiornaPannelli)

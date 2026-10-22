@@ -18,6 +18,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.Branding
+import org.openusenet.reader.filter.richiedeIntestazioni
 import org.openusenet.reader.filter.FilterEngine
 import org.openusenet.reader.filter.FilterField
 import org.openusenet.reader.filter.FilterRule
@@ -1511,9 +1512,13 @@ class NewsRepository(
      * prima di toccare qualunque altra cosa.
      */
     private suspend fun applicaRegoleLettore(articleId: Long, headers: Map<String, String>) {
-        val lettore = MimeUtil.lettoreDiNews(headers) ?: return
+        // 1.5.7 / 175: non solo il lettore di news — anche il campo HEADERS
+        // (tutte le intestazioni) diventa valutabile qui. Si esce subito se
+        // nessuna regola attiva guarda le intestazioni complete.
+        val hf = MimeUtil.intestazioniPerFiltri(headers)
+        if (hf.lettore == null && hf.tutte == null) return
         val tutte = db.filterDao().allOnce().map { it.toRule() }
-        if (tutte.none { it.enabled && it.field == FilterField.NEWSREADER }) return
+        if (tutte.none { it.enabled && it.field.richiedeIntestazioni }) return
 
         val a = db.articleDao().byId(articleId) ?: return
         if (a.watched) return // una discussione seguita non si nasconde mai
@@ -1523,7 +1528,7 @@ class NewsRepository(
         val scorable = ScorableArticle(
             a.fromField, a.subject, a.messageId,
             newsgroups = g.name, body = a.body, references = a.references,
-            newsreader = lettore,
+            newsreader = hf.lettore, intestazioni = hf.tutte,
         )
 
         // (2) il seme prima di tutto il resto
@@ -3132,20 +3137,23 @@ class NewsRepository(
             val regole = engine.rulesForGroup(g.name)
             val guardaCorpo = regole.any { it.field == FilterField.BODY }
             val guardaLettore = regole.any { it.field == FilterField.NEWSREADER }
+            val guardaIntestazioni = regole.any { it.field == FilterField.HEADERS }
             for (a in db.articleDao().byGroupOnce(g.id)) {
-                val lettore = MimeUtil.lettoreDiNews(a.headersRaw)
+                val hf = MimeUtil.intestazioniPerFiltri(a.headersRaw)
                 val stato = StatoMessaggio(
                     nascosto = a.hidden,
                     seguito = a.watched,
                     punteggio = a.score,
                     protetto = a.messageId in protetti,
-                    valutabile = !(guardaCorpo && a.body == null) && !(guardaLettore && lettore == null),
+                    valutabile = !(guardaCorpo && a.body == null) &&
+                        !(guardaLettore && hf.lettore == null) &&
+                        !(guardaIntestazioni && hf.tutte == null),
                 )
                 val esito = engine.evaluate(
                     ScorableArticle(
                         a.fromField, a.subject, a.messageId,
                         newsgroups = g.name, body = a.body, references = a.references,
-                        newsreader = lettore,
+                        newsreader = hf.lettore, intestazioni = hf.tutte,
                     ),
                     g.name,
                 )
@@ -3489,13 +3497,14 @@ class NewsRepository(
             if (regolePropaganti.isNotEmpty()) {
                 val semi = ArrayList<PoisonedId>()
                 for (a in tutti) {
+                    val hf = MimeUtil.intestazioniPerFiltri(a.headersRaw)
                     val scorable = ScorableArticle(
                         a.fromField, a.subject, a.messageId,
                         newsgroups = g.name, body = a.body, references = a.references,
                         // 1.4.4: null per la stragrande maggioranza degli articoli
                         // (intestazioni complete solo per quelli scaricati), e
-                        // allora la regola NEWSREADER si salta da sola.
-                        newsreader = MimeUtil.lettoreDiNews(a.headersRaw),
+                        // allora le regole NEWSREADER e HEADERS si saltano da sole.
+                        newsreader = hf.lettore, intestazioni = hf.tutte,
                     )
                     for (regola in regolePropaganti) {
                         if (regola.matchesArticle(scorable)) {
@@ -3511,11 +3520,12 @@ class NewsRepository(
             // valutazioni separate solo per il KILL; l'HIDE non era valutato
             // affatto qui.
             val valutati = tutti.filter { !it.watched }.map { a ->
+                val hf = MimeUtil.intestazioniPerFiltri(a.headersRaw)
                 a to engine.evaluate(
                     ScorableArticle(
                         a.fromField, a.subject, a.messageId,
                         newsgroups = g.name, references = a.references,
-                        newsreader = MimeUtil.lettoreDiNews(a.headersRaw),
+                        newsreader = hf.lettore, intestazioni = hf.tutte,
                     ),
                     g.name,
                 )

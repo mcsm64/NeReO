@@ -234,6 +234,34 @@ fun AppearanceScreen(nav: NavHostController) {
                 )
                 Text(stringResource(R.string.app_collapse_blank), modifier = Modifier.padding(start = 12.dp))
             }
+            // 1.5.7 / 175: dissolvenza tra le schermate. Acceso di default.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                Switch(
+                    checked = AppSettings.animazioni,
+                    onCheckedChange = { AppSettings.animazioni = it; AppSettings.save() },
+                )
+                Text(stringResource(R.string.app_animations), modifier = Modifier.padding(start = 12.dp))
+            }
+            Text(
+                stringResource(R.string.app_animations_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp, top = 2.dp),
+            )
+            // 1.5.7 / 175 (F8): sfogliare coi tasti del volume. Spento di default.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                Switch(
+                    checked = AppSettings.tastiVolume,
+                    onCheckedChange = { AppSettings.tastiVolume = it; AppSettings.save() },
+                )
+                Text(stringResource(R.string.app_volume_keys), modifier = Modifier.padding(start = 12.dp))
+            }
+            Text(
+                stringResource(R.string.app_volume_keys_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp, top = 2.dp),
+            )
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                 Switch(
                     checked = AppSettings.reflowText,

@@ -27,6 +27,10 @@
  *   Newsreader: regex:EsempioReader/1\\.[0-3]
  *   Followup: subtree
  *
+ * 1.5.7 — anti-sockpuppet e intestazioni:
+ *   From: nickaddr:*              <- nick = indirizzo (senza @ e .)
+ *   Headers: x-antivirus: Norton  <- in tutte le intestazioni, nomi in minuscolo
+ *
  * `Newsreader` guarda User-Agent, X-Newsreader e X-Mailer insieme. Una regola
  * cosi' si valuta solo sugli articoli gia' scaricati (quelle intestazioni non
  * stanno nel riepilogo overview) — vedi FilterField.NEWSREADER.
@@ -56,6 +60,8 @@ object KillFile {
                 MatchType.REGEX -> "regex:"
                 MatchType.WILDCARD -> "wild:"
                 MatchType.CONTAINS -> ""
+                // 1.5.7: «From: nickaddr:*» — il pattern non conta, ma deve esserci.
+                MatchType.NICK_EMAIL -> "nickaddr:"
             }
             val field = when (r.field) {
                 FilterField.FROM -> "From"
@@ -68,6 +74,8 @@ object KillFile {
                 // (User-Agent, X-Newsreader, X-Mailer) e chiamarlo come una
                 // sola farebbe credere che le altre due non contino.
                 FilterField.NEWSREADER -> "Newsreader"
+                // 1.5.7: tutte le intestazioni, «nome: valore» per riga.
+                FilterField.HEADERS -> "Headers"
             }
             appendLine("$field: $prefix${r.pattern}")
             if (r.caseSensitive) appendLine("Case: sensitive")
@@ -141,7 +149,7 @@ object KillFile {
                             else -> FollowupMode.NONE
                         }
                         "followupscore" -> followupScore = value.toIntOrNull()
-                        "from", "subject", "message-id", "xpost", "body", "references", "newsreader" -> {
+                        "from", "subject", "message-id", "xpost", "body", "references", "newsreader", "headers" -> {
                             field = when (key) {
                                 "from" -> FilterField.FROM
                                 "subject" -> FilterField.SUBJECT
@@ -149,11 +157,13 @@ object KillFile {
                                 "xpost" -> FilterField.XPOST
                                 "references" -> FilterField.REFERENCES
                                 "newsreader" -> FilterField.NEWSREADER
+                                "headers" -> FilterField.HEADERS
                                 else -> FilterField.BODY
                             }
                             when {
                                 value.startsWith("regex:") -> { matchType = MatchType.REGEX; pattern = value.drop(6) }
                                 value.startsWith("wild:") -> { matchType = MatchType.WILDCARD; pattern = value.drop(5) }
+                                value.startsWith("nickaddr:") -> { matchType = MatchType.NICK_EMAIL; pattern = value.drop(9).ifEmpty { "*" } }
                                 else -> { matchType = MatchType.CONTAINS; pattern = value }
                             }
                         }

@@ -195,6 +195,18 @@ app_text_size_note =
 # en: Smart line merging (removes consecutive blank lines)
 app_collapse_blank =
 
+# en: Volume keys turn the page
+app_volume_keys =
+
+# en: In full-screen reading, volume down opens the next message and volume up the previous one. Everywhere else the keys change the volume as usual.
+app_volume_keys_note =
+
+# en: Screen transition animation
+app_animations =
+
+# en: The short fade when you open a message or another screen. Turn it off and screens change instantly. Menus keep their own very brief animation.
+app_animations_note =
+
 # en: Shorten quoted text (tap to expand)
 app_shorten_quotes =
 
@@ -639,6 +651,18 @@ flt_body_note =
 # en: Newsreader
 flt_field_newsreader =
 
+# en: Headers
+flt_field_headers =
+
+# en: Searches ALL the headers of the message, one line per header written as «name: value», with names in lower case (for example «x-antivirus: norton»). Useful for the traces an author carries without noticing. Like the Newsreader field, it fires as soon as a message is downloaded, not before: full headers arrive with the text, not with the message list.
+flt_headers_note =
+
+# en: nick = address
+flt_match_nick_email =
+
+# en: Fires when the nickname is the e-mail address split in two: «Coltivatore Diretto <colti@vatorediret.to>». Nickname and address are compared in lower case, letters and digits only (spaces, «@» and dots do not count). Nothing to type: it works on the From line as it arrives with the message list, before anything is downloaded.
+flt_nick_email_note =
+
 # en: Matches the program the author declares (User-Agent, X-Newsreader, X-Mailer). It is meant for someone who keeps changing nickname but always posts from the same reader. Note: those headers do not arrive with the message list, they arrive with the text — so the rule fires as soon as a message is downloaded, not before. With 'prefetch replies' on (the default) that happens on its own. Pair it with 'Extend to replies' to drop the whole branch.
 flt_newsreader_note =
 
@@ -695,6 +719,15 @@ flt_followup_note =
 
 # en: Replies to this author's posts, and the whole branch below them, get the same treatment: they are highlighted, or followed with a star if the action is «Follow the thread». Nothing is hidden.
 flt_followup_note_positiva =
+
+# en: Hide the replies
+flt_followup_hide =
+
+# en: Highlight the replies (to see who answers)
+flt_followup_highlight =
+
+# en: This author's posts are hidden; the replies to them, and the whole branch below, stay visible but HIGHLIGHTED: you see at a glance who keeps answering.
+flt_followup_note_evidenziate =
 
 # en: replies too
 flt_followup_badge =
@@ -2875,6 +2908,24 @@ rn_v155_l7 =
 
 # en: New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the "newest first" orders it also notices a reply inside the thread that is already at the top. With the "oldest first" orders, where new messages are at the bottom, you stay where you were. In the panel view too.
 rn_v155_l8 =
+
+# en: New in 1.5.7
+rn_v157_title =
+
+# en: Quotation marks are shown again. In some fifty texts of the app - settings notes, messages, release notes - words meant to appear in quotes were shown without them, because of how those texts were written. Fixed everywhere, and a check now prevents it from coming back.
+rn_v157_l1 =
+
+# en: The volume keys can turn the page. In Appearance there is a new switch, off by default: when it is on, in full-screen reading volume down opens the next message and volume up the previous one, so you can read with one hand. Everywhere else - lists, writing, other screens - the keys change the volume as usual, and holding a key down does not race through the thread.
+rn_v157_l2 =
+
+# en: Two new tools in the filters against those who create a new identity for every post. «nick = address», for the From field, fires when the nickname is the e-mail address split in two (Coltivatore Diretto <colti@vatorediret.to>), and works before downloading. The new field «Headers» searches all the headers of a message, for traces the author carries without noticing. Combined through the score, several weak clues add up: none of them hides on its own, together they do.
+rn_v157_l3 =
+
+# en: A rule that hides an author and is extended to replies can now HIGHLIGHT the replies instead of hiding them: the author disappears and you see who keeps answering. A new choice under «Extend to replies».
+rn_v157_l4 =
+
+# en: The fade between screens can be switched off. In Appearance, «Screen transition animation» is on by default and behaves exactly as before; turned off, messages and screens open instantly, without the short flash. Requested by a user.
+rn_v157_l5 =
 
 # en: New in 1.5.6
 rn_v156_title =

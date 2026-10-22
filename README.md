@@ -6,9 +6,9 @@ Scritto da zero in Kotlin + Jetpack Compose. Nasce dal MOD 17 di *Newsreader* di
 
 Il package interno resta `org.openusenet.reader` — invariato di proposito, per non rompere gli aggiornamenti già installati.
 
-**Versione 1.5.6** (versionCode 174) — 19 ottobre 2026
+**Versione 1.5.7** (versionCode 175) — 22 ottobre 2026
 
-## Funzioni (1.5.6)
+## Funzioni (1.5.7)
 
 - Multi-server NNTP con SSL/TLS implicito **o STARTTLS** (RFC 3977 + RFC 4643 + RFC 4642) e autenticazione, con **verifica del nome host sul certificato** (RFC 6125) e fallback automatico IPv6/IPv4; CAPABILITIES letto e loggato alla connessione; riuso della connessione durante la lettura di un thread; **allarme se un server che offriva STARTTLS smette di annunciarlo** (RFC 4642 §5)
 - Ricerca e sottoscrizione gruppi, sync incrementale delle headline con `OVER` e ripiego automatico su `XOVER` per i server che non riconoscono `OVER` (es. Astraweb)
@@ -18,10 +18,24 @@ Il package interno resta `org.openusenet.reader` — invariato di proposito, per
 - Decodifica header RFC 2047, quoted-printable, base64, charset multipli; **Face** (PNG, come MesNews) in lettura e in invio; **X-Face** in bianco e nero **in lettura** (dalla 1.5.5, non in invio); **Format=Flowed** (RFC 3676) in lettura
 - **Barre di lettura personalizzabili** in entrambe le viste: ventuno azioni, ognuna spostabile fra barra e menu, con l'ordine che decidi tu
 - **«Conserva questo messaggio»**: un messaggio si scrive come file `.eml` in una cartella scelta una volta sola, e da lì non lo tocca più niente di NeReO — né la pulizia automatica, né una disiscrizione, né un riscarico
-- **Motore filtri a punteggio** stile slrn/Gnus: contains/wildcard/regex su From, Subject, Message-ID, Xpost e Body, con scope per gruppo (wildmat), scadenza, soglie kill/hide/highlight/watch; import/export kill-file testuale (formato slrn-like)
+- **Motore filtri a punteggio** stile slrn/Gnus: contains/wildcard/regex su From, Subject, Message-ID, Xpost, Body, lettore di news e tutte le intestazioni, più «nick = indirizzo» contro i sockpuppet; estensione alle risposte (nascoste o evidenziate); scope per gruppo (wildmat), scadenza, soglie kill/hide/highlight/watch; import/export kill-file testuale (formato slrn-like)
 - Backup e ripristino della configurazione, con cifratura opzionale
 - Material 3, tema chiaro/scuro/di sistema, dynamic color, tinte e dimensioni del testo, layout a pannelli per schermi larghi
 - Interfaccia in italiano e inglese, con **interruttore lingua dentro l'app** (Aspetto → Lingua) oltre alla voce di sistema su Android 13+
+
+## Novità della 1.5.7
+
+> Una richiesta di Marco e dei collaudatori, raccolta in una settimana di lavoro «parcheggiato».
+
+- **La dissolvenza tra le schermate si può spegnere** *(un utente: «Is it possible to disable the "screen flashing"?»)*. Il «lampeggio» era la dissolvenza predefinita di Navigation Compose, 700 ms (verificato nell'APK), mai scelta né toccata da NeReO. Interruttore in Aspetto, acceso di default: acceso è identico a prima, spento le schermate cambiano di colpo (`EnterTransition.None`). Le transizioni leggono `AppSettings.animazioni` al momento del cambio, quindi vale subito. I menu a tendina tengono la loro animazione Material
+
+- **Filtri anti-sockpuppet** *(Marco, 20/10, piano B)*. Contro chi si crea un'identità nuova per ogni post. (1) Tipo di confronto nuovo **«nick = indirizzo»** (`MatchType.NICK_EMAIL`, solo sul From): nick e indirizzo in minuscolo, solo lettere e cifre, devono coincidere — `Coltivatore Diretto <colti@vatorediret.to>`. Lavora al sync, prima dello scarico. Una regex non basta: sa ripetere un pezzo di testo, non ripeterlo togliendogli i punti. (2) Campo nuovo **«Intestazioni»** (`FilterField.HEADERS`): tutte le intestazioni, «nome: valore» per riga, nomi in minuscolo (`MimeUtil.intestazioniPerFiltri`, un'analisi sola per Lettore e Intestazioni); come il Lettore si valuta dopo lo scarico. Il punteggio cumulativo fa il resto: più indizi deboli, nessuno decisivo da solo. Sui tre From veri di Marco, «nick = indirizzo» ne coglie due: il terzo (`Gino Pontieri <gino@pontie.it>`) no, ed è detto. Kill-file: `From: nickaddr:*`, `Headers: …`
+- **Una regola che nasconde, estesa alle risposte, può EVIDENZIARE le risposte** *(Marco: «segnare chi scrive nei post del plonkato», piano A)*. Il motore lo sapeva già fare (un `followupScore` positivo vince sempre): mancava la scelta nell'editor. `punteggioRisposte()` decide cosa salvare e conserva un punteggio negativo scritto a mano nel kill-file. Prove: `controlli/antisockpuppet`, 32 asserzioni, sui From veri
+
+- **I tasti del volume sfogliano i messaggi** *(F8, brainstorming del 17/10)*. Interruttore nuovo in Aspetto, spento di default: nella lettura a schermo intero volume giù = successivo, volume su = precedente. `MainActivity.dispatchKeyEvent` chiede a `ui/TastiVolume.kt` se il tasto è suo; la schermata di lettura si registra solo finché è visibile (`DisposableEffect`), quindi altrove i tasti regolano il volume come sempre. La ripetizione automatica (tasto tenuto premuto) non sfoglia. Provato con `kotlinc` (10 asserzioni)
+- **Un solo lettore delle References, con il suo tetto** *(voce 6-bis del quaderno)*. `FollowupPropagator.parseReferences`, usato dai filtri sui messaggi in arrivo, era una seconda copia del lettore di identificativi SENZA il tetto di sicurezza dell'audit 1.2.12: ora delega a `Threader.idNelleReferences`. La chiusura transitiva della propagazione regge già la perdita degli anelli centrali. Provato con `kotlinc` (9 asserzioni, prova del guasto fatta)
+
+- **Le virgolette si vedono di nuovo.** 38 stringhe inglesi e 17 italiane avevano virgolette `"` (o `&quot;`) non protette: Android le tratta come delimitatori e le toglie a schermo. Ora sono tutte `\"`, e la suite ha un controllo nuovo (5-bis) che blocca le prossime. Scoperto provando lo strumento di conversione delle traduzioni (`controlli/traduzioni.py`)
 
 ## Novità della 1.5.6
 

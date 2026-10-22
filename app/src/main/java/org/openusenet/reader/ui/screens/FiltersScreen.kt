@@ -29,6 +29,7 @@ import org.openusenet.reader.ui.icone.Delete
 import org.openusenet.reader.ui.icone.FileDownload
 import org.openusenet.reader.ui.icone.FileUpload
 import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -40,6 +41,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -65,6 +67,7 @@ import org.openusenet.reader.filter.FollowupMode
 import org.openusenet.reader.filter.campoIdentificaUnAutore
 import org.openusenet.reader.filter.KillFile
 import org.openusenet.reader.filter.MatchType
+import org.openusenet.reader.filter.punteggioRisposte
 import org.openusenet.reader.ui.indietroSicuro
 
 @Composable
@@ -76,6 +79,7 @@ private fun fieldLabelIt(f: FilterField) = when (f) {
     FilterField.BODY -> stringResource(R.string.flt_field_body)
     FilterField.REFERENCES -> stringResource(R.string.flt_field_references)
     FilterField.NEWSREADER -> stringResource(R.string.flt_field_newsreader)
+    FilterField.HEADERS -> stringResource(R.string.flt_field_headers)
 }
 
 /**
@@ -139,14 +143,20 @@ fun FiltersScreen(repo: NewsRepository, nav: NavHostController) {
             items(rules, key = { it.id }) { rule ->
                 ListItem(
                     headlineContent = {
-                        Text(rule.name.ifBlank { "${rule.field}: ${rule.pattern}" })
+                        // 1.5.7: «nick = indirizzo» non ha un pattern da mostrare.
+                        val nickIndirizzo = rule.matchType == MatchType.NICK_EMAIL.name
+                        val etichettaNick = stringResource(R.string.flt_match_nick_email)
+                        Text(rule.name.ifBlank { if (nickIndirizzo) "${rule.field}: $etichettaNick" else "${rule.field}: ${rule.pattern}" })
                     },
                     supportingContent = {
+                        val nickIndirizzo = rule.matchType == MatchType.NICK_EMAIL.name
+                        val etichettaNick = stringResource(R.string.flt_match_nick_email)
                         val desc = if (rule.field == FilterField.BODY.name)
                             stringResource(R.string.flt_body_rule, rule.matchType.lowercase(), rule.pattern)
                         else
-                            "${rule.field.lowercase()} ${rule.matchType.lowercase()} \"${rule.pattern}\"  →  " +
-                                (if (rule.score > 0) "+${rule.score}" else "${rule.score}")
+                            "${rule.field.lowercase()} " +
+                                (if (nickIndirizzo) etichettaNick else "${rule.matchType.lowercase()} \"${rule.pattern}\"") +
+                                "  →  " + (if (rule.score > 0) "+${rule.score}" else "${rule.score}")
                         // M1: una regola estesa alle risposte si deve riconoscere
                         // dall'elenco, senza doverla riaprire.
                         val estesa = rule.followup != FollowupMode.NONE.name
@@ -300,6 +310,12 @@ private fun FilterEditorDialog(
     var estendiAlleRisposte by remember {
         mutableStateOf((initial?.followup ?: FollowupMode.NONE.name) != FollowupMode.NONE.name)
     }
+    // 1.5.7 / 175 (Marco: «segnare chi scrive nei post del plonkato»): su una
+    // regola che NASCONDE ed e' estesa alle risposte, le risposte si possono
+    // EVIDENZIARE invece di nasconderle. Il motore lo sapeva gia' fare (un
+    // followupScore positivo vince sempre, vedi effettoPropagazioneDi): mancava
+    // solo la scelta qui. Parte da com'era salvata la regola.
+    var risposteEvidenziate by remember { mutableStateOf((initial?.followupScore ?: 0) > 0) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -327,7 +343,17 @@ private fun FilterEditorDialog(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     CAMPI_VISIBILI.forEach { f ->
-                        FilterChip(selected = field == f.name, onClick = { field = f.name }, label = { Text(fieldLabelIt(f)) })
+                        FilterChip(
+                            selected = field == f.name,
+                            onClick = {
+                                field = f.name
+                                // 1.5.7: «nick = indirizzo» esiste solo sul From.
+                                if (f != FilterField.FROM && matchType == MatchType.NICK_EMAIL.name) {
+                                    matchType = MatchType.CONTAINS.name
+                                }
+                            },
+                            label = { Text(fieldLabelIt(f)) },
+                        )
                     }
                 }
                 FlowRow(
@@ -335,11 +361,38 @@ private fun FilterEditorDialog(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    MatchType.entries.forEach { m ->
-                        FilterChip(selected = matchType == m.name, onClick = { matchType = m.name }, label = { Text(m.name.lowercase()) })
-                    }
+                    MatchType.entries
+                        .filter { it != MatchType.NICK_EMAIL || field == FilterField.FROM.name }
+                        .forEach { m ->
+                            FilterChip(
+                                selected = matchType == m.name,
+                                onClick = { matchType = m.name },
+                                label = {
+                                    Text(
+                                        if (m == MatchType.NICK_EMAIL) stringResource(R.string.flt_match_nick_email)
+                                        else m.name.lowercase()
+                                    )
+                                },
+                            )
+                        }
                 }
-                OutlinedTextField(value = pattern, onValueChange = { pattern = it }, label = { Text(stringResource(R.string.flt_pattern)) }, singleLine = true, keyboardOptions = KeyboardOptions(autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth())
+                // 1.5.7: «nick = indirizzo» non ha uno schema da scrivere.
+                if (matchType == MatchType.NICK_EMAIL.name) {
+                    Text(
+                        stringResource(R.string.flt_nick_email_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    OutlinedTextField(value = pattern, onValueChange = { pattern = it }, label = { Text(stringResource(R.string.flt_pattern)) }, singleLine = true, keyboardOptions = KeyboardOptions(autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth())
+                }
+                if (field == FilterField.HEADERS.name) {
+                    Text(
+                        stringResource(R.string.flt_headers_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 // 1.4.4: la nota sta QUI e non nel ramo del BODY qui sotto, che
                 // nasconde il selettore dell'azione. Una regola sul lettore di
                 // news l'azione la vuole eccome — e' il suo scopo.
@@ -431,12 +484,27 @@ private fun FilterEditorDialog(
                         val positiva = (score.toIntOrNull() ?: 0) > 0
                         Text(
                             stringResource(
-                                if (positiva) R.string.flt_followup_note_positiva
-                                else R.string.flt_followup_note
+                                when {
+                                    positiva -> R.string.flt_followup_note_positiva
+                                    risposteEvidenziate -> R.string.flt_followup_note_evidenziate
+                                    else -> R.string.flt_followup_note
+                                }
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        // 1.5.7 / 175: regola che nasconde → le risposte si
+                        // possono nascondere (come sempre) o EVIDENZIARE.
+                        if (!positiva) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(selected = !risposteEvidenziate, onClick = { risposteEvidenziate = false })
+                                Text(stringResource(R.string.flt_followup_hide))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(selected = risposteEvidenziate, onClick = { risposteEvidenziate = true })
+                                Text(stringResource(R.string.flt_followup_highlight))
+                            }
+                        }
                     }
                 }
                 OutlinedTextField(value = wildmat, onValueChange = { wildmat = it }, label = { Text(stringResource(R.string.flt_scope)) }, singleLine = true, keyboardOptions = KeyboardOptions(autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth())
@@ -449,7 +517,8 @@ private fun FilterEditorDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = pattern.isNotBlank() && (field == FilterField.BODY.name || score.toIntOrNull() != null),
+                enabled = (pattern.isNotBlank() || matchType == MatchType.NICK_EMAIL.name) &&
+                    (field == FilterField.BODY.name || score.toIntOrNull() != null),
                 onClick = {
                     onSave(
                         FilterRuleEntity(
@@ -457,7 +526,9 @@ private fun FilterEditorDialog(
                             name = name,
                             field = field,
                             matchType = matchType,
-                            pattern = pattern,
+                            // 1.5.7: «*» per nick = indirizzo — il pattern non
+                            // conta, ma il kill-file scarta le regole senza.
+                            pattern = if (matchType == MatchType.NICK_EMAIL.name) "*" else pattern,
                             score = if (field == FilterField.BODY.name) -10000 else (score.toIntOrNull() ?: 0),
                             caseSensitive = caseSensitive,
                             groupWildmat = wildmat.ifBlank { "*" },
@@ -491,7 +562,15 @@ private fun FilterEditorDialog(
                             // il che dice soltanto che nessuno li aveva provati.
                             expiresEpochDay = initial?.expiresEpochDay,
                             enabled = initial?.enabled ?: true,
-                            followupScore = initial?.followupScore,
+                            // 1.5.7 / 175: la scelta «evidenzia le risposte» si
+                            // scrive qui; un punteggio di propagazione NEGATIVO
+                            // scritto a mano nel kill-file si conserva, come prima.
+                            followupScore = punteggioRisposte(
+                                attiva = campoIdentificaUnAutore(field) && estendiAlleRisposte &&
+                                    (score.toIntOrNull() ?: 0) <= 0,
+                                evidenzia = risposteEvidenziate,
+                                salvato = initial?.followupScore,
+                            ),
                         )
                     )
                 },

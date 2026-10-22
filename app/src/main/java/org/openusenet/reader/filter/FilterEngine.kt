@@ -43,7 +43,15 @@ package org.openusenet.reader.filter
  * si valuta — [valoreCampo] torna null e il motore la salta senza alterare il
  * punteggio, esattamente come fa da sempre con BODY.
  */
-enum class FilterField { FROM, SUBJECT, MESSAGE_ID, XPOST, BODY, REFERENCES, NEWSREADER }
+/**
+ * 1.5.7 / 175 — HEADERS («Intestazioni»): cerca in TUTTE le intestazioni del
+ * messaggio, una riga «nome: valore» per intestazione, nomi in minuscolo.
+ * Serve alle impronte che un autore si porta dietro senza saperlo (Marco, 20
+ * ottobre: «X-Antivirus: Norton ... Outbound message»). Come NEWSREADER, si
+ * valuta solo sugli articoli gia' scaricati: le intestazioni complete arrivano
+ * col corpo, non col riepilogo overview.
+ */
+enum class FilterField { FROM, SUBJECT, MESSAGE_ID, XPOST, BODY, REFERENCES, NEWSREADER, HEADERS }
 
 /**
  * 1.4.4 — QUESTO CAMPO IDENTIFICA UN AUTORE?
@@ -67,7 +75,15 @@ enum class FilterField { FROM, SUBJECT, MESSAGE_ID, XPOST, BODY, REFERENCES, NEW
  * cambia a ogni nickname nuovo, il programma con cui si pubblica no.
  */
 val FilterField.identificaUnAutore: Boolean
-    get() = this == FilterField.FROM || this == FilterField.NEWSREADER
+    get() = this == FilterField.FROM || this == FilterField.NEWSREADER || this == FilterField.HEADERS
+
+/**
+ * 1.5.7 / 175: il campo si valuta solo con le intestazioni COMPLETE (che
+ * arrivano col corpo). Un posto solo per le due regole che ne hanno bisogno,
+ * cosi' chi decide «valutabile o no» non deve elencarle a mano.
+ */
+val FilterField.richiedeIntestazioni: Boolean
+    get() = this == FilterField.NEWSREADER || this == FilterField.HEADERS
 
 /**
  * Come sopra, partendo dal nome memorizzato in `FilterRuleEntity.field`.
@@ -77,8 +93,14 @@ val FilterField.identificaUnAutore: Boolean
 fun campoIdentificaUnAutore(nomeCampo: String): Boolean =
     FilterField.entries.any { it.name == nomeCampo && it.identificaUnAutore }
 
-/** Tipo di match: contains semplice, wildcard (* e ?) o regex completa. */
-enum class MatchType { CONTAINS, WILDCARD, REGEX }
+/**
+ * Tipo di match: contains semplice, wildcard (* e ?) o regex completa.
+ *
+ * 1.5.7 / 175 — NICK_EMAIL: «nick = indirizzo», il confronto anti-sockpuppet
+ * (vedi NickIndirizzo.kt). Ha senso sul campo FROM; il pattern non si usa
+ * (l'editor salva «*», perche' il kill-file scarta le regole senza pattern).
+ */
+enum class MatchType { CONTAINS, WILDCARD, REGEX, NICK_EMAIL }
 
 /**
  * M1 (release personale Marco): estensione di una regola alle RISPOSTE.
@@ -149,6 +171,29 @@ fun effettoPropagazioneDi(
     return EffettoPropagazione(punteggio = p, nascondi = p < 0, segui = p >= soglie.watch)
 }
 
+/**
+ * 1.5.7 / 175 — «SEGNARE CHI SCRIVE NEI POST DEL PLONKATO» (Marco, 20/10,
+ * piano A): il punteggio da salvare per le RISPOSTE di una regola che nasconde.
+ *
+ *  - [attiva] = la scelta si vede nell'editor (campo che identifica un autore,
+ *    «estendi alle risposte» acceso, regola non positiva). Se non si vede, si
+ *    conserva cio' che c'era: l'editor non cancella un dato che non mostra
+ *    (lezione 1.4.4).
+ *  - [evidenzia] -> un punteggio positivo: quello gia' salvato se positivo,
+ *    altrimenti la soglia HIGHLIGHT. Per [effettoPropagazioneDi] un
+ *    followupScore positivo non nasconde: le risposte restano visibili e
+ *    colorate, il plonkato sparisce.
+ *  - altrimenti -> null (default: nascoste, come sempre), ma un punteggio
+ *    NEGATIVO scritto a mano nel kill-file (es. -30) si conserva.
+ *
+ * Kotlin puro: provato con kotlinc (controlli/filtri).
+ */
+fun punteggioRisposte(attiva: Boolean, evidenzia: Boolean, salvato: Int?): Int? = when {
+    !attiva -> salvato
+    evidenzia -> if (salvato != null && salvato > 0) salvato else Thresholds().highlight
+    else -> if (salvato != null && salvato < 0) salvato else null
+}
+
 data class FilterRule(
     val id: Long = 0,
     val name: String = "",
@@ -179,7 +224,7 @@ data class FilterRule(
             when (matchType) {
                 MatchType.REGEX -> Regex(pattern, opts)
                 MatchType.WILDCARD -> Regex(wildcardToRegex(pattern), opts)
-                MatchType.CONTAINS -> null
+                MatchType.CONTAINS, MatchType.NICK_EMAIL -> null
             }
         } catch (_: Exception) {
             null // pattern invalido ⇒ regola inerte, mai un crash
@@ -187,6 +232,7 @@ data class FilterRule(
     }
 
     fun matches(value: String): Boolean = when (matchType) {
+        MatchType.NICK_EMAIL -> nickUgualeIndirizzo(value)
         MatchType.CONTAINS ->
             if (caseSensitive) value.contains(pattern) else value.contains(pattern, ignoreCase = true)
         // 1.2.12 (audit di sicurezza): il testo su cui gira la regex viene
@@ -277,6 +323,7 @@ internal fun valoreCampo(article: ScorableArticle, field: FilterField): String? 
     FilterField.BODY -> article.body
     FilterField.REFERENCES -> article.references
     FilterField.NEWSREADER -> article.newsreader
+    FilterField.HEADERS -> article.intestazioni
 }
 
 /** Articolo "visto" dal motore filtri (indipendente dal DB). */
@@ -308,6 +355,12 @@ data class ScorableArticle(
      * scaricato), quindi regola non valutabile. Stessa semantica di [body].
      */
     val newsreader: String? = null,
+    /**
+     * 1.5.7 / 175: tutte le intestazioni, «nome: valore» una per riga, nomi in
+     * minuscolo (MimeUtil.intestazioniPerFiltri). Null = non disponibili:
+     * regola HEADERS non valutabile, stessa semantica di [newsreader].
+     */
+    val intestazioni: String? = null,
 )
 
 /** Esito della valutazione. */

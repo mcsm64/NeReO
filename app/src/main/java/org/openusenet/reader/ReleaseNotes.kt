@@ -26,7 +26,7 @@ object ReleaseNotes {
      * corretto. Ad ogni bump di versione in build.gradle.kts, aggiornare
      * SEMPRE anche questa riga e le [sections] sotto.
      */
-    const val VERSION = "1.5.6"
+    const val VERSION = "1.5.7"
 
     /**
      * Novità della versione corrente, in blocchi titolo → righe.
@@ -39,6 +39,20 @@ object ReleaseNotes {
      * strings.xml (tutte e tre le cartelle).
      */
     val sections: List<Pair<Int, List<Int>>> = listOf(
+        // 1.5.7 (20 ottobre 2026, versionCode 175). Chiavi rn_v157_* verificate
+        // libere nelle tre cartelle prima di usarle.
+        //  - l1  le virgolette si vedono (55 stringhe le perdevano)
+        //  - l2  i tasti del volume sfogliano (F8 del brainstorming 17/10)
+        //  - l3  filtri anti-sockpuppet: «nick = indirizzo» e campo Intestazioni
+        //  - l4  regola estesa alle risposte: le risposte si possono evidenziare
+        //  - l5  interruttore per la dissolvenza tra le schermate
+        R.string.rn_v157_title to listOf(
+            R.string.rn_v157_l3,
+            R.string.rn_v157_l4,
+            R.string.rn_v157_l5,
+            R.string.rn_v157_l2,
+            R.string.rn_v157_l1,
+        ),
         // 1.5.6 (19 ottobre 2026, versionCode 174). Chiavi rn_v156_* verificate
         // libere nelle tre cartelle prima di usarle.
         //  - l1  niente piu' chiusure senza selettore di file (Roxy, box TV)

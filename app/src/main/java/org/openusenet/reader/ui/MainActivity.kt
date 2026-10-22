@@ -9,6 +9,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import android.content.Context
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -65,12 +70,28 @@ import org.openusenet.reader.ui.screens.ThreadListScreen
 import org.openusenet.reader.ui.screens.ThreePaneHome
 import org.openusenet.reader.ui.theme.OpenUsenetTheme
 
+/** 1.5.7: la durata predefinita di Navigation Compose 2.8, mantenuta identica. */
+private const val DURATA_DISSOLVENZA = 700
+
 class MainActivity : ComponentActivity() {
     // Su Android <= 12 applica la lingua scelta in-app avvolgendo il context
     // dell'Activity: da qui stringResource e getString seguono la lingua scelta.
     // Su 13+ e' un no-op (ci pensa il framework). Vedi LocaleHelper.
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleHelper.applica(newBase))
+    }
+
+    /**
+     * 1.5.7 / 175 (F8): i tasti del volume sfogliano i messaggi, se l'opzione e'
+     * attiva E se c'e' un messaggio aperto a schermo intero. In tutti gli altri
+     * casi l'evento prosegue come sempre. Vedi ui/TastiVolume.kt.
+     */
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (org.openusenet.reader.ui.TastiVolume.gestisci(
+                AppSettings.tastiVolume, event.keyCode, event.action, event.repeatCount,
+            )
+        ) return true
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -204,7 +225,35 @@ fun AppNav(repo: NewsRepository, nav: NavHostController = rememberNavController(
     // fallisce per auth rifiutata su connessione non cifrata (483). Montato qui
     // una volta sola; osserva il segnale del Repository.
     DialogoConnessioneNonSicura(repo, nav)
-    NavHost(navController = nav, startDestination = Routes.GROUPS) {
+    /*
+     * 1.5.7 / 175 — LE ANIMAZIONI TRA LE SCHERMATE, CON UN INTERRUTTORE.
+     *
+     * Un utente: «Is it possible to disable the "screen flashing" animation
+     * when opening messages and menus?». Il «lampeggio» e' la dissolvenza
+     * PREDEFINITA di Navigation Compose: 700 ms in entrata e in uscita
+     * (verificato nell'APK: `sipush 700` in NavHostKt). NeReO non l'aveva mai
+     * scelta ne' toccata. Acceso (predefinito) resta IDENTICA a prima — stessa
+     * dissolvenza, stessa durata; spento, le schermate cambiano di colpo.
+     * Le lambda leggono AppSettings al momento del cambio: l'interruttore vale
+     * subito, senza riavviare. I menu a tendina hanno un'animazione propria di
+     * Material, brevissima, che qui non si tocca.
+     */
+    NavHost(
+        navController = nav,
+        startDestination = Routes.GROUPS,
+        enterTransition = {
+            if (AppSettings.animazioni) fadeIn(animationSpec = tween(DURATA_DISSOLVENZA)) else EnterTransition.None
+        },
+        exitTransition = {
+            if (AppSettings.animazioni) fadeOut(animationSpec = tween(DURATA_DISSOLVENZA)) else ExitTransition.None
+        },
+        popEnterTransition = {
+            if (AppSettings.animazioni) fadeIn(animationSpec = tween(DURATA_DISSOLVENZA)) else EnterTransition.None
+        },
+        popExitTransition = {
+            if (AppSettings.animazioni) fadeOut(animationSpec = tween(DURATA_DISSOLVENZA)) else ExitTransition.None
+        },
+    ) {
         composable(Routes.SEARCH) { SearchScreen(repo, nav) }
         composable(Routes.SEARCH_GROUP) { backStack ->
             val gid = backStack.arguments?.getString("groupId")?.toLongOrNull() ?: return@composable

@@ -1,8 +1,24 @@
 ======================================================================
- NeReO 1.5.6 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.5.7 - Ne(ws) Re(ader) O(pen-source)
  Text-only Usenet (NNTP) newsreader for Android
- NeReO 1.5.6 (versionCode 174) - By MCSM - 2026/10/19
+ NeReO 1.5.7 (versionCode 175) - By MCSM - 2026/10/22
 ======================================================================
+ ***  VERSION 1.5.7  ***
+
+ A week of requests: users, testers and Marco.
+
+  * THE FADE BETWEEN SCREENS CAN BE SWITCHED OFF. In Appearance, "Screen transition animation" is on by default and behaves as before; turned off, messages and screens open instantly, without the short flash.
+
+  * FILTERS AGAINST THOSE WHO CREATE A NEW IDENTITY FOR EVERY POST. The match type "nick = address", for the "from" field, fires when the nickname is the e-mail address split in two (Coltivatore Diretto <colti@vatorediret.to>) and works before downloading. The new field "Headers" searches all the headers of a message. Through the score, several weak clues add up: none hides on its own, together they do.
+
+  * SEE WHO FEEDS A TROLL. A rule that hides an author and is extended to replies can now HIGHLIGHT the replies instead of hiding them: the author disappears and you see who keeps answering.
+
+  * THE VOLUME KEYS CAN TURN THE PAGE. In Appearance there is a new switch, off by default: when it is on, in full-screen reading volume down opens the next message and volume up the previous one. Everywhere else the keys change the volume as usual.
+
+  * SAFER AGAINST MALFORMED MESSAGES: filters extended to replies now read the References line with the same safety limit as the rest of the app.
+
+  * QUOTATION MARKS ARE SHOWN AGAIN. In some fifty texts of the app, words meant to appear in quotes were shown without them, because of how those texts were written. Fixed everywhere, with a check that prevents it from coming back.
+
  ***  VERSION 1.5.6  ***
 
  A report from Roxy on his TV box, the day after 1.5.5.

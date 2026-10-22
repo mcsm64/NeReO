@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import org.openusenet.reader.ui.TastiVolume
 import org.openusenet.reader.ui.icone.ArrowBack
 import org.openusenet.reader.ui.icone.Reply
 import org.openusenet.reader.ui.icone.AccountTree
@@ -89,6 +90,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -308,6 +311,18 @@ fun ArticleScreen(repo: NewsRepository, nav: NavHostController, articleId: Long,
 
     // navigazione fra DISCUSSIONI (salta all'inizio del thread seguente/precedente)
     fun goNextThread() { idDiscussioneSuccessiva(tree, currentId)?.let { currentId = it } }
+    // 1.5.7 / 175 (F8): i tasti del volume sfogliano, finche' questa schermata e'
+    // visibile. rememberUpdatedState: il gestore registrato una volta chiama
+    // sempre le funzioni della composizione PIU' RECENTE (posizione attuale).
+    val avantiAttuale by rememberUpdatedState({ goNext() })
+    val indietroAttuale by rememberUpdatedState({ goPrev() })
+    DisposableEffect(Unit) {
+        val mio: (TastiVolume.Verso) -> Unit = { v ->
+            if (v == TastiVolume.Verso.AVANTI) avantiAttuale() else indietroAttuale()
+        }
+        TastiVolume.gestore = mio
+        onDispose { if (TastiVolume.gestore === mio) TastiVolume.gestore = null }
+    }
     fun goPrevThread() { idDiscussionePrecedente(tree, currentId)?.let { currentId = it } }
 
     /**

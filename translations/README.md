@@ -6,6 +6,10 @@ Thank you for helping! NeReO's interface is in English and Italian; other langua
 
 You do **not** need to know Android or programming. You edit one plain text file.
 
+## A new language
+
+Copy `template.txt` (it is always empty) and name the copy after your language, e.g. `is_IS.txt` for Icelandic or `nl_NL.txt` for Dutch. On GitHub: open `template.txt`, copy its text, then in your fork use **Add file → Create new file**, name it `translations/is_IS.txt`, paste, translate. The rest of this guide applies unchanged.
+
 ## The file
 
 Each language has one file in this folder, for example `fr_FR.txt` for French. It looks like this:
