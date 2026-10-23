@@ -22,3 +22,10 @@ captures/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Strumenti e appunti di lavoro di Claude Code (dal 23/10/2026): restano sul PC
+# di Marco, non vanno pubblicati (lo storico non si pubblica, CLAUDE.md contiene
+# il metodo di lavoro, non il codice).
+CLAUDE.md
+_claude/
+.claude/
