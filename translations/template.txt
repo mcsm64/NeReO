@@ -2193,6 +2193,12 @@ app_reflow_text =
 # en: Rejoins lines split by the classic 72-column wrap so paragraphs fill the screen; intentional short lines (lists, verse) are left alone. Reading only.
 app_reflow_text_note =
 
+# en: Show text smileys as emoji
+app_faccine =
+
+# en: On screen only, as in MesNews: :-) 8-o and similar become emoji when they stand on their own (never inside links or words). Copy, quoting, search and filters keep the original characters.
+app_faccine_note =
+
 # en: Refresh only with the icon (disable swipe) in the panel view
 app_pane_refresh_icon_only =
 
@@ -2911,6 +2917,15 @@ rn_v155_l7 =
 
 # en: New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the "newest first" orders it also notices a reply inside the thread that is already at the top. With the "oldest first" orders, where new messages are at the bottom, you stay where you were. In the panel view too.
 rn_v155_l8 =
+
+# en: New in 1.5.9
+rn_v159_title =
+
+# en: Text smileys become emoji, as in MesNews: "8-o 8-o" shows two astonished faces. On screen only: copying, quoting, replies, search, filters and export keep the original characters, and links are never touched. You can turn it off in Appearance.
+rn_v159_l1 =
+
+# en: Back from a message to the thread list, the threads you had opened are still open, and the message you just read is shaded lightly. Leaving the group still closes them all.
+rn_v159_l2 =
 
 # en: New in 1.5.8
 rn_v158_title =

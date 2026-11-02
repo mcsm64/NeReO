@@ -128,6 +128,14 @@ fun ThreadListScreen(
      * l'azione «mostra nell'elenco».
      */
     evidenziaArticolo: Long? = null,
+    /**
+     * 1.5.9 / 177 (vort3): id della voce di navigazione, chiave di
+     * [DiscussioniAperte]. Uguale al ritorno dall'articolo, nuova a ogni
+     * ingresso nel gruppo.
+     */
+    chiaveVoce: String = "",
+    /** 1.5.9 / 177 (vort3): l'ultimo articolo letto partendo da qui, o null. */
+    ultimoLetto: Long? = null,
 ) {
     // 1.4.7 (§A16) — UNA SOLA FONTE, e il perche' viene da Jeff.
     //
@@ -173,7 +181,11 @@ fun ThreadListScreen(
     // discussioni aperte con il +, per messageId della radice. Vive finche' si
     // resta nel gruppo: uscendo si riparte tutto richiuso, che e' il colpo
     // d'occhio che questa vista deve dare.
-    var expandedRoots by remember { mutableStateOf(emptySet<String>()) }
+    // 1.5.9 / 177 (vort3): sopravvive all'andata e ritorno nell'articolo, vedi
+    // DiscussioniAperte. Letta QUI, prima della prima lista: e' quella su cui
+    // il ripristino della posizione cerca la sua ancora.
+    var expandedRoots by remember { mutableStateOf(DiscussioniAperte.get(chiaveVoce)) }
+    LaunchedEffect(expandedRoots) { DiscussioniAperte.put(chiaveVoce, expandedRoots) }
 
     // Posizione di lettura ricordata per gruppo (vedi ThreadScrollMemory).
     // Lo stato parte da zero: il ripristino avviene più sotto, quando la lista
@@ -437,6 +449,13 @@ fun ThreadListScreen(
     // mappa chiude.
     val mappaThread = remember(articles) { mappaDiscussioni(articles) }
 
+    // 1.5.9 / 177 (vort3): la riga in tinta tenue. Non fa scorrere niente: la
+    // posizione resta quella ripristinata, e la regola «novita' in cima» non
+    // ne sa nulla.
+    val rigaLetta = remember(items, articles, mappaThread, ultimoLetto) {
+        rigaUltimoLetto(items, articles, mappaThread, ultimoLetto)
+    }
+
     /**
      * Tutti gli id della discussione che contiene [articleId].
      *
@@ -478,6 +497,8 @@ fun ThreadListScreen(
         // finché si resta nel gruppo restano barrati e ripristinabili, uscendo
         // la scelta diventa definitiva (rientrando non compaiono più).
         val daCancellare = PendingDeletions.drain(groupId)
+        // 1.5.9 / 177: uscendo dal gruppo si riparte tutto chiuso.
+        DiscussioniAperte.clear(chiaveVoce)
         if (AppSettings.markReadOnExit || daCancellare.isNotEmpty()) {
             scope.launch {
                 if (daCancellare.isNotEmpty()) repo.deleteLocal(daCancellare)
@@ -875,6 +896,7 @@ fun ThreadListScreen(
                     ThreadRow(
                         item = item,
                         evidenziato = item.article.id == daEvidenziare,
+                        ultimoLetto = item.article.id == rigaLetta,
                         selezionato = item.article.id in selectedIds,
                         selectionMode = selectionMode,
                         marcato = item.article.id in marcati,
@@ -1387,6 +1409,8 @@ private fun ThreadRow(
     onToggle: (() -> Unit)? = null,
     /** 1.4.6 (par. B13): la riga raggiunta da «mostra nell'elenco». */
     evidenziato: Boolean = false,
+    /** 1.5.9 / 177 (vort3): l'ultimo articolo letto, o la testa della sua discussione chiusa. */
+    ultimoLetto: Boolean = false,
     selezionato: Boolean = false,
     selectionMode: Boolean = false,
     marcato: Boolean = false,
@@ -1415,6 +1439,9 @@ private fun ThreadRow(
                     // diverse — «questa l'hai scelta tu» e «questa e' quella che
                     // cercavi» — e un colore solo per entrambi le confonderebbe.
                     evidenziato -> MaterialTheme.colorScheme.tertiaryContainer
+                    // 1.5.9 / 177 (vort3): «in modo leggero». Tinta neutra,
+                    // sotto le altre due: e' un promemoria, non uno stato.
+                    ultimoLetto -> MaterialTheme.colorScheme.surfaceVariant
                     else -> Color.Transparent
                 }
             )

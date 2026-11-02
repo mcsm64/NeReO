@@ -1,8 +1,16 @@
 ======================================================================
- NeReO 1.5.8 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.5.9 - Ne(ws) Re(ader) O(pen-source)
  Text-only Usenet (NNTP) newsreader for Android
- NeReO 1.5.8 (versionCode 176) - By MCSM - 2026/10/27
+ NeReO 1.5.9 (versionCode 179) - By MCSM - 2026/10/30
 ======================================================================
+ ***  VERSION 1.5.9  ***
+
+ Requests from Marco and vort3.
+
+  * BACK TO THE THREAD LIST AFTER READING: the threads you had opened with + stay open, and the list really returns to where you were. The message you just read is shaded lightly; if you moved with the next button into a closed thread, its first row is shaded and the thread stays closed. The list never scrolls by itself, so new messages still show at the top as before. Leaving the group closes everything, as before. The split-pane view is unchanged.
+
+  * TEXT SMILEYS BECOME EMOJI, as in MesNews: "8-o 8-o" shows as two astonished faces. On screen only: copying, quoting, replies, search, filters and export keep the original characters, and nothing changes inside links or words. Smileys between quotes, brackets or emphasis marks are converted too ("8-o", (8-o), *;-)*). Recognised smileys: :-) :) ;-) ;) :-( :( :-D :D :-P :P :-p :p :-O :O :-o :o 8-o 8-O :'( :'-( :-| :-*. In Appearance, "Show text smileys as emoji", on by default.
+
  ***  VERSION 1.5.8  ***
 
  A small maintenance release.

@@ -60,12 +60,15 @@ import org.openusenet.reader.text.almenoUnaRigaContinua
 import org.openusenet.reader.text.avvolgiFlowed
 import org.openusenet.reader.text.FormatoCorpo
 import org.openusenet.reader.text.profonditaCitazione
+import org.openusenet.reader.text.trovaFaccine
+import org.openusenet.reader.text.TABELLA_FACCINE
 import org.openusenet.reader.ui.screens.followupTo
 import org.openusenet.reader.ui.screens.crosspostGroups
 import org.openusenet.reader.ui.messageIdNudo
 import org.openusenet.reader.data.Article
 import org.openusenet.reader.ui.screens.ThreadItem
 import org.openusenet.reader.ui.screens.discussioneDi
+import org.openusenet.reader.ui.screens.rigaUltimoLetto
 import org.openusenet.reader.ui.screens.confiniDiscussione
 import org.openusenet.reader.ui.screens.esistonoNonLettiDopo
 import org.openusenet.reader.ui.screens.idDiscussionePrecedente
@@ -1908,6 +1911,38 @@ class DiscussioneDiTests {
         // toglie piu'.
         assertEquals(null, discussioneDi(listOf(item(1, "")), 1))
     }
+
+    // 1.5.9 / 177 (vort3) — quale riga colorare come ultimo letto.
+    private fun testa(id: Long, root: String) =
+        ThreadItem(depth = 0, article = art(id), rootKey = root, isRoot = true)
+
+    @Test
+    fun `ultimo letto - la sua riga, se c'e'`() {
+        val righe = listOf(testa(1, "<m1@x>"), item(2, "<m1@x>"))
+        val mappa = mapOf("<m1@x>" to "<m1@x>", "<m2@x>" to "<m1@x>")
+        assertEquals(2L, rigaUltimoLetto(righe, listOf(art(1), art(2)), mappa, 2L))
+    }
+
+    @Test
+    fun `ultimo letto - discussione chiusa, la testa senza aprirla`() {
+        // Ci si e' spostati con ▶ nella discussione 3, che nell'elenco e' chiusa.
+        val righe = listOf(testa(1, "<m1@x>"), testa(3, "<m3@x>"))
+        val mappa = mapOf("<m1@x>" to "<m1@x>", "<m3@x>" to "<m3@x>", "<m4@x>" to "<m3@x>")
+        val articoli = listOf(art(1), art(3), art(4))
+        assertEquals(3L, rigaUltimoLetto(righe, articoli, mappa, 4L))
+    }
+
+    @Test
+    fun `ultimo letto - niente da colorare se manca`() {
+        val righe = listOf(testa(1, "<m1@x>"))
+        val mappa = mapOf("<m1@x>" to "<m1@x>")
+        assertEquals(null, rigaUltimoLetto(righe, listOf(art(1)), mappa, null))
+        // nascosto, filtrato o cancellato: niente, non una riga a caso
+        assertEquals(null, rigaUltimoLetto(righe, listOf(art(1)), mappa, 99L))
+        // vista sequenziale: nessuna riga e' una testa
+        assertEquals(null, rigaUltimoLetto(listOf(item(1, "<m1@x>")), listOf(art(1), art(2)),
+            mapOf("<m2@x>" to "<m1@x>"), 2L))
+    }
     // ------------------------------------------------------------------
     // 1.4.11 / 156 — la riga `CAPABILITIES:` del log non taglia piu' in
     // silenzio. Il banco completo (22 asserzioni, coi dati misurati nei log di
@@ -2134,5 +2169,139 @@ class StrisciaAggiornatoTest {
     @Test
     fun `tornare a una versione vecchia non la fa comparire`() {
         assertFalse(deveMostrareAggiornato("1.5.7", "1.5.8", primaInstallazione = false))
+    }
+}
+
+/**
+ * 1.5.9 / 177 — faccine a caratteri mostrate come emoji (text/Faccine.kt).
+ * Si prova solo DOVE sono le faccine: il testo non cambia mai.
+ */
+class FaccineTest {
+    private fun sequenze(riga: String, escluse: List<IntRange> = emptyList()) =
+        trovaFaccine(riga, escluse).map { it.sequenza }
+
+    @Test
+    fun `l'esempio di Marco - due faccine stupite`() {
+        val f = trovaFaccine("8-o 8-o")
+        assertEquals(listOf("8-o", "8-o"), f.map { it.sequenza })
+        assertEquals(listOf(0 until 3, 4 until 7), f.map { it.inizio until it.fine })
+        assertEquals(String(Character.toChars(0x1F632)), f[0].emoji)
+    }
+
+    @Test
+    fun `riga di sola faccina`() {
+        assertEquals(listOf(":-)"), sequenze(":-)"))
+        assertEquals(listOf(":)"), sequenze("   :)   "))
+    }
+
+    @Test
+    fun `isolata da spazi o punteggiatura finale`() {
+        assertEquals(listOf(":-)"), sequenze("ciao :-) a tutti"))
+        assertEquals(listOf(";-)"), sequenze("lo sai bene ;-)."))
+        assertEquals(listOf(":-D"), sequenze("davvero :-D!"))
+        assertEquals(listOf(":-("), sequenze("peccato :-(, pazienza"))
+    }
+
+    @Test
+    fun `in mezzo a una parola resta testo`() {
+        assertTrue(sequenze("a:-)b").isEmpty())
+        assertTrue(sequenze("ciao:-)").isEmpty())
+        assertTrue(sequenze(":-)ciao").isEmpty())
+        assertTrue(sequenze(":-).x").isEmpty())  // punteggiatura non finale
+    }
+
+    // 1.5.9 / 178 — collaudo di Marco sulla 177: «"8-o 8-o"» restava testo.
+    @Test
+    fun `fra virgolette e parentesi si converte`() {
+        assertEquals(listOf("8-o", "8-o"), sequenze("\"8-o 8-o\""))
+        assertEquals(listOf("8-o"), sequenze("\"8-o\""))
+        assertEquals(listOf("8-o"), sequenze("«8-o»"))
+        assertEquals(listOf("8-o"), sequenze("(8-o)"))
+        assertEquals(listOf("8-o"), sequenze("'8-o'"))
+        assertEquals(listOf("8-o"), sequenze("“8-o”"))
+        assertEquals(listOf("8-o"), sequenze("[8-o]"))
+        assertEquals(listOf("8-o"), sequenze("disse \"8-o\". E poi"))
+        assertEquals(listOf("8-o"), sequenze("> \"8-o\""))
+        assertEquals(listOf("8-o"), sequenze(">\"8-o\""))
+    }
+
+    @Test
+    fun `virgolette attaccate a una parola restano testo`() {
+        assertTrue(sequenze("a8-ob").isEmpty())
+        assertTrue(sequenze("l'8-o").isEmpty())
+        assertTrue(sequenze("x\"8-o\"").isEmpty())
+        assertTrue(sequenze("a(8-o)").isEmpty())
+        assertTrue(sequenze("\"8-o\"x").isEmpty())
+        assertTrue(sequenze("vai su http://example.com").isEmpty())
+        assertTrue(sequenze("vinto \"8-0\"").isEmpty())
+    }
+
+    // 1.5.9 / 179 — come MesNews: l'enfasi Usenet intorno alla faccina.
+    @Test
+    fun `fra asterischi e trattini bassi si converte`() {
+        assertEquals(listOf(";-)"), sequenze("*;-)*"))
+        assertEquals(listOf(":-)"), sequenze("_:-)_"))
+        assertEquals(listOf(":-)", ";-)"), sequenze("\":-)\" *;-)*"))
+    }
+
+    @Test
+    fun `asterischi e trattini bassi attaccati a una parola restano testo`() {
+        assertTrue(sequenze("a*:-)").isEmpty())
+        assertTrue(sequenze("x_8-o").isEmpty())
+        assertTrue(sequenze("*:-)*x").isEmpty())
+    }
+
+    @Test
+    fun `faccina in fondo a una parentesi - piano A1`() {
+        // `:-))` si legge `:-)` piu' una parentesi: e' lo stesso caso di
+        // «(ciao :-))», che deve convertirsi.
+        assertEquals(listOf(":-)"), sequenze(":-))"))
+        assertEquals(listOf(":-)"), sequenze("(ciao :-))"))
+    }
+
+    @Test
+    fun `numeri e punteggi restano testo`() {
+        assertTrue(sequenze("28-o").isEmpty())
+        assertTrue(sequenze("vinto 8-0 in casa").isEmpty())
+        assertTrue(sequenze("ore 8-10").isEmpty())
+    }
+
+    @Test
+    fun `URL, Message-ID e percorsi restano testo`() {
+        assertTrue(sequenze("http://example.com/:-)").isEmpty())
+        assertTrue(sequenze("<abc:-)@example.com>").isEmpty())
+        assertTrue(sequenze("<:-)@example.com>").isEmpty())
+        assertTrue(sequenze("guarda http://x.it/a :/").isEmpty()) // :/ esclusa
+        assertTrue(sequenze("C:\\dati").isEmpty())
+        // una faccina isolata DENTRO un intervallo escluso (un URL che il
+        // chiamante ha riconosciuto) resta testo; fuori si converte
+        val riga = "www.x.it/?q= :-) :-)"
+        assertEquals(listOf(":-)"), sequenze(riga, listOf(0..15)))
+    }
+
+    @Test
+    fun `testo citato`() {
+        assertEquals(listOf(":-)"), sequenze("> :-)"))
+        assertEquals(listOf(":-)"), sequenze(">:-)"))
+        assertEquals(listOf("8-O"), sequenze(">> > 8-O"))
+        assertEquals(listOf(":-P"), sequenze(">> scherzo :-P"))
+        assertTrue(sequenze("a>:-)").isEmpty())
+    }
+
+    @Test
+    fun `varianti con apostrofo e trattino`() {
+        assertEquals(listOf(":'(", ":'-("), sequenze(":'( :'-("))
+        assertEquals(listOf(":-|", ":-*"), sequenze(":-| :-*"))
+    }
+
+    @Test
+    fun `tabella base senza le escluse`() {
+        for (vietata in listOf(":/", ":-/", ":\\", "XD", "<3", ">:-(", "^_^", "o_O", "8-0"))
+            assertFalse(vietata, vietata in TABELLA_FACCINE)
+        // nessuna sequenza e' l'inizio di un'altra: il primo riscontro e' quello giusto
+        for (a in TABELLA_FACCINE.keys) for (b in TABELLA_FACCINE.keys)
+            if (a != b) assertFalse("$a / $b", b.startsWith(a))
+        // tutte di Unicode <= 7.0 (Android 9): nessun code point oltre U+1F64F
+        for (e in TABELLA_FACCINE.values) assertTrue(e.codePointAt(0) in 0x1F600..0x1F64F)
     }
 }

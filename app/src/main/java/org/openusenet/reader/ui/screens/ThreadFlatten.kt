@@ -434,6 +434,31 @@ fun buildThreadList(
 fun discussioneDi(flatCompleto: List<ThreadItem>, articleId: Long): String? =
     flatCompleto.firstOrNull { it.article.id == articleId }?.rootKey?.takeIf { it.isNotEmpty() }
 
+/**
+ * 1.5.9 / 177 (vort3) — QUALE RIGA COLORARE COME «ULTIMO LETTO».
+ *
+ * La riga dell'articolo, se c'e'. Se non c'e' — la sua discussione e' chiusa,
+ * perche' dentro l'articolo ci si e' spostati con ▶ in un'altra — la riga di
+ * testa della sua discussione, che NON si apre: la richiesta era tenere aperte
+ * quelle aperte dall'utente, non aprirne altre. Altrimenti nessuna (articolo
+ * nascosto da «solo non letti», filtrato, cancellato).
+ *
+ * L'appartenenza la decide [mappa] (vedi [mappaDiscussioni]), cioe' il
+ * threader: lo stesso `rootKey` che [rootsList] mette nelle righe.
+ */
+fun rigaUltimoLetto(
+    righe: List<ThreadItem>,
+    articoli: List<Article>,
+    mappa: Map<String, String>,
+    ultimoLetto: Long?,
+): Long? {
+    val id = ultimoLetto ?: return null
+    if (righe.any { it.article.id == id }) return id
+    val msgId = articoli.firstOrNull { it.id == id }?.messageId ?: return null
+    val radice = mappa[msgId] ?: return null
+    return righe.firstOrNull { it.isRoot && it.rootKey == radice }?.article?.id
+}
+
 fun allRootKeys(articles: List<Article>, unreadOnly: Boolean): Set<String> =
     orderedRoots(articles, unreadOnly, AppSettings.threadSort).first
         .mapNotNull { it.flatten().firstOrNull()?.second?.messageId }

@@ -1033,6 +1033,8 @@
     <!-- Riflusso testo (de-wrap) -->
     <string name="app_reflow_text">Riflusso testo (ricompone i capoversi)</string>
     <string name="app_reflow_text_note">Ricompone le righe spezzate dall\u2019a-capo classico a 72 colonne, così i capoversi riempiono lo schermo; le righe corte volute (elenchi, versi) restano. Solo in lettura.</string>
+    <string name="app_faccine">Mostra le faccine come emoji</string>
+    <string name="app_faccine_note">Solo a schermo, come in MesNews: :-) 8-o e simili diventano emoji quando sono isolate (mai dentro link o parole). Copia, citazioni, ricerca e filtri usano i caratteri originali.</string>
     <!-- 1.2.2: riflusso testo -->
     <string name="rn_v122_l5">Nuova opzione «Riflusso testo» (Aspetto): ricompone i capoversi spezzati dall\u2019a-capo classico a 72 colonne, così i post si leggono ordinati su schermo stretto invece di mostrare righe orfane di una-due parole. Spenta di default.</string>
     <!-- 1.2.2: fix vista a pannelli (Dave Royal) -->
@@ -1065,6 +1067,9 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">Le X-Face si vedono. La classica faccina in bianco e nero di Usenet (l\'intestazione X-Face, mandata da MesNews e da molti lettori tradizionali) compare ora accanto al nome dell\'autore, dove finora compariva solo la Face a colori. Toccala per ingrandirla: resta nitida, a quadretti. L\'ordine è: prima la Face, poi la X-Face, poi le iniziali colorate. NeReO mostra le X-Face ma non le invia.</string>
     <string name="rn_v155_l8">I messaggi nuovi restano davvero in vista. La correzione della 1.5.4 funzionava solo quando NeReO ti aveva appena riportato dove eri rimasto: al primo ingresso nel gruppo dopo aver aperto l\'app, o quando la lista era già in cima, i messaggi che arrivavano con la sincronizzazione potevano ancora finire sopra il bordo dello schermo. Ora, ogni volta che apri un gruppo, se arrivano messaggi nuovi e non hai ancora spostato la lista col dito, sale in cima a mostrarli. Con gli ordinamenti \"dai più recenti\" si accorge anche di una risposta dentro la discussione che è già in cima. Con gli ordinamenti \"dai più vecchi\", dove i nuovi stanno in fondo, resti dove sei. Anche nella vista a pannelli.</string>
+    <string name="rn_v159_title">Novità della 1.5.9</string>
+    <string name="rn_v159_l1">Le faccine a caratteri diventano emoji, come in MesNews: \"8-o 8-o\" mostra due faccine stupite. Solo a schermo: copia, citazioni, risposte, ricerca, filtri ed esportazione usano i caratteri originali, e i link non vengono mai toccati. Si spegne in Aspetto.</string>
+    <string name="rn_v159_l2">Tornando da un messaggio all\'elenco, le discussioni aperte restano aperte e il messaggio appena letto ha uno sfondo leggero. Uscendo dal gruppo si richiudono tutte, come prima.</string>
     <string name="rn_v158_title">Novità della 1.5.8</string>
     <string name="rn_v158_l1">Dopo un aggiornamento NeReO te lo dice. In cima all\'elenco dei gruppi compare una striscia «Aggiornato a 1.5.8 — Novità»: toccandola si apre questa schermata, con la ✕ si chiude. Compare una volta per versione, non dopo la prima installazione né dopo un ripristino del backup. Col telecomando si raggiunge col tasto giù.</string>
     <string name="rn_v157_title">Novità della 1.5.7</string>

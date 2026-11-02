@@ -1,8 +1,16 @@
 ======================================================================
- NeReO 1.5.8 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.5.9 - Ne(ws) Re(ader) O(pen-source)
  Newsreader Usenet (NNTP) solo testo per Android
- NeReO 1.5.8 (versionCode 176) - By MCSM - 2026/10/27
+ NeReO 1.5.9 (versionCode 179) - By MCSM - 2026/10/30
 ======================================================================
+ ***  VERSIONE 1.5.9  ***
+
+ Richieste di Marco e di vort3.
+
+  * RITORNO ALL'ELENCO DOPO LA LETTURA: le discussioni aperte col + restano aperte e l'elenco torna davvero dove eri. Il messaggio appena letto ha uno sfondo leggero; se con il tasto "successivo" sei passato in una discussione chiusa, si colora la sua prima riga e la discussione resta chiusa. L'elenco non scorre da solo, quindi i messaggi nuovi compaiono in cima come prima. Uscendo dal gruppo si richiude tutto, come prima. La vista a pannelli non cambia.
+
+  * LE FACCINE A CARATTERI DIVENTANO EMOJI, come in MesNews: "8-o 8-o" si vede come due faccine stupite. Solo a schermo: copia, citazioni, risposte, ricerca, filtri ed esportazione usano i caratteri originali, e dentro i link e le parole non cambia niente. Si convertono anche fra virgolette, parentesi o asterischi ("8-o", (8-o), *;-)*). Faccine riconosciute: :-) :) ;-) ;) :-( :( :-D :D :-P :P :-p :p :-O :O :-o :o 8-o 8-O :'( :'-( :-| :-*. In Aspetto, "Mostra le faccine come emoji", acceso di default.
+
  ***  VERSIONE 1.5.8  ***
 
  Una piccola manutenzione.

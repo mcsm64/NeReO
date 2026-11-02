@@ -94,6 +94,14 @@ object AppSettings {
     var reflowText by mutableStateOf(false)
 
     /**
+     * 1.5.9 / 177 (Marco): le faccine a caratteri (`:-)`, `8-o`...) si
+     * MOSTRANO come emoji, come in MesNews. Solo a schermo: il testo salvato,
+     * la copia, le citazioni e la ricerca restano coi caratteri originali.
+     * Acceso di default. Vedi text/Faccine.kt.
+     */
+    var faccineEmoji by mutableStateOf(true)
+
+    /**
      * 1.4.8 (par. B6b) — IMPAGINARE IN Format=Flowed CIO' CHE SI SPEDISCE.
      *
      * Acceso, i capoversi lunghi escono con la rottura debole della RFC 3676
@@ -928,6 +936,7 @@ object AppSettings {
         tastiVolume = prefs.getBoolean("volume_keys", false)
         animazioni = prefs.getBoolean("screen_animations", true)
         reflowText = prefs.getBoolean("reflow_text", false)
+        faccineEmoji = prefs.getBoolean("faccine_emoji", true)
         // 1.4.8 (par. B6b): spento di default, vedi la nota sulla proprieta'
         formatFlowedInUscita = prefs.getBoolean("format_flowed_out", false)
         soloIconaAggiornaPannelli = prefs.getBoolean("solo_icona_aggiorna_pannelli", true)
@@ -1073,6 +1082,7 @@ object AppSettings {
             .putBoolean("volume_keys", tastiVolume)
             .putBoolean("screen_animations", animazioni)
             .putBoolean("reflow_text", reflowText)
+            .putBoolean("faccine_emoji", faccineEmoji)
             .putBoolean("format_flowed_out", formatFlowedInUscita)
             .putBoolean("solo_icona_aggiorna_pannelli", soloIconaAggiornaPannelli)
             .putBoolean("shorten_quotes", shortenQuotes)

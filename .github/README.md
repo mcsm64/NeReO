@@ -8,7 +8,7 @@
 
 Written from scratch in Kotlin + Jetpack Compose. Its interface follows Piao Hong's *Newsreader* (MOD 17); its goal is to combine that familiarity with the depth of configuration of MesNews.
 
-**Latest version: 1.5.8** (versionCode 176) — 27 October 2026 · Android 8.0 or later
+**Latest version: 1.5.9** (versionCode 179) — 30 October 2026 · Android 8.0 or later
 
 ## Download
 

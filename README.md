@@ -6,9 +6,9 @@ Scritto da zero in Kotlin + Jetpack Compose. Nasce dal MOD 17 di *Newsreader* di
 
 Il package interno resta `org.openusenet.reader` — invariato di proposito, per non rompere gli aggiornamenti già installati.
 
-**Versione 1.5.8** (versionCode 176) — 27 ottobre 2026
+**Versione 1.5.9** (versionCode 179) — 30 ottobre 2026
 
-## Funzioni (1.5.8)
+## Funzioni (1.5.9)
 
 - Multi-server NNTP con SSL/TLS implicito **o STARTTLS** (RFC 3977 + RFC 4643 + RFC 4642) e autenticazione, con **verifica del nome host sul certificato** (RFC 6125) e fallback automatico IPv6/IPv4; CAPABILITIES letto e loggato alla connessione; riuso della connessione durante la lettura di un thread; **allarme se un server che offriva STARTTLS smette di annunciarlo** (RFC 4642 §5)
 - Ricerca e sottoscrizione gruppi, sync incrementale delle headline con `OVER` e ripiego automatico su `XOVER` per i server che non riconoscono `OVER` (es. Astraweb)
@@ -22,6 +22,13 @@ Il package interno resta `org.openusenet.reader` — invariato di proposito, per
 - Backup e ripristino della configurazione, con cifratura opzionale
 - Material 3, tema chiaro/scuro/di sistema, dynamic color, tinte e dimensioni del testo, layout a pannelli per schermi larghi
 - Interfaccia in italiano e inglese, con **interruttore lingua dentro l'app** (Aspetto → Lingua) oltre alla voce di sistema su Android 13+
+
+## Novità della 1.5.9
+
+> Richieste di Marco e di vort3.
+
+- **Ritorno all'elenco dopo la lettura** *(vort3, 30/10, piano A)*: tornando da un messaggio, le discussioni aperte col + restano aperte e la posizione torna davvero quella di prima (prima, chiudendosi le discussioni, spariva la riga a cui era ancorata). Il messaggio appena letto ha uno sfondo tenue, sotto la selezione e il bersaglio di «mostra nell'elenco»; se ci si è spostati con ▶ in una discussione chiusa, si colora la sua riga di testa senza aprirla. L'elenco non scorre da solo, quindi la regola «novità in cima» resta com'era. Uscendo dal gruppo si riparte tutto chiuso. Vista a pannelli invariata
+- **Le faccine a caratteri diventano emoji** *(Marco, 27/10, piano A1)*, come in MesNews: `8-o 8-o` si vede come due faccine stupite. Solo a schermo: nel testo restano i caratteri originali e l'emoji è disegnata sopra il loro posto (`appendInlineContent`), quindi copia, «Cita», risposte, ricerca, filtri ed esportazione `.eml` vedono `8-o`. Una faccina si converte solo se è isolata (spazio, inizio o fine riga, prefisso di citazione), anche fra virgolette, parentesi, asterischi o trattini bassi e con la punteggiatura dopo (`"8-o"`, `«8-o»`, `(8-o),`, `*;-)*`), ma non se questi segni sono attaccati a una parola (`l'8-o`) e mai dentro un URL. L'emoji è grande come il testo e stretta fra i segni vicini, come in MesNews. Tabella base in `text/Faccine.kt` (Kotlin puro, 9 test): `:-)` `:)` `;-)` `;)` `:-(` `:(` `:-D` `:D` `:-P` `:P` `:-p` `:p` `:-O` `:O` `:-o` `:o` `8-o` `8-O` `:'(` `:'-(` `:-|` `:-*`; emoji di Unicode 6.0–7.0, presenti anche su Android 9. Col carattere monospaziato ogni faccina occupa le colonne dei caratteri originali. Interruttore in Aspetto, acceso di default
 
 ## Novità della 1.5.8
 

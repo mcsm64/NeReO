@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -199,6 +200,9 @@ object Routes {
     fun identityEdit(identityId: Long) = "identity_edit/$identityId"
 }
 
+/** 1.5.9 / 177 (vort3): chiave, nel savedStateHandle dell'elenco, dell'ultimo articolo letto. */
+private const val ULTIMO_LETTO = "ultimo_letto"
+
 @Composable
 fun AppNav(repo: NewsRepository, nav: NavHostController = rememberNavController()) {
     val ctx = LocalContext.current
@@ -304,7 +308,15 @@ fun AppNav(repo: NewsRepository, nav: NavHostController = rememberNavController(
             // 1.4.6 (par. B13): senza il parametro si entra nel gruppo come
             // sempre, e il ripristino della posizione resta quello di prima.
             val evidenzia = backStack.arguments?.getString("evidenzia")?.toLongOrNull()
-            ThreadListScreen(repo, nav, groupId, evidenzia)
+            // 1.5.9 / 177 (vort3): l'articolo lo scrive qui, nella voce
+            // dell'elenco da cui e' partito (vedi la rotta ARTICLE).
+            val ultimoLetto by backStack.savedStateHandle
+                .getStateFlow(ULTIMO_LETTO, 0L).collectAsState()
+            ThreadListScreen(
+                repo, nav, groupId, evidenzia,
+                chiaveVoce = backStack.id,
+                ultimoLetto = ultimoLetto.takeIf { it > 0L },
+            )
         }
         // Un'unica rotta con query opzionale ?q= (termine di ricerca da
         // evidenziare, beta13). Senza ?q= il defaultValue "" copre la
@@ -321,7 +333,18 @@ fun AppNav(repo: NewsRepository, nav: NavHostController = rememberNavController(
         ) { backStack ->
             val articleId = backStack.arguments?.getString("articleId")?.toLongOrNull() ?: return@composable
             val q = backStack.arguments?.getString("q").orEmpty()
-            ArticleScreen(repo, nav, articleId, searchQuery = q)
+            /*
+             * 1.5.9 / 177 (vort3): la voce SOTTO l'articolo, presa una volta
+             * sola quando l'articolo e' in cima alla pila. Chiedere
+             * `previousBackStackEntry` piu' tardi sbaglierebbe con la
+             * risposta aperta sopra. Se sotto c'e' la ricerca e non l'elenco,
+             * il valore resta li' e nessuno lo legge.
+             */
+            val voceSotto = remember(backStack) { nav.previousBackStackEntry }
+            ArticleScreen(
+                repo, nav, articleId, searchQuery = q,
+                onArticoloCorrente = { id -> voceSotto?.savedStateHandle?.set(ULTIMO_LETTO, id) },
+            )
         }
         composable(Routes.COMPOSE_NEW) { backStack ->
             val groupId = backStack.arguments?.getString("groupId")?.toLongOrNull() ?: return@composable

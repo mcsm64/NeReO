@@ -127,7 +127,14 @@ import org.openusenet.reader.ui.indietroSicuro
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun ArticleScreen(repo: NewsRepository, nav: NavHostController, articleId: Long, searchQuery: String = "") {
+fun ArticleScreen(
+    repo: NewsRepository,
+    nav: NavHostController,
+    articleId: Long,
+    searchQuery: String = "",
+    /** 1.5.9 / 177 (vort3): riceve l'articolo mostrato, a ogni spostamento. */
+    onArticoloCorrente: (Long) -> Unit = {},
+) {
     // 1.4.1 (105/C, BIG Umberto) — rememberSaveable, non remember.
     // Spostandosi dentro la discussione questo valore cambia, ma non e' una
     // nuova destinazione di navigazione: vive solo nella composizione. Andando
@@ -137,6 +144,9 @@ fun ArticleScreen(repo: NewsRepository, nav: NavHostController, articleId: Long,
     // al 23esimo e mi ritrovo al primo". Confermato dalla sua prova A/B con
     // "Non conservare le attivita'": spento resta sul 15, acceso torna sul 1.
     var currentId by rememberSaveable { mutableStateOf(articleId) }
+    // 1.5.9 / 177 (vort3): l'elenco colora l'ultimo letto, che e' QUESTO — non
+    // la riga toccata, perche' con ◀ ▶ ci si sposta senza tornare indietro.
+    LaunchedEffect(currentId) { onArticoloCorrente(currentId) }
     var article by remember { mutableStateOf<Article?>(null) }
     var body by remember { mutableStateOf<String?>(null) }
     /*

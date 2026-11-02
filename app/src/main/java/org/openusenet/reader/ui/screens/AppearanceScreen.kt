@@ -275,6 +275,20 @@ fun AppearanceScreen(nav: NavHostController) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 12.dp, top = 2.dp),
             )
+            // 1.5.9 / 177 (Marco): faccine a caratteri mostrate come emoji. Acceso di default.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                Switch(
+                    checked = AppSettings.faccineEmoji,
+                    onCheckedChange = { AppSettings.faccineEmoji = it; AppSettings.save() },
+                )
+                Text(stringResource(R.string.app_faccine), modifier = Modifier.padding(start = 12.dp))
+            }
+            Text(
+                stringResource(R.string.app_faccine_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp, top = 2.dp),
+            )
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                 Switch(
                     checked = AppSettings.shortenQuotes,

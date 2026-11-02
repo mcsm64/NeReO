@@ -1027,6 +1027,8 @@
     <!-- Riflusso testo (de-wrap) -->
     <string name="app_reflow_text">Reflow text (rejoin wrapped paragraphs)</string>
     <string name="app_reflow_text_note">Rejoins lines split by the classic 72-column wrap so paragraphs fill the screen; intentional short lines (lists, verse) are left alone. Reading only.</string>
+    <string name="app_faccine">Show text smileys as emoji</string>
+    <string name="app_faccine_note">On screen only, as in MesNews: :-) 8-o and similar become emoji when they stand on their own (never inside links or words). Copy, quoting, search and filters keep the original characters.</string>
     <!-- 1.2.2: riflusso testo -->
     <string name="rn_v122_l5">New «Reflow text» option (Appearance): rejoins paragraphs broken by the classic 72-column wrap, so posts read tidily on narrow screens instead of showing one- or two-word orphan lines. Off by default.</string>
     <!-- 1.2.2: fix vista a pannelli (Dave Royal) -->
@@ -1059,6 +1061,9 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">X-Faces are shown. The classic black-and-white Usenet face (the X-Face header, sent by MesNews and many traditional newsreaders) now appears next to the author\'s name, where until now only the colour Face did. Tap it to enlarge it: it stays sharp, square by square. Order: Face first, then X-Face, then the coloured initials. NeReO shows X-Faces but does not send them.</string>
     <string name="rn_v155_l8">New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the \"newest first\" orders it also notices a reply inside the thread that is already at the top. With the \"oldest first\" orders, where new messages are at the bottom, you stay where you were. In the panel view too.</string>
+    <string name="rn_v159_title">New in 1.5.9</string>
+    <string name="rn_v159_l1">Text smileys become emoji, as in MesNews: \"8-o 8-o\" shows two astonished faces. On screen only: copying, quoting, replies, search, filters and export keep the original characters, and links are never touched. You can turn it off in Appearance.</string>
+    <string name="rn_v159_l2">Back from a message to the thread list, the threads you had opened are still open, and the message you just read is shaded lightly. Leaving the group still closes them all.</string>
     <string name="rn_v158_title">New in 1.5.8</string>
     <string name="rn_v158_l1">After an update NeReO tells you. At the top of the group list a strip «Updated to 1.5.8 — What\'s new» appears: tap it to open this screen, or close it with the ✕. It appears once per version, not after a fresh install nor after restoring a backup. With a remote control, reach it with the down key.</string>
     <string name="rn_v157_title">New in 1.5.7</string>

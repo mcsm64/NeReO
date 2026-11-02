@@ -2046,8 +2046,26 @@ android {
         // «Aggiornato a <versione> — Novita'» in cima ai gruppi (ui/StrisciaAggiornato.kt,
         // idea di Marco, piano B1); wrapper di Gradle rigenerato (9.5.0: gradlew
         // non partiva da riga di comando); CoreTests.kt compila e gira (186 test).
-        versionCode = 176
-        versionName = "1.5.8"
+        // 1.5.8 / 176 PUBBLICATA il 27 ottobre 2026.
+        // versionCode 177 (27 ottobre 2026) - versionName CAMBIA (1.5.8 pubblica;
+        // 1.5.9 deciso da Marco: primo vagone del treno 1.5.9). LE FACCINE A
+        // CARATTERI SI VEDONO COME EMOJI (richiesta di Marco, come MesNews:
+        // «8-o 8-o» = due faccine stupite). Piano A1: solo a schermo, il testo
+        // resta l'originale sotto l'emoji (text/Faccine.kt, ArticleBody.kt);
+        // interruttore in Aspetto, acceso di default.
+        // versionCode 178 (30 ottobre 2026) - versionName INVARIATO: la 177 e'
+        // stata firmata e installata SOLO sul telefono di Marco per prova, non
+        // e' pubblica. Dal suo collaudo: faccine fra virgolette e parentesi ora
+        // convertite (confini con verso, piano A/A1), emoji non piu' tagliate
+        // (0,8 del testo dentro lo stesso segnaposto, piano B). Nel treno anche
+        // il ritorno all'elenco per vort3 (discussioni aperte, ultimo letto).
+        // versionCode 179 (30 ottobre 2026) - versionName INVARIATO: anche la
+        // 178 e' solo di prova sul telefono di Marco. Confronto con MesNews
+        // (piano A): emoji grande come il testo, misurata senza limiti e non
+        // tagliata, segnaposto largo 1,0 em; faccine fra asterischi e trattini
+        // bassi (*;-)*, _:-)_) convertite.
+        versionCode = 179
+        versionName = "1.5.9"
     }
 
     buildTypes {

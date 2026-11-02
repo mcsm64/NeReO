@@ -22,8 +22,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,23 +35,32 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.R
+import org.openusenet.reader.text.Faccina
+import org.openusenet.reader.text.TABELLA_FACCINE
+import org.openusenet.reader.text.trovaFaccine
 
 // Palette a gradini per i livelli di citazione: tinte nettamente diverse.
 private val LIGHT_QUOTES = listOf(
@@ -274,6 +287,10 @@ fun QuoteColoredBody(
         }
     }
 
+    // 1.5.9 / 177: faccine come emoji, solo a schermo (vedi appendConFaccine)
+    val conFaccine = AppSettings.faccineEmoji
+    val faccine = inlineFaccine(style, AppSettings.bodyMonospace)
+
     Column(modifier.fillMaxWidth()) {
         blocks.forEachIndexed { i, block ->
             val color = when {
@@ -282,9 +299,13 @@ fun QuoteColoredBody(
                 else -> quoteColors[(block.depth - 1) % quoteColors.size]
             }
             if (block.depth == 0) {
-                Text(annotate(block.lines, color, linkColor, searchQuery, highlightBg), style = style)
+                Text(
+                    annotate(block.lines, color, linkColor, searchQuery, highlightBg, conFaccine),
+                    style = style,
+                    inlineContent = faccine,
+                )
             } else {
-                QuotedBlock(block, i, color, linkColor, style, searchQuery, highlightBg)
+                QuotedBlock(block, i, color, linkColor, style, searchQuery, highlightBg, conFaccine, faccine)
             }
         }
     }
@@ -304,6 +325,8 @@ private fun QuotedBlock(
     // "niente da evidenziare". Ora vengono propagati come nel testo normale.
     searchQuery: String = "",
     highlightBg: Color = Color.Unspecified,
+    conFaccine: Boolean = false,
+    faccine: Map<String, InlineTextContent> = emptyMap(),
 ) {
     var expanded by remember(index, block.lines.size) { mutableStateOf(false) }
     // beta19 (Roxy): soglia configurabile (prima fissa a 6 → la funzione
@@ -367,7 +390,11 @@ private fun QuotedBlock(
                     color = color.copy(alpha = 0.6f),
                 )
             } else {
-                Text(annotate(shown, color, linkColor, searchQuery, highlightBg), style = style)
+                Text(
+                    annotate(shown, color, linkColor, searchQuery, highlightBg, conFaccine),
+                    style = style,
+                    inlineContent = faccine,
+                )
                 if (shorten) {
                     Text(
                         stringResource(R.string.body_more_lines, block.lines.size - shown.size),
@@ -386,10 +413,11 @@ private fun annotate(
     linkColor: Color,
     searchQuery: String = "",
     highlightBg: Color = Color.Unspecified,
+    conFaccine: Boolean = false,
 ): AnnotatedString =
     buildAnnotatedString {
         lines.forEachIndexed { i, line ->
-            appendLineWithLinks(line, textColor, linkColor, searchQuery, highlightBg)
+            appendLineWithLinks(line, textColor, linkColor, searchQuery, highlightBg, conFaccine)
             if (i < lines.size - 1) append('\n')
         }
     }
@@ -415,15 +443,96 @@ private fun AnnotatedString.Builder.appendHighlighted(
     }
 }
 
+/*
+ * 1.5.9 / 177 (Marco, piano A1) — FACCINE A CARATTERI MOSTRATE COME EMOJI.
+ *
+ * Dove sono le faccine lo dice text/Faccine.kt (Kotlin puro, con le prove).
+ * Qui le si DISEGNA, e il punto e' come: nel testo restano i caratteri
+ * originali (`8-o`) come `alternateText` di un `appendInlineContent`, e sopra
+ * il loro posto si disegna l'emoji. Il testo non cambia, quindi:
+ *  - «Copia» e «Cita» (CitaSelezione.kt) prendono `8-o`, e il confronto con
+ *    l'archivio di Citazione.kt funziona senza saperne niente;
+ *  - le posizioni dei caratteri non si spostano: link ed evidenziazione
+ *    della ricerca lavorano come prima;
+ *  - TalkBack legge la sequenza originale.
+ * Le faccine si cercano DOPO gli URL e fuori da essi: una sequenza dentro un
+ * link resta link. La sostituzione nel testo (piano A2) e' stata scartata
+ * perche' «Copia» della selezione avrebbe dato le emoji, e la copia del menu
+ * di sistema non si puo' intercettare.
+ */
+private const val ID_FACCINA = "faccina:"
+
+/**
+ * Lo spazio di ogni faccina, una voce per sequenza della tabella. Col
+ * carattere monospaziato lo spazio e' largo quanto i caratteri originali
+ * (~0,6 em l'uno): le colonne di ASCII art e tabelle non si spostano.
+ *
+ * GRANDEZZA DELL'EMOJI, tre giri di collaudo di Marco:
+ *  - 177: emoji grande come il testo dentro un segnaposto alto 1 em, ma il
+ *    carattere emoji e' alto circa 1,2 em e il Text la tagliava sopra e sotto;
+ *  - 178: emoji a 0,8 (piano B): intera, ma piu' piccola del testo e con
+ *    vuoti larghi ai lati (segnaposto 1,2 em). MesNews la mostra grande e
+ *    stretta fra le virgolette;
+ *  - 179 (piano A): emoji di nuovo grande come il testo, misurata SENZA
+ *    limiti (`wrapContentSize(unbounded = true)`) e centrata: esce dal
+ *    segnaposto invece di essere tagliata. Segnaposto largo 1,0 em, alto 1
+ *    em come sempre: l'interlinea non cambia, e il disegno (~1 em) sta
+ *    dentro la riga (1,2 em). Il monospaziato tiene le sue larghezze.
+ */
+@Composable
+private fun inlineFaccine(style: TextStyle, monospace: Boolean): Map<String, InlineTextContent> =
+    remember(style, monospace) {
+        val stileEmoji = style.copy(lineHeight = TextUnit.Unspecified)
+        TABELLA_FACCINE.entries.associate { (seq, emoji) ->
+            val larghezza = if (monospace) (seq.length * 0.6f).coerceAtLeast(1.2f) else 1.0f
+            ID_FACCINA + seq to InlineTextContent(
+                Placeholder(larghezza.em, 1.em, PlaceholderVerticalAlign.TextCenter),
+            ) {
+                // DisableSelection: l'emoji disegnata NON e' testo selezionabile,
+                // altrimenti «Copia» prenderebbe lei insieme all'originale.
+                DisableSelection {
+                    Box(Modifier.fillMaxWidth().fillMaxHeight(), contentAlignment = Alignment.Center) {
+                        Text(
+                            emoji, style = stileEmoji,
+                            maxLines = 1, softWrap = false, overflow = TextOverflow.Visible,
+                            modifier = Modifier.wrapContentSize(unbounded = true),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+/**
+ * Aggiunge il tratto [inizio, fine) di [line] (mai dentro un URL), mettendo al
+ * posto delle [faccine] che vi cadono l'emoji disegnata sopra l'originale.
+ */
+private fun AnnotatedString.Builder.appendConFaccine(
+    line: String, inizio: Int, fine: Int, faccine: List<Faccina>,
+    textColor: Color, searchQuery: String, highlightBg: Color,
+) {
+    var i = inizio
+    for (f in faccine) {
+        if (f.inizio < inizio || f.fine > fine) continue
+        if (f.inizio > i) appendHighlighted(line.substring(i, f.inizio), textColor, searchQuery, highlightBg)
+        appendInlineContent(ID_FACCINA + f.sequenza, f.sequenza)
+        i = f.fine
+    }
+    if (i < fine) appendHighlighted(line.substring(i, fine), textColor, searchQuery, highlightBg)
+}
+
 /** Aggiunge una riga, trasformando gli URL in link cliccabili (aprono il browser). */
 private fun AnnotatedString.Builder.appendLineWithLinks(
     line: String, textColor: Color, linkColor: Color,
     searchQuery: String = "", highlightBg: Color = Color.Unspecified,
+    conFaccine: Boolean = false,
 ) {
+    val url = URL_REGEX.findAll(line).toList()
+    val faccine = if (conFaccine) trovaFaccine(line, url.map { it.range }) else emptyList()
     var last = 0
-    for (m in URL_REGEX.findAll(line)) {
+    for (m in url) {
         if (m.range.first > last) {
-            appendHighlighted(line.substring(last, m.range.first), textColor, searchQuery, highlightBg)
+            appendConFaccine(line, last, m.range.first, faccine, textColor, searchQuery, highlightBg)
         }
         val raw = m.value
         val url = raw.trimEnd('.', ',', ';', ':', '!', '?', ')', ']')
@@ -440,6 +549,6 @@ private fun AnnotatedString.Builder.appendLineWithLinks(
         last = m.range.last + 1
     }
     if (last < line.length) {
-        appendHighlighted(line.substring(last), textColor, searchQuery, highlightBg)
+        appendConFaccine(line, last, line.length, faccine, textColor, searchQuery, highlightBg)
     }
 }

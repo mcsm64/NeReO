@@ -26,7 +26,7 @@ object ReleaseNotes {
      * corretto. Ad ogni bump di versione in build.gradle.kts, aggiornare
      * SEMPRE anche questa riga e le [sections] sotto.
      */
-    const val VERSION = "1.5.8"
+    const val VERSION = "1.5.9"
 
     /**
      * Novità della versione corrente, in blocchi titolo → righe.
@@ -39,6 +39,14 @@ object ReleaseNotes {
      * strings.xml (tutte e tre le cartelle).
      */
     val sections: List<Pair<Int, List<Int>>> = listOf(
+        // 1.5.9 (treno in corso; versionCode 177 dal 27 ottobre 2026). Chiavi
+        // rn_v159_* verificate libere nelle tre cartelle prima di usarle.
+        //  - l1  faccine a caratteri mostrate come emoji (Marco, come MesNews)
+        //  - l2  ritorno all'elenco: discussioni aperte e ultimo letto (vort3)
+        R.string.rn_v159_title to listOf(
+            R.string.rn_v159_l1,
+            R.string.rn_v159_l2,
+        ),
         // 1.5.8 (27 ottobre 2026, versionCode 176). Chiavi rn_v158_* verificate
         // libere nelle tre cartelle prima di usarle.
         //  - l1  la striscia «Aggiornato a <versione> — Novita'»
