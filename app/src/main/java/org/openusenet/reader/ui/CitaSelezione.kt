@@ -111,7 +111,7 @@ fun CorpoCitabile(
     suspend fun testoCitazione(a: Article, scelta: CitazioneRiradicata, conCoda: Boolean): String {
         val gruppo = repo.groupById(a.groupId)
         val intro = scelta.introduzione ?: introLine(
-            repo.resolvedIdentity(gruppo?.serverId), a, gruppo?.name.orEmpty(),
+            repo.identitaPerGruppo(a.groupId), a, gruppo?.name.orEmpty(),
             introPredefinita, gruppo?.replyIntro,
         )
         return formattaCitazione(

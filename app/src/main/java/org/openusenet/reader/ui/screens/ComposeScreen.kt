@@ -101,8 +101,7 @@ import org.openusenet.reader.R
 // Erano in `ui.screens` e ComposeScreen li vedeva senza import perche' era
 // nello stesso package: era proprio quella vicinanza accidentale a tenere
 // in piedi il debito.
-import org.openusenet.reader.text.avvolgiFlowed
-import org.openusenet.reader.text.wrapBody
+import org.openusenet.reader.text.corpoDaInviare
 import org.openusenet.reader.data.Article
 import org.openusenet.reader.data.Draft
 import org.openusenet.reader.data.Identity
@@ -133,8 +132,8 @@ fun ComposeScreen(
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
 
-    // 1.2.9 (multi-identità): l'identità viene risolta per il server di
-    // destinazione (Repository.resolvedIdentity) appena lo si conosce, dentro
+    // 1.2.9 (multi-identità), 1.6: l'identità viene risolta per il gruppo di
+    // destinazione (Repository.identitaPerGruppo) appena lo si conosce, dentro
     // la LaunchedEffect qui sotto — non più letta subito da preferenze sciolte
     // globali. fromName/fromEmail/customHeaders restano campi modificabili
     // dall'utente (come sempre), solo pre-compilati dall'identità risolta.
@@ -180,8 +179,6 @@ fun ComposeScreen(
     // esiste una. Serve a non creare duplicati salvando più volte.
     var bozzaId by remember { mutableStateOf(draftId ?: 0L) }
     var groupName by remember { mutableStateOf("") }
-    // server di destinazione: decide quale firma usare (globale o dedicata)
-    var targetServerId by remember { mutableStateOf<Long?>(null) }
     var sending by remember { mutableStateOf(false) }
     var ready by remember { mutableStateOf(false) }
 
@@ -192,7 +189,7 @@ fun ComposeScreen(
         if (draftId != null && draftId > 0) {
             repo.draftById(draftId)?.let { d ->
                 targetGroupId = d.groupId
-                repo.groupById(d.groupId)?.let { g -> groupName = g.name; targetServerId = g.serverId }
+                repo.groupById(d.groupId)?.let { g -> groupName = g.name }
                 subject = d.subject
                 bodyField = TextFieldValue(d.body)
                 // Il mittente della bozza resta quello salvato CON la bozza (non
@@ -205,7 +202,7 @@ fun ComposeScreen(
                 if (d.replyToArticleId > 0) parent = repo.articleById(d.replyToArticleId)
                 // Le intestazioni personalizzate non fanno parte della bozza salvata
                 // (Draft non le conserva): si ripescano dall'identità del server.
-                identity = repo.resolvedIdentity(targetServerId).also { customHeaders = it.customHeaders }
+                identity = repo.identitaPerGruppo(targetGroupId).also { customHeaders = it.customHeaders }
                 ready = true
                 return@LaunchedEffect
             }
@@ -222,7 +219,6 @@ fun ComposeScreen(
         targetGroupId?.let {
             val g = repo.groupById(it)
             groupName = g?.name ?: ""
-            targetServerId = g?.serverId
             introGruppo = g?.replyIntro
         }
         // 1.4.5 (§A10, Dave Royal): con «rispondi sempre a tutti i gruppi»
@@ -249,7 +245,7 @@ fun ComposeScreen(
         // destinazione (o quella predefinita, se il server non ne ha una
         // propria) — mittente, indirizzo e intestazioni personalizzate
         // diventano i suoi. Tutto resta modificabile a mano.
-        identity = repo.resolvedIdentity(targetServerId).also { ident ->
+        identity = repo.identitaPerGruppo(targetGroupId).also { ident ->
             fromName = ident.name
             fromEmail = ident.email
             customHeaders = ident.customHeaders
@@ -262,11 +258,11 @@ fun ComposeScreen(
             if (orig != null) {
                 targetGroupId = orig.groupId
                 repo.groupById(orig.groupId)?.let { g ->
-                    groupName = g.name; targetServerId = g.serverId
+                    groupName = g.name
                 }
                 // il gruppo/server dell'originale potrebbe differire da quello
                 // risolto sopra (qui targetGroupId era ancora null): ri-risolvo.
-                identity = repo.resolvedIdentity(targetServerId).also { ident ->
+                identity = repo.identitaPerGruppo(targetGroupId).also { ident ->
                     fromName = ident.name
                     fromEmail = ident.email
                     customHeaders = ident.customHeaders
@@ -281,7 +277,7 @@ fun ComposeScreen(
             }
         }
         bodyField = buildPrefill(
-            identity ?: repo.resolvedIdentity(targetServerId), if (parent != null) replyMode else "none", parent,
+            identity ?: repo.identitaPerGruppo(targetGroupId), if (parent != null) replyMode else "none", parent,
             groupName = groupName,
             defaultIntro = introPredefinita,
             introGruppo = introGruppo,
@@ -423,7 +419,7 @@ fun ComposeScreen(
             // di andare perso uscendo dalla schermata.
             runCatching { salvaBozza() }
             runCatching {
-                val ident = identity ?: repo.resolvedIdentity(targetServerId)
+                val ident = identity ?: repo.identitaPerGruppo(targetGroupId)
                 repo.postArticle(
                     gid, fromName.trim(), fromEmail.trim(), subject.trim(),
                     // a capo a 72 colonne: senza, un paragrafo scritto di getto
@@ -436,8 +432,7 @@ fun ComposeScreen(
                     // se' in `postArticle`, guardando il corpo: non si passa
                     // nessuna bandiera, cosi' l'intestazione non puo' dire una
                     // cosa diversa da quella che spediamo.
-                    if (AppSettings.formatFlowedInUscita) avvolgiFlowed(bodyField.text)
-                    else wrapBody(bodyField.text),
+                    corpoDaInviare(bodyField.text, AppSettings.formatFlowedInUscita),
                     referencesHeader,
                     // Correzione 1.2.9 (segnalazione di Marco): campo User-Agent
                     // vuoto nell'identità doveva significare "nessun header
@@ -780,6 +775,7 @@ fun ComposeScreen(
                 }
             }
 
+            RigaIdentita(repo, identity, fromName, fromEmail)
             // 1.4: l'avviso del Followup-To. Non è un dettaglio ripiegabile:
             // dice che il messaggio esce in un posto diverso da quello che
             // l'utente sta guardando, e deve vedersi senza aprire nulla.

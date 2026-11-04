@@ -7,15 +7,16 @@ package org.openusenet.reader.ui
 /**
  * 1.5.7 / 175 (brainstorming del 17/10, voce F8) — SFOGLIARE COI TASTI DEL VOLUME.
  *
- * Nella lettura a schermo intero: volume GIU' = messaggio successivo, volume
- * SU = precedente. Come in molti lettori di e-book e di news: si legge con una
- * mano sola, senza allungare il pollice fino alla barra in basso.
+ * Nella lettura: volume GIU' = Avanti (1.6, vedi TastoAvanti.kt; prima era il
+ * messaggio successivo, fermo a fine discussione), volume SU = precedente. Come
+ * in molti lettori di e-book e di news: si legge con una mano sola, senza
+ * allungare il pollice fino alla barra in basso.
  *
  * SPENTO DI DEFAULT (Aspetto → lettura): chi non lo attiva non vede nessuna
  * differenza, e i tasti del volume fanno il loro lavoro. Anche attivo, i
- * tasti vengono «presi» SOLO mentre e' aperto un messaggio a schermo intero:
- * nell'elenco, nella scrittura e nelle altre schermate regolano il volume
- * come sempre.
+ * tasti vengono «presi» SOLO mentre e' aperto un messaggio (a schermo intero o,
+ * dalla 1.6, nel pannello di lettura): nell'elenco, nella scrittura e nelle
+ * altre schermate regolano il volume come sempre.
  *
  * COME. MainActivity.dispatchKeyEvent chiede a [gestisci] se il tasto e' suo;
  * la schermata di lettura si registra in [gestore] finche' e' visibile

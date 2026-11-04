@@ -70,6 +70,8 @@ data class AzioniLettura(
     val vaiInCima: (() -> Unit)? = null,
     val vaiInFondo: (() -> Unit)? = null,
     val ricaricaCorpo: (() -> Unit)? = null,
+    /** 1.6: null = il padre del messaggio c'e', quindi niente da cercare. */
+    val ricostruisci: (() -> Unit)? = null,
 )
 
 /**
@@ -106,6 +108,7 @@ fun azioniLettura(
     vaiInCima: (() -> Unit)? = null,
     vaiInFondo: (() -> Unit)? = null,
     ricaricaCorpo: (() -> Unit)? = null,
+    ricostruisci: (() -> Unit)? = null,
 ): AzioniLettura {
     // 1.3.5: un solo punto in tutta l'app legge gli appunti (ui/Appunti.kt).
     val appunti = rememberAppunti()
@@ -138,6 +141,7 @@ fun azioniLettura(
         vaiInCima = vaiInCima,
         vaiInFondo = vaiInFondo,
         ricaricaCorpo = ricaricaCorpo,
+        ricostruisci = ricostruisci,
     )
 }
 
@@ -173,6 +177,7 @@ fun AzioniLettura.esegui(id: String): Boolean {
         "top" -> vaiInCima?.invoke() ?: return false
         "bottom" -> vaiInFondo?.invoke() ?: return false
         "ricarica" -> ricaricaCorpo?.invoke() ?: return false
+        "ricostruisci" -> ricostruisci?.invoke() ?: return false
         else -> return false
     }
     return true
@@ -183,5 +188,6 @@ fun AzioniLettura.disponibile(id: String): Boolean = when (id) {
     "top" -> vaiInCima != null
     "bottom" -> vaiInFondo != null
     "ricarica" -> ricaricaCorpo != null
+    "ricostruisci" -> ricostruisci != null
     else -> true
 }

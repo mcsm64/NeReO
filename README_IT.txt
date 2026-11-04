@@ -1,8 +1,30 @@
 ======================================================================
- NeReO 1.5.9 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6 - Ne(ws) Re(ader) O(pen-source)
  Newsreader Usenet (NNTP) solo testo per Android
- NeReO 1.5.9 (versionCode 179) - By MCSM - 2026/10/30
+ NeReO 1.6 (versionCode 185) - By MCSM - 2026/11/04
 ======================================================================
+ ***  VERSIONE 1.6  ***
+
+ Richieste di RPoggi, Bingo3331, Dave Royal e Marco, e le cinque voci del sondaggio sui gruppi.
+
+  * IL NOME DEL GRUPPO MENTRE LEGGI. Nella barra in alto c'e' il gruppo del messaggio e, sotto, la posizione nella discussione [5/8]. Un +2 vuol dire che il messaggio e' stato crospostato in altri 2 gruppi. Con piu' di un server compare anche il nome del server. Il gruppo e' quello del messaggio, anche se lo apri da una ricerca o da un link. Lo stesso nella lettura a tutto schermo della vista a pannelli.
+
+  * IL TUO MESSAGGIO NON SPARISCE PIU' DOPO L'INVIO. Subito dopo un invio alcuni server annunciano il messaggio ma non lo consegnano ancora: ora NeReO lo richiede al prossimo aggiornamento invece di saltarlo per sempre. Segnalato da Bingo3331 e HAL.
+
+  * NUOVA GAMMA VIOLA: icona, avvio con tre barre su un disco, viola predefinito per chi installa da adesso, piu' leggibile nel tema scuro, e tinta Purple coi colori nuovi.
+
+  * RIFORMATTA LA CITAZIONE. Nella finestra per rifinire la citazione un comando rimette in ordine le righe citate a 72 colonne, conservando i segni > e i livelli. Non tocca il tuo testo, le firme, le righe vuote fra i capoversi e i link lunghi. Dal sondaggio sui gruppi.
+
+  * A CAPO A 72 COLONNE ANCHE DAI PANNELLI. L'invio dalla vista a pannelli ora manda a capo e rispetta Format=Flowed, come ha sempre fatto la vista a pagine. Prima un capoverso lungo partiva su una riga sola.
+
+  * TASTO AVANTI. Un comando solo per il prossimo non letto, la discussione successiva e, a fine gruppo, il gruppo successivo con dei non letti, su tutti i server. Quando non resta niente te lo dice. Nella barra di lettura, nel menu dei pannelli e con volume giu'. Dal sondaggio sui gruppi.
+
+  * IDENTITA' PER GRUPPO. Nelle Impostazioni del gruppo scegli con quale identita' scrivere in quel gruppo: conta il gruppo, poi il server, poi la predefinita. Il backup ora conserva identita', introduzione e conservazione di ogni gruppo. Idea di Dave Royal, dal sondaggio sui gruppi.
+
+  * IGNORA DISCUSSIONE. Dal menu della discussione: le risposte future arrivano gia' lette, tranne quelle ai tuoi messaggi e i tuoi post. Si annulla dallo stesso menu. Dal sondaggio sui gruppi.
+
+  * RICOSTRUISCI DISCUSSIONE. Se mancano i messaggi a cui si risponde, il menu li cerca sul server e completa l'albero. Arrivano gia' letti. Una risposta scaduta non si puo' cercare, e con la conservazione a giorni possono sparire all'aggiornamento dopo. Dal sondaggio sui gruppi.
+
  ***  VERSIONE 1.5.9  ***
 
  Richieste di Marco e di vort3.

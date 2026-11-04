@@ -142,7 +142,7 @@ fun splitMulti(text: String): List<String> =
  * Blocco firma con delimitatore standard "-- ".
  *
  * 1.2.9 (multi-identità): [identity] arriva già RISOLTA per il server di
- * destinazione (Repository.resolvedIdentity — quella assegnata al server, o
+ * destinazione (Repository.identitaPerGruppo — quella assegnata al server, o
  * la default se il server non ne ha una propria). Prima della 1.2.9 c'era un
  * solo campo firma con un override per-server letto qui dentro; ora
  * un'identità è un oggetto intero, non serve più questa distinzione qui.

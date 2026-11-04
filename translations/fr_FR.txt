@@ -198,7 +198,7 @@ app_collapse_blank =
 # en: Volume keys turn the page
 app_volume_keys =
 
-# en: In full-screen reading, volume down opens the next message and volume up the previous one. Everywhere else the keys change the volume as usual.
+# en: In reading, volume down is Next (next unread message, then the next group with unread messages) and volume up opens the previous message. Everywhere else the keys change the volume as usual.
 app_volume_keys_note =
 
 # en: Screen transition animation
@@ -1194,6 +1194,9 @@ cmp_send =
 # en: Group: %s
 cmp_group =
 
+# en: Identity: %s
+cmp_identity =
+
 # en: Groups: %s
 cmp_groups =
 
@@ -1214,6 +1217,15 @@ tl_group_intro_tip =
 
 # en: Intro line (empty = use identity)
 tl_group_intro_label =
+
+# en: Identity for this group
+tl_group_identity =
+
+# en: Name, address, signature and everything else you post with in this group. The group introduction above, if set, still wins.
+tl_group_identity_tip =
+
+# en: Same as the server
+tl_group_identity_inherit =
 
 # en: A crossposted message read in one group counts as read in the others
 mnt_letto_messageid =
@@ -1349,6 +1361,9 @@ trim_remove_cd =
 
 # en: Apply
 trim_apply =
+
+# en: Rewrap to 72 columns
+trim_reflow =
 
 # en: Crossposted message
 xp_title =
@@ -1527,6 +1542,15 @@ art_next_msg =
 # en: Next unread
 art_next_unread =
 
+# en: Next (unread, then next group)
+art_avanti =
+
+# en: Next group: %1$s
+art_avanti_gruppo =
+
+# en: Nothing left to read, in any group.
+art_avanti_fine =
+
 # en: Previous thread
 art_prev_thread =
 
@@ -1698,7 +1722,7 @@ common_hide_filtered =
 # en: Show filtered messages
 common_show_filtered =
 
-# en: Retention for this group…
+# en: Settings for this group…
 common_group_retention_menu =
 
 # en: All read in this group.\nOpen the ⋮ menu and choose "Show filtered" or change view.
@@ -1733,6 +1757,39 @@ common_mark_thread_read =
 
 # en: Mark thread as unread
 common_mark_thread_unread =
+
+# en: Ignore thread
+common_ignore_thread =
+
+# en: Stop ignoring
+common_unignore_thread =
+
+# en: Thread ignored: replies will arrive already read, except those to you.
+common_ignore_thread_done =
+
+# en: The thread is no longer ignored.
+common_unignore_thread_done =
+
+# en: Rebuild thread (%1$d missing)
+common_rebuild_thread =
+
+# en: Rebuild thread
+rb_title =
+
+# en: Searched %1$d of %2$d
+rb_avanzamento =
+
+# en: Found %1$d, not available %2$d on server %3$s.
+rb_esito =
+
+# en: Discarded by filters: %1$d.
+rb_scartati =
+
+# en: Stopped at the limit: %1$d left, try again to continue.
+rb_restanti =
+
+# en: Interrupted: %1$s
+rb_errore =
 
 # en: Plonk author and replies
 common_ignore_author =
@@ -1830,7 +1887,7 @@ tl_never_keep_all =
 # en: Latest %1$d threads
 tl_keep_latest_threads =
 
-# en: Group retention
+# en: Group settings
 tl_group_retention =
 
 # en: After every sync, read messages are deleted (unread and followed ones remain). You can choose to keep messages by TIME or by NUMBER of threads.
@@ -2917,6 +2974,36 @@ rn_v155_l7 =
 
 # en: New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the "newest first" orders it also notices a reply inside the thread that is already at the top. With the "oldest first" orders, where new messages are at the bottom, you stay where you were. In the panel view too.
 rn_v155_l8 =
+
+# en: New in 1.6
+rn_v16_title =
+
+# en: Rewrap quotes: while writing, the Trim quote window has a new command that puts quoted lines back in order at 72 columns, keeping the > marks and the levels. It leaves alone your own text, signatures, blank lines between paragraphs and long links. From the survey on the groups.
+rn_v16_l4 =
+
+# en: Sending from the panes view now wraps lines at 72 columns and follows the Format=Flowed setting, as the phone view always did. Before, a long paragraph left as a single line and some servers could refuse it.
+rn_v16_l5 =
+
+# en: New Next command: one button for the next unread message, then the next thread and, at the end of the group, the next group with unread messages, on all servers in the order of the list. When nothing is left it says so. You find it in the reading bar (the panes view has it in the menu; Customize bars moves it). The volume keys, if enabled, now use it for volume down, in the panes view too. From the survey on the groups.
+rn_v16_l6 =
+
+# en: Identity per group: the group settings let you pick the identity to post with in that group (name, address, signature, Face, User-Agent, headers). The group comes first, then the server, then the default identity. In a crosspost the identity is that of the group you reply from, and the writing screen shows it. Backups now carry it, together with the group introduction, which was missing. Idea by Dave Royal, from the survey on the groups.
+rn_v16_l7 =
+
+# en: Ignore thread: from the menu of a thread, with a long press. Future replies arrive already read, except replies to your posts and your own posts. The same menu undoes it with Stop ignoring; what arrived read stays read. Watch and Ignore exclude each other. From the survey on the groups.
+rn_v16_l8 =
+
+# en: Rebuild thread: when the messages being replied to are missing, expired or never downloaded, the thread menu and the message menu offer to look for them on the server and complete the tree. They arrive already read. It recovers the messages named by the replies, also from other groups on the same server; an expired reply cannot be searched for. With retention by days they may disappear again at the next refresh. From the survey on the groups.
+rn_v16_l9 =
+
+# en: While reading, the bar at the top shows the group of the message, with the position in the thread [5/8] underneath. A +2 means the message was crossposted to 2 more groups. With more than one server, the server name appears too. Same in full-screen reading of the panes view.
+rn_v16_l1 =
+
+# en: Your own post no longer goes missing after sending. Right after a post some servers (Astraweb, for example) already announce the new message but do not deliver it yet: NeReO now asks for it again at the next refresh instead of skipping it for good.
+rn_v16_l2 =
+
+# en: New purple palette. The icon has new colours, and the start screen now shows its three bars on a purple disc instead of the old logo. The purple in Appearance → Button colour is easier to read, especially in the dark theme, and it is the default colour for new installs. The Purple tint uses the new colours too, with more readable text.
+rn_v16_l3 =
 
 # en: New in 1.5.9
 rn_v159_title =

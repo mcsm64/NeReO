@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Icona NeReO: tre barre indentate (thread di discussione), gamma
-     viola dell'app, barre ispessite e ad angoli smussati (beta13). -->
+     viola dell'app, barre ispessite e ad angoli smussati (beta13).
+     1.6: colori della scala 2 sullo sfondo viola_base: T92 (8,7:1), T70
+     (4,3:1), T55 (2,6:1; T40 sparirebbe, 1,6:1). E' anche l'icona
+     dell'avvio, sopra il disco: il disegno delle barre esiste solo qui. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#EDE7F6" android:pathData="M34.5,37 h39.0 a4.5,4.5 0 0 1 4.5,4.5 a4.5,4.5 0 0 1 -4.5,4.5 h-39.0 a4.5,4.5 0 0 1 -4.5,-4.5 a4.5,4.5 0 0 1 4.5,-4.5 z" />
-    <path android:fillColor="#9B6DF3" android:pathData="M42.5,51 h31.0 a4.5,4.5 0 0 1 4.5,4.5 a4.5,4.5 0 0 1 -4.5,4.5 h-31.0 a4.5,4.5 0 0 1 -4.5,-4.5 a4.5,4.5 0 0 1 4.5,-4.5 z" />
-    <path android:fillColor="#6E4BB8" android:pathData="M50.5,65 h23.0 a4.5,4.5 0 0 1 4.5,4.5 a4.5,4.5 0 0 1 -4.5,4.5 h-23.0 a4.5,4.5 0 0 1 -4.5,-4.5 a4.5,4.5 0 0 1 4.5,-4.5 z" />
+    <path android:fillColor="#F2DFF6" android:pathData="M34.5,37 h39.0 a4.5,4.5 0 0 1 4.5,4.5 a4.5,4.5 0 0 1 -4.5,4.5 h-39.0 a4.5,4.5 0 0 1 -4.5,-4.5 a4.5,4.5 0 0 1 4.5,-4.5 z" />
+    <path android:fillColor="#C98CD9" android:pathData="M42.5,51 h31.0 a4.5,4.5 0 0 1 4.5,4.5 a4.5,4.5 0 0 1 -4.5,4.5 h-31.0 a4.5,4.5 0 0 1 -4.5,-4.5 a4.5,4.5 0 0 1 4.5,-4.5 z" />
+    <path android:fillColor="#A95CBC" android:pathData="M50.5,65 h23.0 a4.5,4.5 0 0 1 4.5,4.5 a4.5,4.5 0 0 1 -4.5,4.5 h-23.0 a4.5,4.5 0 0 1 -4.5,-4.5 a4.5,4.5 0 0 1 4.5,-4.5 z" />
 </vector>

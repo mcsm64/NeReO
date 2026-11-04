@@ -136,6 +136,15 @@ data class Group(
      * da nessuno. E' voluto — la migrazione viaggia da sola (vedi Db.kt).
      */
     val replyIntro: String? = null,
+    /**
+     * 1.6 (Dave Royal, sondaggio sui gruppi) — IDENTITA' PER QUESTO GRUPPO.
+     * null = quella del server, e se manca la predefinita. Precede
+     * [Server.identityId]; [replyIntro] continua a vincere sull'introduzione
+     * dell'identita'. Chiave «morbida» come quella del server: nessun vincolo
+     * FOREIGN KEY, un'identita' cancellata ricade sul livello sotto. La regola
+     * sta in [primaIdentita]. Colonna dalla migrazione 12 -> 13.
+     */
+    val identityId: Long? = null,
     /** Override retention per gruppo: giorni oltre cui eliminare i letti. null = usa il valore globale. */
     val purgeDays: Int? = null,
     /**
@@ -254,6 +263,30 @@ data class PoisonedId(
     val ruleId: Long,
     /** true = post dell'autore filtrato; false = risposta colpita per propagazione. */
     val seed: Boolean = false,
+)
+
+/**
+ * 1.6 (sondaggio sui gruppi) — REGISTRO DELLE DISCUSSIONI IGNORATE: i message-id
+ * dei messaggi di ogni discussione ignorata. Solo identificatori, nessun
+ * contenuto.
+ *
+ * PERCHE' NON `poisoned_ids`: quelle righe significano «colpito da una regola» e
+ * proteggono il messaggio dalla revisione dopo un cambio di regole. Riusarle con
+ * un ruleId riservato farebbe rispondere lo stesso campo a due domande.
+ *
+ * PERCHE' NON UNA COLONNA SU `articles`: gli articoli se ne vanno con la
+ * conservazione, e con loro il ricordo; una risposta tardiva tornerebbe non
+ * letta in una discussione ignorata. Qui la chiave e' il solo message-id, quindi
+ * vale per un crosspost e per lo stesso gruppo su piu' server.
+ *
+ * [epoch]: data dell'articolo (epoch secondi), serve alla pulizia.
+ *
+ * Tabella dalla migrazione 12 -> 13. La logica sta in filter/IgnoraDiscussione.kt.
+ */
+@Entity(tableName = "ignored_ids", indices = [Index(value = ["epoch"])])
+data class IgnoredId(
+    @PrimaryKey val messageId: String,
+    val epoch: Long,
 )
 
 /**

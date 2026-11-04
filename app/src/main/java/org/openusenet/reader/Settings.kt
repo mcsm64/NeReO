@@ -23,8 +23,15 @@ object AppSettings {
     /** Material You (colori dal wallpaper, Android 12+) */
     var dynamicColor by mutableStateOf(true)
 
+    /**
+     * 1.6: accento predefinito viola (prima "indigo"), come icona e avvio.
+     * Vale solo per chi non ha mai salvato le impostazioni: save() scrive
+     * sempre "accent", quindi chi ha gia' NeReO conserva il proprio.
+     */
+    const val ACCENTO_PREDEFINITO = "purple"
+
     /** chiave di ACCENT_COLORS */
-    var accent by mutableStateOf("indigo")
+    var accent by mutableStateOf(ACCENTO_PREDEFINITO)
 
     /** Corpo articolo in monospazio (stile lettore classico / MesNews). */
     var bodyMonospace by mutableStateOf(true)
@@ -353,7 +360,7 @@ object AppSettings {
      * innocuo (letto solo qui, non più scritto altrove dalla 1.3).
      */
     val articleBarActionIds = listOf(
-        "prev_msg", "next_msg", "next_unread", "prev_thread", "next_thread",
+        "prev_msg", "next_msg", "next_unread", "avanti", "prev_thread", "next_thread",
         "back_index", "top", "bottom", "mute_quotes", "tree_bottom",
         // 1.3.3 (Roxy): copia l'intero messaggio negli appunti, un clic.
         "copia",
@@ -463,7 +470,7 @@ object AppSettings {
      */
     val paneBarActionIds = listOf(
         "rot13", "mute_quotes", "headers", "reply", "copia", "esporta", "eml", "conserva",
-        "link", "msgid",
+        "link", "msgid", "ricostruisci",
         /*
          * 1.4.6 (§B4, fetta 3) — LE OTTO CHE MANCAVANO AI PANNELLI.
          *
@@ -479,7 +486,7 @@ object AppSettings {
          * che nella vista a pannelli non vogliono dire niente. Otto su dieci, e
          * le due mancanti per una ragione scritta.
          */
-        "prev_msg", "next_msg", "next_unread", "prev_thread", "next_thread",
+        "prev_msg", "next_msg", "next_unread", "avanti", "prev_thread", "next_thread",
         "top", "bottom", "ricarica",
     )
     var paneBarOrder by mutableStateOf(paneBarActionIds)
@@ -500,8 +507,8 @@ object AppSettings {
      * al menu e l'altro ripartiva da un insieme fisso che nessuno aggiornava.
      */
     val paneBarInMenuIniziale = setOf(
-        "rot13", "headers", "link", "msgid",
-        "prev_msg", "next_msg", "next_unread", "prev_thread", "next_thread",
+        "rot13", "headers", "link", "msgid", "ricostruisci",
+        "prev_msg", "next_msg", "next_unread", "avanti", "prev_thread", "next_thread",
         "top", "bottom", "ricarica",
         // 1.4.9 (§J3-C1): nasce nel menu, applicando la regola scritta nel
         // 1.3.6 per le azioni future e seguita dalle otto del §B4. Nel riquadro
@@ -855,7 +862,14 @@ object AppSettings {
         // del riferimento, così si staccano. Verificate TUTTE le combinazioni
         // in uso (testo, non letti, letti, testo tenue, barrato) su entrambi i
         // fondi: la peggiore è 4,6:1, tutte sopra il minimo.
-        "purple" to UiPalette("Purple", 0xFF331C60L, 0xFF4A2C86L, 0xFFEDE7F6L, true),
+        //
+        // 1.6: dalla scala viola 2, come icona e avvio: sfondo T10, barre T18,
+        // testo T92 (prima #331C60 / #4A2C86 / #EDE7F6). Ricontrollate tutte
+        // le combinazioni su entrambi i fondi: testo 14,1 e 11,7:1, testo
+        // secondario (75%) 8,3 e 7,2:1, non letti 7,8 e 6,5:1, letti 8,8 e
+        // 7,3:1, citazioni e link almeno 6,4:1, accento viola 11,0 e 9,1:1.
+        // Barre sul fondo 1,20:1 (prima 1,35): da guardare sul telefono.
+        "purple" to UiPalette("Purple", 0xFF211325L, 0xFF371F3DL, 0xFFF2DFF6L, true),
     )
 
     /** Livelli di densita' del pannello discussioni, dal piu' largo al piu' fitto. */
@@ -887,7 +901,19 @@ object AppSettings {
         "green" to 0xFF2E7D32,
         "amber" to 0xFFFF8F00,
         "red" to 0xFFC62828,
-        "purple" to 0xFF6A1B9A,
+        // 1.6: viola di riferimento, BASE della scala 2 (11:1 sul bianco).
+        // Prima 0xFF6A1B9A.
+        "purple" to 0xFF522F5B,
+    )
+
+    /**
+     * 1.6 — accento nel TEMA SCURO: coppia (colore, testo sopra il colore).
+     * Chi non e' qui usa nel tema scuro lo stesso colore del chiaro, come
+     * prima. Il viola scuro della scala 2 sul fondo scuro avrebbe 2:1: si
+     * passa a T84 (10,6:1 sul fondo), col testo dei pulsanti in T18 (9,1:1).
+     */
+    val accentColorsDark: Map<String, Pair<Long, Long>> = mapOf(
+        "purple" to (0xFFE4BFEDL to 0xFF371F3DL),
     )
 
     /**
@@ -920,7 +946,7 @@ object AppSettings {
     private fun caricaPreferenze() {
         themeMode = prefs.getString("theme_mode", "system") ?: "system"
         dynamicColor = prefs.getBoolean("dynamic_color", true)
-        accent = prefs.getString("accent", "indigo") ?: "indigo"
+        accent = prefs.getString("accent", ACCENTO_PREDEFINITO) ?: ACCENTO_PREDEFINITO
         bodyMonospace = prefs.getBoolean("body_monospace", true)
         // le vecchie scale (0.85 / 1.0) erano troppo piccole: portate al minimo attuale
         // beta15: il minimo consentito scende a 0.8 (nuove taglie Piccolissimo/

@@ -18,6 +18,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.data.FilterRuleEntity
+import org.openusenet.reader.data.IgnoredId
 import org.openusenet.reader.data.Identity
 import org.openusenet.reader.data.IdentityMigrator
 import org.openusenet.reader.data.LegacyIdentityFields
@@ -93,7 +94,18 @@ object BackupManager {
                 JSONObject()
                     .put("server", key(srv.host, srv.port))
                     .put("name", g.name)
-                    .put("sortOrder", g.sortOrder),
+                    .put("sortOrder", g.sortOrder)
+                    // 1.6 (Dave Royal): per nickname, come sui server: l'id di
+                    // riga non ha senso fra installazioni diverse. Campi nuovi
+                    // e facoltativi: VERSION resta 5, le versioni vecchie li
+                    // ignorano. L'introduzione del gruppo non era mai entrata
+                    // nel backup: l'identita' sarebbe tornata e lei no.
+                    .put("identity_nickname", g.identityId?.let { identityNickById[it] } ?: JSONObject.NULL)
+                    .put("replyIntro", g.replyIntro ?: JSONObject.NULL)
+                    // 1.6: anche la conservazione del gruppo. Vale 0 = «mai»,
+                    // null = «usa il valore globale»: sono due cose diverse.
+                    .put("purgeDays", (g.purgeDays as Any?) ?: JSONObject.NULL)
+                    .put("purgeKeepThreads", (g.purgeKeepThreads as Any?) ?: JSONObject.NULL),
             )
         }
         root.put("subscriptions", subs)
@@ -212,6 +224,13 @@ object BackupManager {
         val watched = JSONArray()
         for (mid in repo.watchedMessageIdsOnce()) watched.put(mid)
         root.put("watched_threads", watched)
+
+        // 1.6: discussioni ignorate. Campo nuovo e facoltativo: VERSION resta 5.
+        val ignorati = JSONArray()
+        for (r in repo.ignoratiOnce()) {
+            ignorati.put(JSONObject().put("id", r.messageId).put("epoch", r.epoch))
+        }
+        root.put("ignored_threads", ignorati)
 
         return root.toString(2)
     }
@@ -466,6 +485,18 @@ object BackupManager {
                 val nomeGruppo = pulisci(o.optString("name"), 512)
                 if (nomeGruppo.isBlank()) continue
                 repo.subscribe(id, nomeGruppo, ordine)
+                // 1.6: un backup vecchio non ha queste chiavi: isNull vale anche
+                // per la chiave assente, e il gruppo resta com'e'. La guardia e'
+                // quella del commento su `username`, qui sopra.
+                repo.ripristinaImpostazioniGruppo(
+                    id, nomeGruppo,
+                    identityId = if (o.isNull("identity_nickname")) null
+                                 else nicknameToId[o.optString("identity_nickname")],
+                    intro = if (o.isNull("replyIntro")) null
+                            else o.optString("replyIntro").take(4096).ifBlank { null },
+                    purgeDays = if (o.isNull("purgeDays")) null else o.optInt("purgeDays"),
+                    purgeKeepThreads = if (o.isNull("purgeKeepThreads")) null else o.optInt("purgeKeepThreads"),
+                )
                 nSubs++
             }
         }
@@ -593,6 +624,17 @@ object BackupManager {
             val mids = ArrayList<String>(arr.length())
             for (i in 0 until arr.length()) arr.optString(i).takeIf { it.isNotBlank() }?.let { mids.add(it) }
             if (mids.isNotEmpty()) repo.markWatchedByMessageIds(mids)
+        }
+
+        // 1.6: un backup vecchio non ha la chiave, e non cambia niente.
+        root.optJSONArray("ignored_threads")?.let { arr ->
+            val righe = ArrayList<IgnoredId>(arr.length())
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                val id = pulisci(o.optString("id"), 998)
+                if (id.isNotBlank()) righe.add(IgnoredId(id, o.optLong("epoch", 0L)))
+            }
+            repo.ripristinaIgnorati(righe)
         }
 
         // 2.1(b): dopo il ripristino delle identità, ricarica le email note dal DB.

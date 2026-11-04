@@ -78,7 +78,9 @@ fun OpenUsenetTheme(content: @Composable () -> Unit) {
         // sceglierebbe sfondi propri e cancellerebbe la tinta
         palette == null && AppSettings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        darkTheme -> darkColorScheme(primary = seed, tertiary = seed)
+        darkTheme -> AppSettings.accentColorsDark[AppSettings.accent]?.let { (colore, testo) ->
+            darkColorScheme(primary = Color(colore), onPrimary = Color(testo), tertiary = Color(colore), onTertiary = Color(testo))
+        } ?: darkColorScheme(primary = seed, tertiary = seed)
         else -> lightColorScheme(primary = seed, tertiary = seed)
     }
 

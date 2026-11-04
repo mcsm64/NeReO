@@ -18,6 +18,8 @@ import org.openusenet.reader.filter.effettoPropagazioneDi
 import org.openusenet.reader.filter.EffettoPropagazione
 import org.openusenet.reader.filter.FollowupMode
 import org.openusenet.reader.filter.FollowupPropagator
+import org.openusenet.reader.filter.colpitiDaIgnorate
+import org.openusenet.reader.filter.siSegnaLetto
 import org.openusenet.reader.filter.campoIdentificaUnAutore
 import org.openusenet.reader.filter.identificaUnAutore
 import org.openusenet.reader.filter.PropagationInput
@@ -29,6 +31,14 @@ import org.openusenet.reader.nntp.MimeUtil
 import org.openusenet.reader.nntp.capabilitiesPerIlLog
 import java.nio.charset.Charset
 import org.openusenet.reader.nntp.NntpClient
+import org.openusenet.reader.nntp.EsitoRicerca
+import org.openusenet.reader.nntp.NntpException
+import org.openusenet.reader.nntp.cercaPerMessageId
+import org.openusenet.reader.nntp.intestazioniDaTesta
+import org.openusenet.reader.nntp.numeroDaXref
+import org.openusenet.reader.nntp.overviewDaIntestazioni
+import org.openusenet.reader.thread.idDaCercare
+import org.openusenet.reader.thread.idNominati
 import org.openusenet.reader.thread.ThreadableArticle
 import org.openusenet.reader.thread.Threader
 import org.openusenet.reader.ui.articoloEml
@@ -43,7 +53,9 @@ import org.openusenet.reader.ui.riradica
 import org.openusenet.reader.ui.nomeFileConserva
 import org.openusenet.reader.ui.nomeFileEml
 import org.openusenet.reader.ui.messageIdCanonico
+import org.openusenet.reader.text.corpoDaInviare
 import org.openusenet.reader.text.wrapBody
+import org.openusenet.reader.ui.riformattaCitazioni
 import org.openusenet.reader.ui.screens.gruppiDestinazione
 import org.openusenet.reader.ui.screens.extraPredefinitiCrosspost
 import org.openusenet.reader.ui.screens.extraPredefinitiRisposta
@@ -64,6 +76,9 @@ import org.openusenet.reader.text.trovaFaccine
 import org.openusenet.reader.text.TABELLA_FACCINE
 import org.openusenet.reader.ui.screens.followupTo
 import org.openusenet.reader.ui.screens.crosspostGroups
+import org.openusenet.reader.ui.screens.serverDaMostrare
+import org.openusenet.reader.ui.screens.altriGruppiCrosspost
+import org.openusenet.reader.data.Server
 import org.openusenet.reader.ui.messageIdNudo
 import org.openusenet.reader.data.Article
 import org.openusenet.reader.ui.screens.ThreadItem
@@ -76,7 +91,13 @@ import org.openusenet.reader.ui.screens.idDiscussioneSuccessiva
 import org.openusenet.reader.ui.screens.idMessaggioPrecedente
 import org.openusenet.reader.ui.screens.idMessaggioSuccessivo
 import org.openusenet.reader.ui.screens.idPrimoNonLettoDopo
+import org.openusenet.reader.ui.screens.idNonLettoNelGruppo
+import org.openusenet.reader.ui.screens.idGruppoConNonLetti
+import org.openusenet.reader.ui.screens.GruppoDaLeggere
 import org.openusenet.reader.update.deveMostrareAggiornato
+import org.openusenet.reader.data.segnalibroDopoLotto
+import org.openusenet.reader.data.primaIdentita
+import org.openusenet.reader.ui.screens.etichettaIdentita
 import org.openusenet.reader.update.versionePiuNuova
 
 class FilterEngineTest {
@@ -730,6 +751,21 @@ class FlowedGenerazioneTest {
         // profondita' diversa non si uniscono mai, quindi ometterli spezzerebbe
         // la citazione in due capoversi.
         assertTrue(avvolgiFlowed(">>$lunga").split("\n").all { it.startsWith(">>") })
+    }
+
+    @Test
+    fun `la forma con gli spazi conserva i due livelli sulle continuazioni`() {
+        // ⚠️ 1.6: `> > testo` e' la forma che NeReO stessa produce rispondendo a
+        // un messaggio gia' citato. Si contava un solo `>` (quello in testa), e
+        // l'altro finiva nel contenuto: la continuazione usciva a livello 1.
+        val generato = avvolgiFlowed("> > $lunga").split("\n")
+        assertTrue(generato.size > 1)
+        assertTrue(generato.all { it.startsWith(">> ") })
+        assertEquals(listOf(">>$lunga"), srotolaFlowed(generato))
+        // anche a tre livelli, e su una riga corta: stessa profondita', stessa forma
+        assertEquals(">>> corta", avvolgiFlowed("> > > corta"))
+        // un `>` DOPO il testo non e' un livello
+        assertEquals("> a > b", avvolgiFlowed("> a > b"))
     }
 
     @Test
@@ -1718,6 +1754,83 @@ class NavigazioneLetturaTest {
         assertNull(idDiscussionePrecedente(lista, 2L))
     }
 
+    // ---- 1.6: tasto Avanti ----
+
+    private fun misto(vararg nonLetti: Long) = listOf(
+        voce(1, inizio = true, letto = 1L !in nonLetti), voce(2, letto = 2L !in nonLetti),
+        voce(3, letto = 3L !in nonLetti), voce(4, inizio = true, letto = 4L !in nonLetti),
+        voce(5, letto = 5L !in nonLetti),
+    )
+
+    @Test
+    fun `avanti - nella stessa discussione, poi nella successiva`() {
+        assertEquals(3L, idNonLettoNelGruppo(misto(3, 5), 1))
+        assertEquals(5L, idNonLettoNelGruppo(misto(3, 5), 2))
+    }
+
+    @Test
+    fun `avanti - i non letti sopra la posizione non si saltano`() {
+        assertEquals(1L, idNonLettoNelGruppo(misto(1), 4))
+        // dopo vengono prima di quelli sopra
+        assertEquals(5L, idNonLettoNelGruppo(misto(1, 5), 3))
+    }
+
+    @Test
+    fun `avanti - il messaggio corrente non e' mai la destinazione`() {
+        assertNull(idNonLettoNelGruppo(misto(3), 2))
+    }
+
+    @Test
+    fun `avanti - gruppo finito`() {
+        assertNull(idNonLettoNelGruppo(lista, 0))
+    }
+
+    @Test
+    fun `avanti - messaggio fuori sequenza riparte dal primo non letto`() {
+        assertEquals(2L, idNonLettoNelGruppo(misto(2, 4), -1))
+        assertNull(idNonLettoNelGruppo(lista, -1))
+    }
+
+    private val gruppi = listOf(
+        GruppoDaLeggere(10, 0), GruppoDaLeggere(20, 3), GruppoDaLeggere(30, 0), GruppoDaLeggere(40, 1),
+    )
+
+    @Test
+    fun `avanti - il gruppo dopo con dei non letti, saltando i vuoti`() {
+        assertEquals(20L, idGruppoConNonLetti(gruppi, 10))
+        assertEquals(40L, idGruppoConNonLetti(gruppi, 20))
+        assertEquals(40L, idGruppoConNonLetti(gruppi, 30))
+    }
+
+    @Test
+    fun `avanti - dopo l'ultimo gruppo si riparte dall'inizio`() {
+        assertEquals(20L, idGruppoConNonLetti(gruppi, 40))
+    }
+
+    @Test
+    fun `avanti - il gruppo corrente non e' mai la destinazione`() {
+        assertNull(idGruppoConNonLetti(listOf(GruppoDaLeggere(1, 5)), 1))
+        assertNull(idGruppoConNonLetti(listOf(GruppoDaLeggere(1, 5), GruppoDaLeggere(2, 0)), 1))
+    }
+
+    @Test
+    fun `avanti - un contatore falso non fa girare il tasto a vuoto`() {
+        assertEquals(40L, idGruppoConNonLetti(gruppi, 10, scartati = setOf(20)))
+        assertNull(idGruppoConNonLetti(gruppi, 10, scartati = setOf(20, 40)))
+    }
+
+    @Test
+    fun `avanti - gruppo corrente fuori elenco, si parte dal primo`() {
+        assertEquals(20L, idGruppoConNonLetti(gruppi, 999))
+        assertEquals(20L, idGruppoConNonLetti(gruppi, null))
+    }
+
+    @Test
+    fun `avanti - niente da leggere in nessun gruppo`() {
+        assertNull(idGruppoConNonLetti(listOf(GruppoDaLeggere(1, 0), GruppoDaLeggere(2, 0)), 1))
+        assertNull(idGruppoConNonLetti(emptyList(), 1))
+    }
+
     @Test
     fun `i confini della discussione hanno la fine esclusiva`() {
         assertEquals(0 to 3, confiniDiscussione(lista, 1))
@@ -2173,6 +2286,57 @@ class StrisciaAggiornatoTest {
 }
 
 /**
+ * 1.6 — il segnalibro del sync non supera l'ultimo numero ricevuto
+ * nell'ultimo lotto (Bingo3331 + HAL, articolo 3282 su Astraweb).
+ */
+class SegnalibroSyncTest {
+
+    @Test
+    fun `il caso di Bingo - overview vuota subito dopo l'invio, il segnalibro resta`() {
+        assertEquals(3281L, segnalibroDopoLotto(3281, 3282, 3282, emptyList(), ultimoLotto = true))
+    }
+
+    @Test
+    fun `overview completa - il segnalibro va alla fine come prima`() {
+        assertEquals(3282L, segnalibroDopoLotto(3281, 3282, 3282, listOf(3282L), ultimoLotto = true))
+        assertEquals(3290L, segnalibroDopoLotto(3279, 3280, 3290, listOf(3280L, 3285L, 3290L), ultimoLotto = true))
+    }
+
+    @Test
+    fun `coda mancante - il segnalibro si ferma all'ultimo ricevuto`() {
+        assertEquals(3285L, segnalibroDopoLotto(3279, 3280, 3290, listOf(3280L, 3283L, 3285L), ultimoLotto = true))
+    }
+
+    @Test
+    fun `lotto intermedio - i buchi sono normali, va alla fine del lotto`() {
+        assertEquals(19999L, segnalibroDopoLotto(0, 10000, 19999, emptyList(), ultimoLotto = false))
+        assertEquals(19999L, segnalibroDopoLotto(0, 10000, 19999, listOf(10005L), ultimoLotto = false))
+    }
+
+    @Test
+    fun `ultimo lotto dopo altri lotti - vuoto, resta alla fine del lotto precedente`() {
+        // il segnalibro letto all'inizio e' vecchio: conta la fine del lotto prima
+        assertEquals(19999L, segnalibroDopoLotto(0, 20000, 20005, emptyList(), ultimoLotto = true))
+    }
+
+    @Test
+    fun `numeri scavalcati dal limite di testate non si richiedono`() {
+        // segnalibro 0, limite 300 su high 10000: si parte da 9701
+        assertEquals(9700L, segnalibroDopoLotto(0, 9701, 10000, emptyList(), ultimoLotto = true))
+    }
+
+    @Test
+    fun `numeri fuori dall'intervallo chiesto non spostano il segnalibro`() {
+        assertEquals(3281L, segnalibroDopoLotto(3281, 3282, 3282, listOf(9999L, 5L), ultimoLotto = true))
+    }
+
+    @Test
+    fun `il segnalibro non torna mai indietro`() {
+        assertEquals(3300L, segnalibroDopoLotto(3300, 3282, 3290, listOf(3285L), ultimoLotto = true))
+    }
+}
+
+/**
  * 1.5.9 / 177 — faccine a caratteri mostrate come emoji (text/Faccine.kt).
  * Si prova solo DOVE sono le faccine: il testo non cambia mai.
  */
@@ -2303,5 +2467,504 @@ class FaccineTest {
             if (a != b) assertFalse("$a / $b", b.startsWith(a))
         // tutte di Unicode <= 7.0 (Android 9): nessun code point oltre U+1F64F
         for (e in TABELLA_FACCINE.values) assertTrue(e.codePointAt(0) in 0x1F600..0x1F64F)
+    }
+}
+
+/** 1.6 — Ricostruisci discussione: quali id cercare, e la ricerca contro un server finto. */
+class RicostruisciDiscussioneTest {
+    @Test
+    fun `solo gli id assenti, i piu' vicini per primi, senza ripetizioni`() {
+        val righe = listOf("<a@x> <b@x> <c@x>", "<a@x> <b@x>")
+        assertEquals(listOf("<c@x>", "<a@x>"), idDaCercare(righe, presenti = setOf("<b@x>")))
+    }
+
+    @Test
+    fun `gli id gia' cercati non si cercano due volte`() {
+        assertEquals(listOf("<a@x>"), idDaCercare(listOf("<a@x> <b@x>"), emptySet(), giaCercati = setOf("<b@x>")))
+    }
+
+    @Test
+    fun `discussione intera - niente da cercare`() {
+        assertTrue(idDaCercare(listOf("<a@x> <b@x>", ""), setOf("<a@x>", "<b@x>")).isEmpty())
+    }
+
+    @Test
+    fun `gli id nominati sono letti con la funzione unica, tetto compreso`() {
+        val lunga = (1..500).joinToString(" ") { "<$it@x>" }
+        assertEquals(Threader.idNelleReferences(lunga), idNominati(listOf(lunga)))
+        assertTrue(idNominati(listOf(lunga)).size <= 100)
+    }
+
+    @Test
+    fun `Xref - il numero del gruppo giusto`() {
+        val x = "news.example.org it.test:3282 it.altro:17"
+        assertEquals(3282L, numeroDaXref(x, "it.test"))
+        assertEquals(17L, numeroDaXref(x, "it.altro"))
+    }
+
+    @Test
+    fun `Xref - gruppo assente, intestazione assente`() {
+        assertNull(numeroDaXref("news.example.org it.altro:17", "it.test"))
+        assertNull(numeroDaXref(null, "it.test"))
+        assertNull(numeroDaXref("", "it.test"))
+    }
+
+    @Test
+    fun `Xref - il nome del server non e' una posizione`() {
+        assertNull(numeroDaXref("it.test:5", "it.test"))
+    }
+
+    @Test
+    fun `Xref - un locatore non numerico o zero non vale`() {
+        assertNull(numeroDaXref("s it.test:abc", "it.test"))
+        assertNull(numeroDaXref("s it.test:0", "it.test"))
+    }
+
+    @Test
+    fun `Xref - gruppo col prefisso uguale non si confonde`() {
+        assertNull(numeroDaXref("s it.test.altro:9", "it.test"))
+    }
+
+    @Test
+    fun `dalle intestazioni alla riga che usa la sync`() {
+        val righe = listOf(
+            "Subject: =?UTF-8?Q?perch=C3=A9?=", "From: Marco <m@x.it>", "Date: Mon, 2 Nov 2026 10:00:00 +0100",
+            "References: <a@x>", " <b@x>", "Lines: 12", "Xref: s it.test:5",
+        ).map { it.toByteArray() }
+        val o = overviewDaIntestazioni(intestazioniDaTesta(righe), "<c@x>", 5)
+        assertEquals("perché", o.subject)
+        assertEquals("<a@x> <b@x>", o.references)
+        assertEquals("<c@x>", o.messageId)
+        assertEquals(12, o.lines)
+        assertEquals(5L, o.number)
+    }
+
+    @Test
+    fun `un Subject a 8 bit passa dalla decodifica della sync`() {
+        val righe = listOf("Subject: citt\u00e0".toByteArray(Charsets.UTF_8))
+        assertEquals("città", overviewDaIntestazioni(intestazioniDaTesta(righe), "<c@x>", 0).subject)
+    }
+
+    /** Un server NNTP in una riga: risponde a ogni comando con [risposte]. */
+    private fun conServerFinto(risposte: (String) -> List<String>, prova: (NntpClient) -> Unit) {
+        val presa = java.net.ServerSocket(0, 1, java.net.InetAddress.getByName("127.0.0.1"))
+        val filo = Thread {
+            runCatching {
+                presa.accept().use { s ->
+                    val w = s.getOutputStream().bufferedWriter(Charsets.ISO_8859_1)
+                    val r = s.getInputStream().bufferedReader(Charsets.ISO_8859_1)
+                    w.write("200 finto\r\n"); w.flush()
+                    while (true) {
+                        val cmd = r.readLine() ?: break
+                        for (riga in risposte(cmd)) w.write(riga + "\r\n")
+                        w.flush()
+                        if (cmd.startsWith("QUIT")) break
+                    }
+                }
+            }
+        }
+        filo.isDaemon = true
+        filo.start()
+        try {
+            NntpClient("127.0.0.1", presa.localPort).use { c -> c.connect(); prova(c) }
+        } finally {
+            presa.close()
+        }
+    }
+
+    private fun serverBase(cmd: String): List<String> = when {
+        cmd.startsWith("CAPABILITIES") -> listOf("101 elenco", "VERSION 2", "READER", ".")
+        cmd.startsWith("HEAD <sparito@x>") -> listOf("430 No article with that message-id")
+        cmd.startsWith("HEAD <zero@x>") ->
+            listOf("221 0 <zero@x>", "Subject: s", "Xref: srv it.test:42", ".")
+        cmd.startsWith("HEAD <numero@x>") -> listOf("221 7 <numero@x>", "Subject: s", ".")
+        cmd.startsWith("HEAD <xreffalsa@x>") ->
+            listOf("221 0 <xreffalsa@x>", "Subject: s", "Xref: srv it.test:43", ".")
+        cmd.startsWith("HEAD <altrove@x>") ->
+            listOf("221 0 <altrove@x>", "Subject: s", "Xref: srv it.altro:1", ".")
+        cmd.startsWith("STAT 42") -> listOf("223 42 <zero@x>")
+        cmd.startsWith("STAT 43") -> listOf("223 43 <un-altro@x>")
+        cmd.startsWith("HEAD <rotto@x>") -> listOf("403 guasto del server")
+        else -> listOf("500 sconosciuto")
+    }
+
+    private fun numero(e: EsitoRicerca) = (e as EsitoRicerca.Trovato).overview.number
+
+    @Test
+    fun `430 - non disponibile, e la connessione resta buona`() = conServerFinto(::serverBase) { c ->
+        assertEquals(EsitoRicerca.NonDisponibile, cercaPerMessageId(c, "<sparito@x>", "it.test"))
+        assertEquals(7L, numero(cercaPerMessageId(c, "<numero@x>", "it.test")))
+    }
+
+    @Test
+    fun `il numero dichiarato dal server vince`() = conServerFinto(::serverBase) { c ->
+        assertEquals(7L, numero(cercaPerMessageId(c, "<numero@x>", "it.test")))
+    }
+
+    @Test
+    fun `numero zero - si prende da Xref, verificato con STAT`() = conServerFinto(::serverBase) { c ->
+        assertEquals(42L, numero(cercaPerMessageId(c, "<zero@x>", "it.test")))
+    }
+
+    @Test
+    fun `una Xref che porta a un altro articolo non si crede`() = conServerFinto(::serverBase) { c ->
+        assertEquals(0L, numero(cercaPerMessageId(c, "<xreffalsa@x>", "it.test")))
+    }
+
+    @Test
+    fun `articolo di un altro gruppo - numero 0, lo decide chi chiama`() = conServerFinto(::serverBase) { c ->
+        assertEquals(0L, numero(cercaPerMessageId(c, "<altrove@x>", "it.test")))
+    }
+
+    @Test
+    fun `senza gruppo non si chiede nessun numero`() = conServerFinto(::serverBase) { c ->
+        assertEquals(0L, numero(cercaPerMessageId(c, "<zero@x>")))
+    }
+
+    @Test
+    fun `un guasto del server non e' un 430 - resta un errore`() = conServerFinto(::serverBase) { c ->
+        val e = runCatching { cercaPerMessageId(c, "<rotto@x>", "it.test") }.exceptionOrNull()
+        assertEquals(403, (e as NntpException).code)
+    }
+}
+
+/** 1.6 — Ignora discussione: chi e' colpito, e chi resta comunque non letto. */
+class IgnoraDiscussioneTest {
+    private fun art(id: String, refs: String = "", data: Long = 1) = PropagationInput(id, refs, data)
+
+    @Test
+    fun `registro vuoto - non cambia niente`() {
+        assertTrue(colpitiDaIgnorate(listOf(art("<b@x>", "<a@x>")), emptySet()).isEmpty())
+    }
+
+    @Test
+    fun `una risposta nella discussione ignorata e' colpita, le altre no`() {
+        val c = colpitiDaIgnorate(
+            listOf(art("<b@x>", "<a@x>"), art("<c@x>", "<d@x>"), art("<e@x>")), setOf("<a@x>"),
+        )
+        assertEquals(setOf("<b@x>"), c)
+    }
+
+    @Test
+    fun `basta un antenato qualunque`() {
+        assertEquals(setOf("<c@x>"), colpitiDaIgnorate(listOf(art("<c@x>", "<a@x> <b@x>")), setOf("<b@x>")))
+    }
+
+    @Test
+    fun `References potate - la catena nello stesso lotto regge`() {
+        // c nomina solo b, che non e' nel registro ma arriva nello stesso lotto
+        val lotto = listOf(art("<c@x>", "<b@x>", 2), art("<b@x>", "<a@x>", 1))
+        assertEquals(setOf("<b@x>", "<c@x>"), colpitiDaIgnorate(lotto, setOf("<a@x>")))
+    }
+
+    @Test
+    fun `una copia gia' nel registro, da un altro gruppo o server, e' colpita`() {
+        assertEquals(setOf("<a@x>"), colpitiDaIgnorate(listOf(art("<a@x>")), setOf("<a@x>")))
+    }
+
+    @Test
+    fun `una risposta a me resta non letta`() {
+        assertFalse(siSegnaLetto(rispostaAMe = true, mio = false, seguito = false))
+    }
+
+    @Test
+    fun `un mio post resta non letto`() {
+        assertFalse(siSegnaLetto(rispostaAMe = false, mio = true, seguito = false))
+    }
+
+    @Test
+    fun `un messaggio seguito resta non letto`() {
+        assertFalse(siSegnaLetto(rispostaAMe = false, mio = false, seguito = true))
+    }
+
+    @Test
+    fun `tutto il resto si segna letto`() {
+        assertTrue(siSegnaLetto(rispostaAMe = false, mio = false, seguito = false))
+    }
+
+    @Test
+    fun `il registro segue la discussione anche attraverso un mio post`() {
+        val c = colpitiDaIgnorate(
+            listOf(art("<mio@x>", "<a@x>", 1), art("<dopo@x>", "<a@x> <mio@x>", 2)), setOf("<a@x>"),
+        )
+        assertEquals(setOf("<mio@x>", "<dopo@x>"), c)
+    }
+}
+
+/** 1.6 (Dave Royal) — identita' per gruppo: gruppo, poi server, poi predefinita. */
+class IdentitaPerGruppoTest {
+    private val identita = mapOf(1L to "gruppo", 2L to "server")
+    private fun scelta(g: Long?, s: Long?, predefinita: String? = "predefinita") =
+        primaIdentita(g, s, trova = { identita[it] }, predefinita = { predefinita })
+
+    @Test
+    fun `il gruppo vince sul server`() = assertEquals("gruppo", scelta(1, 2))
+
+    @Test
+    fun `senza gruppo si eredita dal server`() = assertEquals("server", scelta(null, 2))
+
+    @Test
+    fun `senza gruppo e senza server, la predefinita`() = assertEquals("predefinita", scelta(null, null))
+
+    @Test
+    fun `identita' del gruppo cancellata - ricade sul server`() = assertEquals("server", scelta(99, 2))
+
+    @Test
+    fun `identita' cancellate tutte e due - ricade sulla predefinita`() =
+        assertEquals("predefinita", scelta(99, 98))
+
+    @Test
+    fun `nessuna identita' - null, e al vuoto di cortesia ci pensa il Repository`() =
+        assertNull(scelta(null, null, predefinita = null))
+
+    @Test
+    fun `la riga in scrittura compare con piu' identita' e il mittente giusto`() {
+        assertEquals("MCSM", etichettaIdentita("MCSM", "Marco", "m@x.it", 2, " Marco ", "M@X.it"))
+    }
+
+    @Test
+    fun `una sola identita' - niente riga`() {
+        assertNull(etichettaIdentita("MCSM", "Marco", "m@x.it", 1, "Marco", "m@x.it"))
+    }
+
+    @Test
+    fun `mittente cambiato a mano - la riga non dice il falso`() {
+        assertNull(etichettaIdentita("MCSM", "Marco", "m@x.it", 2, "Altro", "m@x.it"))
+        assertNull(etichettaIdentita("MCSM", "Marco", "m@x.it", 2, "Marco", "altro@x.it"))
+        assertNull(etichettaIdentita("", "Marco", "m@x.it", 2, "Marco", "m@x.it"))
+    }
+}
+
+/**
+ * 1.6 — «Riformatta» in scrittura. Regola di prudenza: nel dubbio non si unisce.
+ * Le ultime prove sono le invarianti: stesse parole, seconda passata identica,
+ * giro completo con Format=Flowed.
+ */
+class RiformattaCitazioneTest {
+    /** Una citazione «a pettine»: righe piene e code di una parola. */
+    private val pettine = """
+        > Questa e' una riga che arrivava quasi al margine delle settantadue
+        > colonne
+        > e che dopo la citazione e' stata spezzata lasciando una coda corta
+        > corta
+        > e poi il discorso prosegue ancora per un bel pezzo su questa riga
+        > finale
+    """.trimIndent()
+
+    private fun parole(s: String) =
+        s.lines().flatMap { it.split(' ') }.map { it.trimStart('>') }.filter { it.isNotEmpty() }
+
+    @Test
+    fun `il pettine si ricompone entro le 72 colonne`() {
+        val r = riformattaCitazioni(pettine).lines()
+        assertTrue(r.size < pettine.lines().size)
+        assertTrue(r.all { it.length <= 72 && it.startsWith("> ") })
+        assertTrue(r.dropLast(1).all { it.length > 50 })
+    }
+
+    @Test
+    fun `una riga citata troppo lunga si spezza conservando il livello`() {
+        val r = riformattaCitazioni("> > " + "parola ".repeat(20).trimEnd()).lines()
+        assertTrue(r.size > 1)
+        assertTrue(r.all { it.startsWith("> > ") && it.length <= 72 })
+    }
+
+    @Test
+    fun `testo nostro, firma e righe vuote non si toccano`() {
+        val testo = "Tizio ha scritto:\n$pettine\n\nIl mio testo resta qui,\nsu due righe.\n\n-- \nMarco\n> finta citazione nella firma\n> su due righe"
+        val r = riformattaCitazioni(testo)
+        assertTrue(r.startsWith("Tizio ha scritto:\n> "))
+        assertTrue(r.endsWith("\n\nIl mio testo resta qui,\nsu due righe.\n\n-- \nMarco\n> finta citazione nella firma\n> su due righe"))
+    }
+
+    @Test
+    fun `una riga non citata lunga non si tocca`() {
+        val lunga = "parola ".repeat(20).trimEnd()
+        assertEquals(lunga, riformattaCitazioni(lunga))
+    }
+
+    @Test
+    fun `la riga vuota citata separa i capoversi`() {
+        val t = "> primo capoverso lungo abbastanza da sembrare testo impaginato davvero\n> \n> secondo capoverso lungo abbastanza da sembrare testo impaginato pure"
+        assertEquals(t, riformattaCitazioni(t))
+        val s = t.replace("\n> \n", "\n>\n")
+        assertEquals(s, riformattaCitazioni(s))
+    }
+
+    @Test
+    fun `livelli diversi non si uniscono mai`() {
+        val t = "> > riga di secondo livello lunga abbastanza da sembrare impaginata\n> riga di primo livello lunga abbastanza da sembrare impaginata"
+        assertEquals(t, riformattaCitazioni(t))
+    }
+
+    @Test
+    fun `l'attribuzione resta sulla sua riga`() {
+        val t = "> Il 03/11/2026 alle 10:00, Sempronio ha scritto:\n> > riga citata lunga abbastanza da sembrare impaginata per bene"
+        assertEquals(t, riformattaCitazioni(t))
+        // senza i due punti, ma introduce un livello piu' profondo
+        val s = "> On Monday Sempronio wrote\n> > riga citata lunga abbastanza da sembrare impaginata per bene"
+        assertEquals(s, riformattaCitazioni(s))
+    }
+
+    @Test
+    fun `said in mezzo a una frase non ferma il capoverso`() {
+        val r = riformattaCitazioni(
+            "> and then he said that the whole thing should be done again from the\n> start\n> because nobody had really understood what had been asked at first"
+        ).lines()
+        // la coda «start» si e' riunita alla riga dopo: «said» non ha fermato niente
+        assertTrue(r[1].startsWith("> start because"))
+    }
+
+    @Test
+    fun `i segni di taglio restano dove sono`() {
+        val t = "> prima parte del discorso lunga abbastanza da sembrare impaginata\n> [...]\n> seconda parte del discorso lunga abbastanza da sembrare impaginata\n> 8<-------\n> terza parte del discorso lunga abbastanza da sembrare impaginata"
+        assertEquals(t, riformattaCitazioni(t))
+    }
+
+    @Test
+    fun `la firma citata non si tocca`() {
+        val t = "> testo citato lungo abbastanza da sembrare impaginato per bene\n> -- \n> Tizio Caio\n> via Roma 1, una firma lunga che non deve essere ricomposta mai"
+        assertEquals(t, riformattaCitazioni(t))
+    }
+
+    @Test
+    fun `elenchi e rientri restano com'erano`() {
+        val t = "> ecco cosa serve per fare la prova come si deve in tutti i casi:\n> - la prima cosa da fare\n> - la seconda cosa da fare\n> 1. numerata\n>    rientrata"
+        assertEquals(t, riformattaCitazioni(t))
+    }
+
+    @Test
+    fun `saluti e frasi brevi con punteggiatura restano separati`() {
+        val t = "> Ciao,\n> questa e' una riga lunga abbastanza da sembrare impaginata davvero"
+        assertEquals(t, riformattaCitazioni(t))
+    }
+
+    @Test
+    fun `i versi a righe corte restano com'erano`() {
+        val t = "> Nel mezzo del cammin\n> di nostra vita\n> mi ritrovai\n> per una selva"
+        assertEquals(t, riformattaCitazioni(t))
+    }
+
+    @Test
+    fun `un URL lungo non si tocca e non si unisce`() {
+        val url = "https://example.org/" + "a".repeat(80)
+        val t = "> vedi questo indirizzo qui sotto che spiega bene tutta la faccenda\n> $url\n> e poi il discorso prosegue con altre parole fino a riempire la riga"
+        assertEquals(t, riformattaCitazioni(t))
+    }
+
+    @Test
+    fun `prefisso profondissimo - niente crash e niente parole perse`() {
+        val t = ">".repeat(60) + " " + "parola ".repeat(12).trimEnd()
+        assertEquals(parole(t), parole(riformattaCitazioni(t)))
+    }
+
+    @Test
+    fun `una faccina a inizio riga non e' testo da unire`() {
+        val t = "> una riga citata lunga abbastanza da sembrare impaginata per bene\n>:-)\n> altra riga citata lunga abbastanza da sembrare impaginata"
+        assertEquals(t, riformattaCitazioni(t))
+    }
+
+    @Test
+    fun `i doppi spazi dentro la riga sopravvivono`() {
+        val t = "> una riga con  doppio spazio lunga abbastanza da sembrare impaginata\n> coda"
+        assertTrue(riformattaCitazioni(t).contains("con  doppio"))
+    }
+
+    @Test
+    fun `gli spazi in coda di un messaggio flowed non restano`() {
+        val t = "> riga che finiva con uno spazio perche' il messaggio era flowed \n> e continua qui sotto fino a riempire la riga di parole"
+        assertTrue(riformattaCitazioni(t).lines().none { it.endsWith(" ") })
+    }
+
+    @Test
+    fun `testo vuoto e senza citazioni restano uguali`() {
+        assertEquals("", riformattaCitazioni(""))
+        assertEquals("ciao\n\nmondo", riformattaCitazioni("ciao\n\nmondo"))
+    }
+
+    @Test
+    fun `invariante - le parole restano le stesse`() {
+        assertEquals(parole(pettine), parole(riformattaCitazioni(pettine)))
+    }
+
+    @Test
+    fun `invariante - seconda passata identica alla prima`() {
+        val casi = listOf(
+            pettine,
+            "> > " + "parola ".repeat(30).trimEnd(),
+            "$pettine\n> \n> > altra riga di secondo livello lunga abbastanza da sembrare testo\n> > coda.\n> > seguito",
+            "> Fine frase.\n> " + "parola ".repeat(10).trimEnd() + "\n> altro.\n> " + "testo ".repeat(14).trimEnd(),
+        )
+        for (c in casi) {
+            val uno = riformattaCitazioni(c)
+            assertEquals(uno, riformattaCitazioni(uno))
+        }
+    }
+
+    @Test
+    fun `giro completo con Format=Flowed - righe entro 72 e livelli intatti`() {
+        val t = "> > " + "parola ".repeat(30).trimEnd() + "\n> " + "testo ".repeat(30).trimEnd()
+        val riformattato = riformattaCitazioni(t)
+        val inviato = avvolgiFlowed(riformattato).lines()
+        assertEquals(riformattato.lines().size, inviato.size)   // niente di rispezzato
+        assertTrue(inviato.all { it.length <= 72 })
+        assertTrue(inviato.none { it.endsWith(" ") })           // righe fisse
+        assertEquals(riformattato.lines().map { it.count { c -> c == '>' } }, inviato.map { it.count { c -> c == '>' } })
+    }
+
+    @Test
+    fun `il corpo da inviare passa sempre dall'a capo`() {
+        val lunga = "parola ".repeat(20).trimEnd()
+        assertTrue(corpoDaInviare(lunga, flowed = false).lines().all { it.length <= 72 })
+        assertTrue(corpoDaInviare(lunga, flowed = true).lines().all { it.length <= 72 })
+        assertTrue(almenoUnaRigaContinua(corpoDaInviare(lunga, flowed = true).lines()))
+        assertFalse(almenoUnaRigaContinua(corpoDaInviare(lunga, flowed = false).lines()))
+    }
+}
+
+/**
+ * 1.6 / 180 — il gruppo nella barra di lettura (RPoggi): quale server nominare
+ * (regola della 1.4.4, ora in un posto solo) e il segno `+N` dei crosspost.
+ */
+class TitoloGruppoTest {
+    private val es = Server(id = 1, name = "Eternal-September", host = "news.eternal-september.org")
+    private val aw = Server(id = 2, name = "", host = "news.astraweb.com")
+
+    @Test
+    fun `un server solo - nessuna etichetta`() {
+        assertEquals("", serverDaMostrare(listOf(es), 1))
+        assertEquals("", serverDaMostrare(emptyList(), 1))
+    }
+
+    @Test
+    fun `piu' server - il nome, o l'host se il nome e' vuoto`() {
+        assertEquals("Eternal-September", serverDaMostrare(listOf(es, aw), 1))
+        assertEquals("news.astraweb.com", serverDaMostrare(listOf(es, aw), 2))
+    }
+
+    @Test
+    fun `gruppo orfano o senza server - nessuna etichetta`() {
+        assertEquals("", serverDaMostrare(listOf(es, aw), 99))
+        assertEquals("", serverDaMostrare(listOf(es, aw), null))
+    }
+
+    @Test
+    fun `crosspost - si contano solo gli altri gruppi`() {
+        assertEquals(2, altriGruppiCrosspost(listOf("it.test", "it.uno", "it.due"), "it.test"))
+        assertEquals(0, altriGruppiCrosspost(listOf("it.test"), "it.test"))
+        assertEquals(0, altriGruppiCrosspost(emptyList(), "it.test"))
+    }
+
+    @Test
+    fun `crosspost - doppioni, maiuscole e spazi non contano due volte`() {
+        assertEquals(1, altriGruppiCrosspost(listOf("it.test", " it.uno", "IT.UNO", "", "It.Test"), "it.test"))
+    }
+
+    @Test
+    fun `crosspost - dalla riga Newsgroups vera`() {
+        val h = "From: a@b.c\nNewsgroups: it.test, it.uno,it.due\nSubject: x"
+        assertEquals(2, altriGruppiCrosspost(crosspostGroups(h), "it.uno"))
+        // corpo non ancora scaricato: headersRaw null, nessun segno
+        assertEquals(0, altriGruppiCrosspost(crosspostGroups(null), "it.uno"))
     }
 }

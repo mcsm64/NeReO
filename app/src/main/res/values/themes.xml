@@ -3,11 +3,18 @@
     <!-- Compose gestisce il tema reale; questo serve solo al Manifest -->
     <style name="Theme.OpenUsenet" parent="android:Theme.Material.Light.NoActionBar" />
 
-    <!-- beta13: tema dello splashscreen (API SplashScreen). Sfondo viola
-         dell'app, logo NR centrato. Al termine passa a Theme.OpenUsenet. -->
-    <style name="Theme.OpenUsenet.Splash" parent="Theme.SplashScreen">
+    <!-- beta13: tema dello splashscreen (API SplashScreen). Al termine passa
+         a Theme.OpenUsenet.
+         1.6: al posto del logo NR le tre barre dell'icona (ic_launcher_fg)
+         su un disco viola_base. Il disco esiste solo col genitore
+         Theme.SplashScreen.IconBackground: su Android 12+ e' quello stile a
+         passare il colore all'attributo di sistema, sotto Android 12 e' lui
+         a far disegnare alla libreria l'ovale col colore (240 dp ritagliati
+         a 160, come sul sistema). Verificato sui sorgenti di core-splashscreen. -->
+    <style name="Theme.OpenUsenet.Splash" parent="Theme.SplashScreen.IconBackground">
         <item name="windowSplashScreenBackground">@color/splash_bg</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/viola_base</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_fg</item>
         <item name="postSplashScreenTheme">@style/Theme.OpenUsenet</item>
     </style>
 </resources>

@@ -23,6 +23,7 @@
 package org.openusenet.reader.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -124,6 +125,66 @@ fun NomeGruppoAdattivo(
         modifier = modifier,
     )
 }
+
+/**
+ * Il nome di un gruppo e, sotto, una riga di contesto in piccolo: i [dettagli]
+ * (in lettura il contatore `[5/8]` e il segno `+N` dei crosspost) e il
+ * [server], separati da « · ». Senza niente da dire, la riga piccola non c'e'.
+ *
+ * PERCHE' ESISTE (1.6 / 180, RPoggi via Usenet: «il nome del gruppo mentre si
+ * legge»). La forma «nome sopra, server sotto solo con piu' server» e' della
+ * 1.4.4 (§A9, Roxy), ma era scritta a mano in DUE posti — la barra
+ * dell'elenco discussioni e l'intestazione della colonna 2 dei pannelli. La
+ * lettura sarebbe stata la terza copia, e il tutto schermo dei pannelli la
+ * quarta: ora i quattro posti chiamano questa, e la regola del server sta in
+ * [serverDaMostrare].
+ *
+ * @param style lo stile del NOME. Il resto della riga e' sempre `labelSmall`.
+ */
+@Composable
+fun TitoloGruppo(
+    nome: String,
+    server: String,
+    modifier: Modifier = Modifier,
+    dettagli: String = "",
+    style: TextStyle = LocalTextStyle.current,
+) {
+    val sotto = listOf(dettagli, server).filter { it.isNotEmpty() }.joinToString(" · ")
+    Column(modifier) {
+        NomeGruppoAdattivo(nome = nome, righe = 1, style = style)
+        if (sotto.isNotEmpty()) {
+            Text(
+                sotto,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/**
+ * Quale server nominare accanto a un gruppo: **nessuno** (stringa vuota) se i
+ * server configurati sono al massimo uno — non c'e' niente da distinguere, e
+ * una riga in piu' costerebbe altezza senza dire nulla (1.4.4, §A9). Vuota
+ * anche per un gruppo orfano, il cui server non esiste piu'.
+ */
+fun serverDaMostrare(servers: List<Server>, serverId: Long?): String =
+    if (servers.size <= 1) ""
+    else servers.firstOrNull { it.id == serverId }
+        ?.let { etichettaServer(it.name, it.host) }.orEmpty()
+
+/**
+ * Quanti ALTRI gruppi oltre a [corrente] compaiono in [gruppi] (la riga
+ * `Newsgroups:`, gia' spezzata da `crosspostGroups`). Doppioni e maiuscole non
+ * contano due volte. E' il numero del segno `+N` nella barra di lettura (1.6,
+ * voluto da Marco).
+ */
+fun altriGruppiCrosspost(gruppi: List<String>, corrente: String): Int =
+    gruppi.map { it.trim().lowercase() }
+        .filter { it.isNotEmpty() && it != corrente.trim().lowercase() }
+        .distinct().size
 
 /**
  * Come si chiama un server quando lo si mostra all'utente.

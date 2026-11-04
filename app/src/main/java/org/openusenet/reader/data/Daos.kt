@@ -144,6 +144,14 @@ interface GroupDao {
     @Query("UPDATE groups SET replyIntro = :intro WHERE id = :id")
     suspend fun setReplyIntro(id: Long, intro: String?)
 
+    /** 1.6 (Dave Royal): identità per questo gruppo. null = eredita dal server. */
+    @Query("UPDATE groups SET identityId = :identityId WHERE id = :id")
+    suspend fun setIdentityId(id: Long, identityId: Long?)
+
+    /** 1.6: il sync scrive solo le sue colonne, vedi elaboraLottoOverview. */
+    @Query("UPDATE groups SET lastFetchedArticleNumber = :numero, lastSyncEpoch = :epoch WHERE id = :id")
+    suspend fun setAvanzamentoSync(id: Long, numero: Long, epoch: Long)
+
     /** beta19 (Roxy): conservazione per numero di discussioni (null = usa i giorni). */
     @Query("UPDATE groups SET purgeKeepThreads = :keep WHERE id = :id")
     suspend fun setPurgeKeepThreads(id: Long, keep: Int?)
@@ -200,6 +208,22 @@ interface ArticleDao {
      */
     @Query("SELECT * FROM articles WHERE messageId = :messageId")
     suspend fun tutteLeCopie(messageId: String): List<Article>
+
+    /** 1.6: quali di questi id ci sono in QUESTO gruppo, nascosti compresi. Massimo 500. */
+    @Query("SELECT messageId FROM articles WHERE groupId = :groupId AND messageId IN (:ids)")
+    suspend fun presentiNelGruppo(groupId: Long, ids: List<String>): List<String>
+
+    /**
+     * 1.6: il numero piu' basso del gruppo. I ricostruiti che non hanno un numero
+     * in questo gruppo ne prendono uno negativo: l'indice unico (groupId, number)
+     * resta rispettato, e i numeri negativi non esistono sul server.
+     */
+    @Query("SELECT MIN(number) FROM articles WHERE groupId = :groupId")
+    suspend fun numeroMinimo(groupId: Long): Long?
+
+    /** 1.6: toglie i ricostruiti a numero negativo che ora arrivano col numero vero. */
+    @Query("DELETE FROM articles WHERE groupId = :groupId AND number < 0 AND messageId IN (:ids)")
+    suspend fun togliRicostruiti(groupId: Long, ids: List<String>)
 
     /** 1.4: gli articoli di un elenco di id (per leggerne i Message-ID prima di cambiarli). */
     @Query("SELECT * FROM articles WHERE id IN (:ids)")
@@ -545,6 +569,29 @@ interface FilterDao {
     suspend fun delete(id: Long)
 }
 
+/** 1.6: registro delle discussioni ignorate (vedi [IgnoredId]). Solo identificatori. */
+@Dao
+interface IgnoredIdDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(righe: List<IgnoredId>)
+
+    /** Quali di questi id sono nel registro. Al massimo 500 per volta (variabili SQLite). */
+    @Query("SELECT messageId FROM ignored_ids WHERE messageId IN (:ids)")
+    suspend fun fra(ids: List<String>): List<String>
+
+    @Query("SELECT COUNT(*) FROM ignored_ids")
+    suspend fun conta(): Int
+
+    @Query("SELECT * FROM ignored_ids")
+    suspend fun tutti(): List<IgnoredId>
+
+    @Query("DELETE FROM ignored_ids WHERE messageId IN (:ids)")
+    suspend fun togli(ids: List<String>)
+
+    @Query("DELETE FROM ignored_ids WHERE epoch < :olderThanEpoch")
+    suspend fun deleteOlderThan(olderThanEpoch: Long)
+}
+
 /**
  * M1 (release personale Marco): registro degli avvelenati (vedi [PoisonedId]).
  * Tutte le query sono per identificatore, mai per contenuto: la tabella non
@@ -634,6 +681,10 @@ interface IdentityDao {
     @Query("UPDATE servers SET identityId = NULL WHERE identityId = :id")
     suspend fun unassignFromServers(id: Long)
 
+    /** 1.6: lo stesso per i gruppi (ricadranno sull'identità del server). */
+    @Query("UPDATE groups SET identityId = NULL WHERE identityId = :id")
+    suspend fun unassignFromGroups(id: Long)
+
     /**
      * 1.3.2: sostituisce uno User-Agent SOLO dove è ESATTAMENTE [vecchio].
      * Serve alla correzione RFC 5536 (vedi Branding.LEGACY_USER_AGENTS e
@@ -716,6 +767,10 @@ interface DiagnosticaDao {
 
     @Query("SELECT COUNT(*) FROM tls_pins")
     suspend fun tlsPins(): Int
+
+    /** 1.6: e' anche la prova, in Diagnostica database, che la 12 -> 13 e' passata. */
+    @Query("SELECT COUNT(*) FROM ignored_ids")
+    suspend fun ignoredIds(): Int
 
     /** Articoli di cui e' stato scaricato anche il corpo: dice quanto pesa la cache. */
     @Query("SELECT COUNT(*) FROM articles WHERE body IS NOT NULL")

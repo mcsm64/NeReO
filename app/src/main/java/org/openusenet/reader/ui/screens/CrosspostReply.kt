@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.R
+import org.openusenet.reader.data.Identity
+import org.openusenet.reader.data.NewsRepository
 
 /** Numero massimo di gruppi su cui una risposta può uscire (deciso da Marco). */
 const val CROSSPOST_MAX_GROUPS = 3
@@ -116,6 +119,40 @@ fun etichettaDestinazioni(destinazioni: List<String>): String =
             destinazioni.firstOrNull()?.takeIf { it.isNotBlank() } ?: "…",
         )
     }
+
+/**
+ * 1.6 (Dave Royal) — il nome dell'identità da mostrare in scrittura, o null se
+ * non va mostrata: con una sola identità non c'è niente da distinguere, e se
+ * nome o indirizzo sono stati cambiati a mano (o vengono da una bozza) la riga
+ * direbbe il falso. Il confronto sull'indirizzo ignora le maiuscole, come
+ * [AppSettings.eMioPost].
+ */
+fun etichettaIdentita(
+    nickname: String,
+    nome: String,
+    email: String,
+    quanteIdentita: Int,
+    fromName: String,
+    fromEmail: String,
+): String? {
+    if (quanteIdentita < 2 || nickname.isBlank()) return null
+    if (nome != fromName.trim() || !email.equals(fromEmail.trim(), ignoreCase = true)) return null
+    return nickname
+}
+
+/** La riga «Identità: X» sopra il messaggio, nelle due viste. Vedi [etichettaIdentita]. */
+@Composable
+fun RigaIdentita(repo: NewsRepository, identita: Identity?, fromName: String, fromEmail: String) {
+    val tutte by repo.identities.collectAsState(initial = emptyList())
+    val i = identita ?: return
+    val nick = etichettaIdentita(i.nickname, i.name, i.email, tutte.size, fromName, fromEmail) ?: return
+    Text(
+        stringResource(R.string.cmp_identity, nick),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 4.dp),
+    )
+}
 
 /**
  * I gruppi EXTRA con cui una risposta a un crosspost deve NASCERE, prima che

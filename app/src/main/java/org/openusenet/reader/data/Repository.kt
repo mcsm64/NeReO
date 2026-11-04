@@ -7,7 +7,6 @@
 package org.openusenet.reader.data
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -27,7 +26,17 @@ import org.openusenet.reader.filter.DecisioneRiga
 import org.openusenet.reader.filter.StatoMessaggio
 import org.openusenet.reader.filter.applicaVetoCrosspost
 import org.openusenet.reader.filter.revisioneDopoCambioRegole
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import org.openusenet.reader.nntp.EsitoRicerca
+import org.openusenet.reader.nntp.cercaPerMessageId
+import org.openusenet.reader.thread.idDaCercare
+import org.openusenet.reader.thread.idNominati
 import org.openusenet.reader.filter.FollowupMode
+import org.openusenet.reader.filter.colpitiDaIgnorate
+import org.openusenet.reader.filter.siSegnaLetto
 import org.openusenet.reader.filter.FollowupPropagator
 import org.openusenet.reader.filter.MatchType
 import org.openusenet.reader.filter.PropagationInput
@@ -195,6 +204,26 @@ object StatoCifratura {
  * funzione Ritira). La riga di riepilogo era già stata scaricata prima, e senza
  * un nuovo sync del gruppo nessuno l'ha ancora tolta di mezzo.
  */
+/**
+ * 1.6: com'e' andata «Ricostruisci discussione». [trovati]: entrati nel database;
+ * [scartati]: trovati ma respinti dai filtri; [restanti]: fuori dal tetto;
+ * [errore]: perche' ci si e' fermati prima. Cio' che era arrivato resta.
+ */
+data class EsitoRicostruzione(
+    val trovati: Int,
+    val nonDisponibili: Int,
+    val scartati: Int,
+    val restanti: Int,
+    val server: String,
+    val errore: String? = null,
+)
+
+/** 1.6: tetto di messaggi cercati per volta, e di giri (vedi ricostruisciDiscussione). */
+private const val RICOSTRUZIONE_MAX_ARTICOLI = 100
+private const val RICOSTRUZIONE_MAX_GIRI = 3
+/** 1.6: ogni quanti messaggi si scrive: un Annulla non butta cio' che e' arrivato. */
+private const val RICOSTRUZIONE_LOTTO = 20
+
 class ArticoloMancanteException(
     val articleId: Long,
     val messageId: String,
@@ -681,7 +710,7 @@ class NewsRepository(
     /**
      * Salva un'identità. Se [Identity.isDefault] è true, toglie prima il flag
      * a tutte le altre: al più UNA può essere la ricaduta dei server senza
-     * assegnazione esplicita (vedi [resolvedIdentity]).
+     * assegnazione esplicita (vedi [identitaPerGruppo]).
      */
     suspend fun saveIdentity(identity: Identity): Long {
         if (identity.isDefault) db.identityDao().clearDefault()
@@ -696,6 +725,7 @@ class NewsRepository(
     suspend fun deleteIdentity(id: Long) {
         val era = db.identityDao().byId(id) ?: return
         db.identityDao().unassignFromServers(id)
+        db.identityDao().unassignFromGroups(id)
         db.identityDao().delete(id)
         if (era.isDefault) {
             db.identityDao().allOnce().firstOrNull()?.let { saveIdentity(it.copy(isDefault = true)) }
@@ -705,16 +735,47 @@ class NewsRepository(
     suspend fun assignIdentityToServer(serverId: Long, identityId: Long?) =
         db.serverDao().setIdentityId(serverId, identityId)
 
+    /** 1.6 (Dave Royal): identità di QUESTO gruppo. null = eredita dal server. */
+    suspend fun assignIdentityToGroup(groupId: Long, identityId: Long?) =
+        db.groupDao().setIdentityId(groupId, identityId)
+
     /**
-     * L'identità da usare per pubblicare su [serverId]: quella assegnata
-     * esplicitamente al server, altrimenti quella marcata default, altrimenti
-     * (caso limite: nessuna identità esiste ancora, prima che la migrazione
-     * al primo avvio sia passata) un'identità vuota "di cortesia" — mai un
-     * crash in ComposeScreen per questo.
+     * 1.6: al ripristino, ciò che il backup sa di un gruppo oltre all'iscrizione.
+     * Un valore null non tocca niente: un backup vecchio non ha questi campi, e
+     * il ripristino non deve cancellare ciò che c'è già.
      */
-    suspend fun resolvedIdentity(serverId: Long?): Identity {
-        val viaServer = serverId?.let { db.serverDao().byId(it)?.identityId }?.let { db.identityDao().byId(it) }
-        return viaServer ?: db.identityDao().defaultOnce() ?: Identity(nickname = "", isDefault = true)
+    suspend fun ripristinaImpostazioniGruppo(
+        serverId: Long,
+        nome: String,
+        identityId: Long?,
+        intro: String?,
+        purgeDays: Int?,
+        purgeKeepThreads: Int?,
+    ) {
+        val g = db.groupDao().byName(serverId, nome) ?: return
+        if (identityId != null) db.groupDao().setIdentityId(g.id, identityId)
+        if (intro != null) db.groupDao().setReplyIntro(g.id, intro)
+        if (purgeDays != null) db.groupDao().setPurgeDays(g.id, purgeDays)
+        if (purgeKeepThreads != null) db.groupDao().setPurgeKeepThreads(g.id, purgeKeepThreads)
+    }
+
+    /**
+     * L'identità da usare per pubblicare in [groupId]: gruppo, poi server, poi
+     * predefinita ([primaIdentita]), altrimenti (caso limite: nessuna identità
+     * esiste ancora, prima che la migrazione al primo avvio sia passata)
+     * un'identità vuota "di cortesia" — mai un crash in ComposeScreen per questo.
+     *
+     * 1.6: era `resolvedIdentity(serverId)`. Il nome e l'argomento cambiano
+     * apposta: nessun chiamante puo' restare indietro a guardare il solo server.
+     */
+    suspend fun identitaPerGruppo(groupId: Long?): Identity {
+        val gruppo = groupId?.let { db.groupDao().byId(it) }
+        val idServer = gruppo?.let { db.serverDao().byId(it.serverId)?.identityId }
+        return primaIdentita(
+            gruppo?.identityId, idServer,
+            trova = { db.identityDao().byId(it) },
+            predefinita = { db.identityDao().defaultOnce() },
+        ) ?: Identity(nickname = "", isDefault = true)
     }
 
     /**
@@ -918,6 +979,174 @@ class NewsRepository(
             else if (Threader.idNelleReferences(a.references).any { it in seguiti }) a.copy(watched = true)
             else a
         }
+    }
+
+    // ------------------------------------------ 1.6: ricostruisci discussione
+
+    private suspend fun presentiNelGruppo(groupId: Long, ids: List<String>): Set<String> =
+        ids.chunked(500).flatMap { db.articleDao().presentiNelGruppo(groupId, it) }.toHashSet()
+
+    /** Quanti antenati mancano ai [membri]: e' cio' che accende la voce di menu. */
+    suspend fun quantiMancanti(membri: List<Article>): Int {
+        val gruppo = membri.firstOrNull()?.groupId ?: return 0
+        val righe = membri.map { it.references }
+        return idDaCercare(righe, presentiNelGruppo(gruppo, idNominati(righe))).size
+    }
+
+    /** Il messaggio risponde a qualcosa che qui non c'e'? */
+    suspend fun padreMancante(articolo: Article): Boolean {
+        val padre = Threader.idNelleReferences(articolo.references).lastOrNull() ?: return false
+        return presentiNelGruppo(articolo.groupId, listOf(padre)).isEmpty()
+    }
+
+    /**
+     * Cerca sul server del gruppo gli antenati mancanti e li inserisce dalla
+     * stessa strada della sync ([elaboraLottoOverview]): filtri, plonk, risposte
+     * a me, propagazione. Arrivano gia' letti, e il segnalibro non si muove.
+     *
+     * Anche i messaggi di ALTRI gruppi dello stesso server: un padre spostato
+     * altrove con Followup-To e' proprio una discussione monca. Senza un numero
+     * in questo gruppo ne prendono uno negativo.
+     *
+     * Piu' giri, fino a [RICOSTRUZIONE_MAX_GIRI]: chi arriva puo' nominare altri
+     * antenati, se le References erano potate. Stesso mutex della sync: mai due
+     * scritture di massa insieme. Interrompendo, cio' che e' arrivato si salva.
+     */
+    suspend fun ricostruisciDiscussione(
+        membri: List<Article>,
+        avanzamento: (fatti: Int, totale: Int) -> Unit,
+    ): EsitoRicostruzione = withContext(Dispatchers.IO) {
+        var trovati = 0
+        var nonDisponibili = 0
+        var scartati = 0
+        var restanti = 0
+        var errore: String? = null
+        val group = membri.firstOrNull()?.let { db.groupDao().byId(it.groupId) }
+        val server = group?.let { db.serverDao().byId(it.serverId) }
+        if (group == null || server == null) {
+            return@withContext EsitoRicostruzione(0, 0, 0, 0, "")
+        }
+        val seguita = membri.any { it.watched }
+        val cercati = HashSet<String>()
+        val lotto = ArrayList<OverviewLine>()
+        headerSyncMutex.withLock {
+            try {
+                val engine = buildEngine()
+                val regole = engine.poisoningRulesForGroup(group.name)
+                suspend fun salva() {
+                    if (lotto.isEmpty()) return
+                    var libero = minOf(0L, db.articleDao().numeroMinimo(group.id) ?: 0L) - 1
+                    val numerati = lotto.map { if (it.number > 0) it else it.copy(number = libero--) }
+                    val (inseriti, _) = elaboraLottoOverview(group, engine, numerati, regole, comeContesto = true)
+                    trovati += inseriti
+                    scartati += lotto.size - inseriti
+                    if (seguita) db.articleDao().setWatchedByMessageIds(lotto.map { it.messageId })
+                    db.groupDao().refreshUnreadCount(group.id)
+                    lotto.clear()
+                }
+                openClient(server) { client ->
+                    client.group(group.name)
+                    var righe = membri.map { it.references }
+                    for (giro in 1..RICOSTRUZIONE_MAX_GIRI) {
+                        val daCercare = idDaCercare(righe, presentiNelGruppo(group.id, idNominati(righe)), cercati)
+                        val blocco = daCercare.take(RICOSTRUZIONE_MAX_ARTICOLI - cercati.size)
+                        restanti = daCercare.size - blocco.size
+                        if (blocco.isEmpty()) break
+                        val totale = cercati.size + blocco.size
+                        val nuove = ArrayList<String>()
+                        try {
+                            for (id in blocco) {
+                                currentCoroutineContext().ensureActive()
+                                when (val esito = cercaPerMessageId(client, id, group.name)) {
+                                    is EsitoRicerca.Trovato -> {
+                                        lotto.add(esito.overview)
+                                        nuove.add(esito.overview.references)
+                                    }
+                                    EsitoRicerca.NonDisponibile -> nonDisponibili++
+                                }
+                                cercati.add(id)
+                                avanzamento(cercati.size, totale)
+                                if (lotto.size >= RICOSTRUZIONE_LOTTO) salva()
+                            }
+                        } finally {
+                            withContext(NonCancellable) { salva() }
+                        }
+                        righe = nuove
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                errore = e.message ?: e.javaClass.simpleName
+            }
+        }
+        EsitoRicostruzione(trovati, nonDisponibili, scartati, restanti, server.name.ifBlank { server.host }, errore)
+    }
+
+    // ------------------------------------------- 1.6: discussioni ignorate
+
+    /**
+     * Il lotto appena arrivato, coi messaggi delle discussioni ignorate gia'
+     * letti. Vedi filter/IgnoraDiscussione.kt.
+     *
+     * Registra anche le risposte a me e i miei post, che restano non letti: sono
+     * anelli della discussione, e chi risponde a loro va riconosciuto.
+     *
+     * COSTO PER CHI NON USA LA FUNZIONE: un COUNT su una tabella vuota, e si esce.
+     */
+    private suspend fun applicaDiscussioniIgnorate(articoli: List<Article>): List<Article> {
+        if (articoli.isEmpty() || db.ignoredIdDao().conta() == 0) return articoli
+        val nominati = articoli
+            .flatMap { Threader.idNelleReferences(it.references) + it.messageId }
+            .distinct()
+        val registro = nominati.chunked(500).flatMap { db.ignoredIdDao().fra(it) }.toHashSet()
+        val colpiti = colpitiDaIgnorate(
+            articoli.map { PropagationInput(it.messageId, it.references, it.dateEpoch) },
+            registro,
+        )
+        if (colpiti.isEmpty()) return articoli
+        val inDiscussione = articoli.filter { it.messageId in colpiti }
+        db.ignoredIdDao().insertAll(inDiscussione.map { IgnoredId(it.messageId, it.dateEpoch) })
+        return articoli.map { a ->
+            if (a.messageId in colpiti && siSegnaLetto(a.replyToMe, AppSettings.eMioPost(a.fromField), a.watched)) {
+                a.copy(read = true)
+            } else a
+        }
+    }
+
+    /**
+     * [membri]: i messaggi della discussione, come li vede il threader
+     * (`membriDelThread`). Tutti nel registro, non la sola radice: non tutti i
+     * programmi scrivono la catena intera nelle References.
+     */
+    suspend fun ignoraDiscussione(membri: List<Article>) {
+        db.ignoredIdDao().insertAll(membri.map { IgnoredId(it.messageId, it.dateEpoch) })
+        val seguiti = membri.filter { it.watched }.map { it.id }
+        if (seguiti.isNotEmpty()) db.articleDao().setWatchedBulk(seguiti, false)
+        val daLeggere = membri.filter {
+            !it.read && siSegnaLetto(it.replyToMe, AppSettings.eMioPost(it.fromField), seguito = false)
+        }
+        segnaLetti(daLeggere.map { it.id }, daLeggere.map { it.groupId }, true)
+    }
+
+    /**
+     * Toglie anche gli antenati nominati dalle References: la conservazione puo'
+     * aver cancellato i messaggi, non le loro righe nel registro. Cio' che e'
+     * arrivato letto resta letto.
+     */
+    suspend fun smettiDiIgnorare(membri: List<Article>) {
+        membri.flatMap { Threader.idNelleReferences(it.references) + it.messageId }
+            .distinct().chunked(500).forEach { db.ignoredIdDao().togli(it) }
+    }
+
+    suspend fun eIgnorata(messageId: String): Boolean = db.ignoredIdDao().fra(listOf(messageId)).isNotEmpty()
+
+    /** Per il backup. */
+    suspend fun ignoratiOnce(): List<IgnoredId> = db.ignoredIdDao().tutti()
+
+    /** Dal backup: si aggiunge, come per le discussioni seguite. */
+    suspend fun ripristinaIgnorati(righe: List<IgnoredId>) {
+        if (righe.isNotEmpty()) db.ignoredIdDao().insertAll(righe)
     }
 
     // ---------------------------------------------------------------- bozze
@@ -1213,9 +1442,35 @@ class NewsRepository(
             var lo = from
             while (lo <= stats.high) {
                 val hi = minOf(lo + PASSO_OVERVIEW - 1, stats.high)
-                val (inseriti, nuoviPerMe) = elaboraLottoOverview(
-                    group, engine, client.over(lo, hi), regolePropaganti, hi,
+                val over = client.over(lo, hi)
+                // 1.6 (Bingo3331 + HAL, piano A): nell'ultimo lotto il
+                // segnalibro non supera l'ultimo numero ricevuto. Vedi
+                // SegnalibroSync.kt.
+                val ultimoLotto = hi == stats.high
+                val segnalibro = segnalibroDopoLotto(
+                    group.lastFetchedArticleNumber, lo, hi, over.map { it.number }, ultimoLotto,
                 )
+                if (ultimoLotto) {
+                    NntpLog.diag(
+                        "segnalibro ${group.name}: richiesto $lo-$hi, ricevute ${over.size}, " +
+                            "da ${maxOf(group.lastFetchedArticleNumber, lo - 1)} a $segnalibro",
+                    )
+                }
+                val (inseriti, nuoviPerMe) = elaboraLottoOverview(group, engine, over, regolePropaganti)
+                // Il segnalibro avanza A OGNI LOTTO, non solo alla fine: una
+                // sincronizzazione interrotta a meta' (rete che cade, app chiusa)
+                // riprende da qui invece di ricominciare da capo. Su un gruppo da
+                // milioni di articoli e' la differenza fra un riavvio e mezz'ora
+                // buttata.
+                //
+                // [segnalibro]: la fine di QUESTO lotto, non del gruppo. 1.6:
+                // nell'ultimo lotto, l'ultimo numero davvero ricevuto (vedi
+                // segnalibroDopoLotto).
+                //
+                // 1.6: solo queste due colonne. Era un `update` di tutta la riga
+                // con la copia letta all'inizio del sync: un'identita', un'introduzione
+                // o una conservazione scelte a sync in corso tornavano al valore vecchio.
+                db.groupDao().setAvanzamentoSync(group.id, segnalibro, System.currentTimeMillis() / 1000)
                 totaleArticoli += inseriti
                 totaleNuoviPerMe += nuoviPerMe
                 lastSyncFiltrati += ultimoLottoFiltrati
@@ -1242,8 +1497,12 @@ class NewsRepository(
 
 
     /**
-     * Un LOTTO di overview: lo valuta coi filtri, lo inserisce, propaga le
-     * regole M1 e porta il segnalibro del gruppo a [finoA].
+     * Un LOTTO di overview: lo valuta coi filtri, lo inserisce e propaga le
+     * regole M1. E' L'UNICO ingresso degli articoli: lo usano la sync e, dalla 1.6,
+     * «Ricostruisci discussione». Il segnalibro NON sta qui, lo muove la sync:
+     * un ricostruito non deve spostarlo.
+     *
+     * [comeContesto] (1.6): i messaggi arrivano gia' letti. Sono contesto vecchio.
      *
      * Estratta da [syncGruppoConClient] il 17 settembre 2026, quando la
      * sincronizzazione e' passata a chiedere l'overview A FETTE (vedi la nota
@@ -1258,7 +1517,7 @@ class NewsRepository(
         engine: FilterEngine,
         over: List<OverviewLine>,
         regolePropaganti: List<FilterRule>,
-        finoA: Long,
+        comeContesto: Boolean = false,
     ): Pair<Int, Int> {
         val semiNuovi = ArrayList<PoisonedId>()
 
@@ -1375,9 +1634,12 @@ class NewsRepository(
         // e si decide a parte. Rimedio manuale: togliere e rimettere il «segui».
         val articoliConEredita = ereditaSeguitoDalThread(articles)
 
-        val flagged = if (mieEmail.isEmpty()) articoliConEredita else articoliConEredita.map { a ->
+        // 1.6: il genitore puo' stare nello STESSO lotto, non ancora nel database:
+        // prima, una risposta arrivata col mio post non risultava risposta a me.
+        val nelLotto = if (mieEmail.isEmpty()) emptyMap() else articoliConEredita.associateBy { it.messageId }
+        val conRisposteAMe = if (mieEmail.isEmpty()) articoliConEredita else articoliConEredita.map { a ->
             val parentId = a.references.trim().split(Regex("\\s+")).lastOrNull()?.takeIf { it.isNotBlank() }
-            val parent = parentId?.let { db.articleDao().byMessageId(it) }
+            val parent = parentId?.let { nelLotto[it] ?: db.articleDao().byMessageId(it) }
             // 1.4.1 (105/A): il criterio "e' mio" e' uno solo, quello
             // irrobustito dall'audit della 1.2.12. Qui era rimasta la ricerca
             // per sottostringa sulla riga From intera. Questa resta.
@@ -1385,8 +1647,16 @@ class NewsRepository(
                 newToMe++; a.copy(replyToMe = true)
             } else a
         }
+        // 1.6 (sondaggio sui gruppi): DOPO replyToMe, che e' una delle eccezioni.
+        val flagged = applicaDiscussioniIgnorate(conRisposteAMe)
+            .let { lista -> if (comeContesto) lista.map { it.copy(read = true) } else lista }
         // (il totale su TUTTI i lotti lo somma il chiamante)
         ultimoLottoFiltrati = flagged.count { it.hidden }
+        // 1.6: un messaggio ricostruito senza numero che ora arriva col numero vero
+        // (per esempio riscaricando il gruppo) non deve restare doppio.
+        if (!comeContesto && flagged.isNotEmpty() && (db.articleDao().numeroMinimo(group.id) ?: 0L) < 0L) {
+            flagged.map { it.messageId }.chunked(500).forEach { db.articleDao().togliRicostruiti(group.id, it) }
+        }
         db.articleDao().insertAll(flagged)
 
         // ---------------------------------------------------------- M1
@@ -1412,19 +1682,6 @@ class NewsRepository(
             val nascosti = propagaAlleRisposte(group, engine, candidati)
             if (nascosti > 0) db.groupDao().refreshUnreadCount(group.id)
         }
-
-        // Il segnalibro avanza A OGNI LOTTO, non solo alla fine: una
-        // sincronizzazione interrotta a meta' (rete che cade, app chiusa)
-        // riprende da qui invece di ricominciare da capo. Su un gruppo da
-        // milioni di articoli e' la differenza fra un riavvio e mezz'ora
-        // buttata.
-        db.groupDao().update(
-            group.copy(
-                // [finoA]: la fine di QUESTO lotto, non del gruppo.
-                lastFetchedArticleNumber = finoA,
-                lastSyncEpoch = System.currentTimeMillis() / 1000,
-            )
-        )
         return articles.size to newToMe
     }
 
@@ -2408,6 +2665,12 @@ class NewsRepository(
      *  sia il post da cui la si attiva. */
     suspend fun setWatchedBulk(ids: List<Long>, watched: Boolean) {
         db.articleDao().setWatchedBulk(ids, watched)
+        // 1.6: Segui e Ignora si escludono a vicenda.
+        if (watched && db.ignoredIdDao().conta() > 0) {
+            ids.chunked(500).forEach { blocco ->
+                db.ignoredIdDao().togli(db.articleDao().idEMessageId(blocco).map { it.messageId })
+            }
+        }
     }
 
     /** #4c: per il backup — i Message-ID delle discussioni seguite. */
@@ -2956,7 +3219,7 @@ class NewsRepository(
             ?: error("Sender address not recognised in the original article")
         val identita = identitiesOnce()
             .firstOrNull { it.email.trim().equals(indirizzo, ignoreCase = true) }
-            ?: resolvedIdentity(group.serverId)
+            ?: identitaPerGruppo(group.id)
         val nome = identita.name.ifBlank { indirizzo.substringBefore("@") }
 
         // Newsgroups: quelli dell'ORIGINALE quando li conosciamo (un crosspost
@@ -3235,6 +3498,7 @@ class NewsRepository(
             "drafts" to d.drafts(),
             "poisoned_ids" to d.poisonedIds(),
             "tls_pins" to d.tlsPins(),
+            "ignored_ids" to d.ignoredIds(),
         )
     }
 
@@ -3401,6 +3665,9 @@ class NewsRepository(
         // articoli. Se restasse indietro crescerebbe all'infinito; se corresse
         // avanti perderebbe il contesto di thread ancora vivi.
         db.poisonedIdDao().deleteOlderThan(cutoff)
+        // 1.6: un anno fisso, non la finestra degli articoli: il registro deve
+        // sopravvivere ai messaggi, o una risposta tardiva tornerebbe non letta.
+        db.ignoredIdDao().deleteOlderThan(System.currentTimeMillis() / 1000 - 365L * 86_400)
         return db.articleDao().deleteReadOlderThan(cutoff)
     }
 

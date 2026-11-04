@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import org.openusenet.reader.ui.icone.Block
+import org.openusenet.reader.ui.icone.VisibilityOff
 import org.openusenet.reader.ui.icone.Cancel
 import org.openusenet.reader.ui.icone.CheckCircle
 import org.openusenet.reader.ui.icone.Checklist
@@ -82,6 +83,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.produceState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -102,6 +104,7 @@ import kotlinx.coroutines.launch
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.R
 import org.openusenet.reader.data.Article
+import org.openusenet.reader.data.Identity
 import org.openusenet.reader.data.NewsRepository
 import org.openusenet.reader.ui.Routes
 import org.openusenet.reader.ui.indietroSicuro
@@ -160,6 +163,11 @@ fun ThreadListScreen(
     var groupKeepThreads by remember { mutableStateOf<Int?>(null) }
     // 1.4 (Henry The Mole): introduzione alla citazione di QUESTO gruppo.
     var groupReplyIntro by remember { mutableStateOf<String?>(null) }
+    // 1.6 (Dave Royal): identità di QUESTO gruppo, e quelle fra cui scegliere.
+    var groupIdentityId by remember { mutableStateOf<Long?>(null) }
+    // 1.6: la discussione da ricostruire, se il dialogo e' aperto.
+    var ricostruisciMembri by remember { mutableStateOf<List<Article>?>(null) }
+    val identita by repo.identities.collectAsState(initial = emptyList())
     var contextItem by remember { mutableStateOf<ThreadItem?>(null) }
     // Modalità selezione multipla: attiva, il tocco seleziona invece di aprire.
     // Serve a cancellare più copie locali in un colpo (richiesta dei tester).
@@ -232,11 +240,8 @@ fun ThreadListScreen(
     // Con UN SOLO server l'etichetta resta vuota e la barra non cambia: non
     // c'e' niente da distinguere, e una riga in piu' costerebbe altezza utile
     // senza dire nulla. E' lo stesso criterio del menu "aggiorna" di §A7.
-    val serverEtichetta = remember(groupServerId, servers) {
-        if (servers.size <= 1) ""
-        else servers.firstOrNull { it.id == groupServerId }
-            ?.let { etichettaServer(it.name, it.host) }.orEmpty()
-    }
+    // 1.6 / 180: la regola sta in serverDaMostrare (IntestazioneServer.kt).
+    val serverEtichetta = remember(groupServerId, servers) { serverDaMostrare(servers, groupServerId) }
 
     LaunchedEffect(groupId) {
         val g = repo.groupById(groupId)
@@ -245,6 +250,7 @@ fun ThreadListScreen(
         groupPurge = g?.purgeDays
         groupKeepThreads = g?.purgeKeepThreads
         groupReplyIntro = g?.replyIntro
+        groupIdentityId = g?.identityId
         syncing = true
         // beta20 (Roxy): RIPRISTINATO il sync all'apertura del gruppo (vedi
         // SyncGuard in ThreadFlatten.kt per la spiegazione completa dell'errore
@@ -496,13 +502,12 @@ fun ThreadListScreen(
         // I messaggi contrassegnati per la cancellazione vengono eliminati ORA:
         // finché si resta nel gruppo restano barrati e ripristinabili, uscendo
         // la scelta diventa definitiva (rientrando non compaiono più).
-        val daCancellare = PendingDeletions.drain(groupId)
+        // 1.6: il COSA sta in applicaUscitaGruppo, che lo usa anche il tasto Avanti.
         // 1.5.9 / 177: uscendo dal gruppo si riparte tutto chiuso.
         DiscussioniAperte.clear(chiaveVoce)
-        if (AppSettings.markReadOnExit || daCancellare.isNotEmpty()) {
+        if (AppSettings.markReadOnExit || PendingDeletions.of(groupId).isNotEmpty()) {
             scope.launch {
-                if (daCancellare.isNotEmpty()) repo.deleteLocal(daCancellare)
-                if (AppSettings.markReadOnExit) repo.markAllRead(groupId)
+                applicaUscitaGruppo(repo, groupId)
                 nav.indietroSicuro()
             }
         } else {
@@ -610,7 +615,10 @@ fun ThreadListScreen(
             // Riga 2: le stesse azioni di prima, ora con tutto lo spazio loro.
             TopAppBar(
                 title = {
-                    Column {
+                        // 1.6 / 180: nome e server passano da TitoloGruppo
+                        // (IntestazioneServer.kt), lo stesso della colonna 2 e
+                        // della lettura. Le note qui sotto restano valide.
+                        //
                         // 1.4.7 (§A11-bis, Dave Royal) — ANCHE QUI.
                         //
                         // La richiesta era: «the group name should preferably be
@@ -635,24 +643,15 @@ fun ThreadListScreen(
                         //
                         // *Una cautela che conserva proprio cio' che si era chiesto
                         // di cambiare non e' prudenza: e' la modifica non fatta.*
-                        NomeGruppoAdattivo(
-                            nome = groupName.ifEmpty { stringResource(R.string.tl_default_title) },
-                            righe = 1,
-                        )
+                        //
                         // 1.4.4 (§A9): il server sotto al nome, e solo quando i
                         // server sono piu' di uno. Sottotitolo e non seconda
                         // riga del titolo: e' un'informazione di contesto, non
                         // il nome di cio' che stai guardando.
-                        if (serverEtichetta.isNotEmpty()) {
-                            Text(
-                                serverEtichetta,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
+                        TitoloGruppo(
+                            nome = groupName.ifEmpty { stringResource(R.string.tl_default_title) },
+                            server = serverEtichetta,
+                        )
                 },
                 navigationIcon = {
                     IconButton(onClick = { leaveGroup() }) {
@@ -984,6 +983,9 @@ fun ThreadListScreen(
     // fatto per chiedere sì/no, non per ospitare un elenco di azioni. Il
     // pannello dal basso è il contenitore giusto: le voci scorrono, si chiude
     // scorrendo in giù o toccando fuori, e "Annulla" non serve più.
+    ricostruisciMembri?.let { membri ->
+        DialogoRicostruisci(repo, membri) { ricostruisciMembri = null }
+    }
     contextItem?.let { ctxItem ->
         val a = ctxItem.article
         val marcato = PendingDeletions.isMarked(groupId, a.id)
@@ -1090,6 +1092,31 @@ fun ThreadListScreen(
                         val ids = threadIdsOf(a.id)
                         scope.launch { repo.setReadBulk(ids, false, groupId) }
                         contextItem = null
+                    }
+                    // 1.6 (sondaggio sui gruppi): vedi filter/IgnoraDiscussione.kt.
+                    val ignorata by produceState(false, a.id) { value = repo.eIgnorata(a.messageId) }
+                    VoceMenu(
+                        Icons.Default.VisibilityOff,
+                        stringResource(if (ignorata) R.string.common_unignore_thread else R.string.common_ignore_thread),
+                    ) {
+                        val membri = membriDelThread(articles, mappaThread, a)
+                        contextItem = null
+                        scope.launch {
+                            if (ignorata) repo.smettiDiIgnorare(membri) else repo.ignoraDiscussione(membri)
+                            snackbar.showSnackbar(
+                                ctx.getString(if (ignorata) R.string.common_unignore_thread_done else R.string.common_ignore_thread_done),
+                            )
+                        }
+                    }
+                    // 1.6 (sondaggio sui gruppi): solo se manca davvero qualcosa.
+                    val mancanti by produceState(0, a.id, articles.size) {
+                        value = repo.quantiMancanti(membriDelThread(articles, mappaThread, a))
+                    }
+                    if (mancanti > 0) {
+                        VoceMenu(Icons.Default.Download, stringResource(R.string.common_rebuild_thread, mancanti)) {
+                            ricostruisciMembri = membriDelThread(articles, mappaThread, a)
+                            contextItem = null
+                        }
                     }
                     HorizontalDivider()
                     VoceMenu(Icons.Default.Block, stringResource(R.string.common_ignore_author)) {
@@ -1247,6 +1274,13 @@ fun ThreadListScreen(
                 groupReplyIntro = intro
                 scope.launch { repo.setGroupReplyIntro(groupId, intro) }
             },
+            // 1.6 (Dave Royal): identità per gruppo.
+            identita = identita,
+            currentIdentityId = groupIdentityId,
+            onPickIdentity = { id ->
+                groupIdentityId = id
+                scope.launch { repo.assignIdentityToGroup(groupId, id) }
+            },
         )
     }
 }
@@ -1276,6 +1310,14 @@ fun RetentionDialog(
      */
     currentIntro: String? = null,
     onPickIntro: ((String?) -> Unit)? = null,
+    /**
+     * 1.6 (Dave Royal) — identità per QUESTO gruppo, null = quella del server.
+     * Sta qui per la stessa ragione dell'introduzione qui sopra. Con una sola
+     * identità non c'è niente da scegliere e la sezione non compare.
+     */
+    identita: List<Identity> = emptyList(),
+    currentIdentityId: Long? = null,
+    onPickIdentity: ((Long?) -> Unit)? = null,
 ) {
     // Bozza locale: si scrive liberamente e si salva alla conferma. Salvare a
     // ogni tasto vorrebbe dire una scrittura sul database per carattere.
@@ -1358,6 +1400,37 @@ fun RetentionDialog(
                     ) {
                         RadioButton(selected = !aNumero && current == days, onClick = null)
                         Text(label)
+                    }
+                }
+                // 1.6 (Dave Royal): identità per gruppo. Vale subito, come le
+                // righe qui sopra, ma senza chiudere: sotto c'è l'introduzione.
+                if (onPickIdentity != null && identita.size > 1) {
+                    HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                    Text(
+                        stringResource(R.string.tl_group_identity),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                    Text(
+                        stringResource(R.string.tl_group_identity_tip),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                    val scelte: List<Pair<Long?, String>> =
+                        listOf<Pair<Long?, String>>(null to stringResource(R.string.tl_group_identity_inherit)) +
+                            identita.map { it.id to it.nickname.ifBlank { it.name } }
+                    var scelta by remember(currentIdentityId) { mutableStateOf(currentIdentityId) }
+                    scelte.forEach { (id, nome) ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { scelta = id; onPickIdentity(id) },
+                        ) {
+                            RadioButton(selected = scelta == id, onClick = null)
+                            Text(nome)
+                        }
                     }
                 }
                 // 1.4 (Henry The Mole): introduzione alla citazione per gruppo.

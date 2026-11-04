@@ -29,6 +29,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.openusenet.reader.ui.TastiVolume
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -50,6 +53,7 @@ import org.openusenet.reader.ui.icone.Reply
 import org.openusenet.reader.ui.icone.OpenInNew
 import org.openusenet.reader.ui.icone.Add
 import org.openusenet.reader.ui.icone.Block
+import org.openusenet.reader.ui.icone.VisibilityOff
 import org.openusenet.reader.ui.icone.Cancel
 import org.openusenet.reader.ui.icone.ContentCut
 import org.openusenet.reader.ui.icone.ContentCopy
@@ -112,7 +116,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.collectAsState
@@ -136,6 +143,7 @@ import org.openusenet.reader.ui.CorpoCitabile
 import org.openusenet.reader.ui.rememberAppunti
 import org.openusenet.reader.ui.articoloEml
 import org.openusenet.reader.ui.articoloGrezzo
+import org.openusenet.reader.text.corpoDaInviare
 import org.openusenet.reader.text.formatoCorpo
 import org.openusenet.reader.ui.nomeFileConserva
 import org.openusenet.reader.ui.nomeFileEml
@@ -276,6 +284,14 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
     var reloadDialog by remember { mutableStateOf(false) }
     var bodiesDialog by remember { mutableStateOf(false) }
     var retentionDialog by remember { mutableStateOf(false) }
+    // 1.6 (tasto Avanti): il messaggio da aprire dopo il cambio di gruppo, e il
+    // fermo ai tocchi ripetuti. Vedi TastoAvanti.kt.
+    var articoloInArrivo by remember { mutableStateOf<Long?>(null) }
+    // 1.6: la discussione da ricostruire, se il dialogo e' aperto.
+    var ricostruisciMembri by remember { mutableStateOf<List<Article>?>(null) }
+    var avantiInCorso by remember { mutableStateOf(false) }
+    // 1.6 (Dave Royal): le identità fra cui scegliere nel dialogo del gruppo.
+    val identita by repo.identities.collectAsState(initial = emptyList())
 
     val articles by remember(selectedGroupId, showHidden) {
         selectedGroupId?.let { repo.articles(it, showHidden = showHidden, unreadOnly = false) }
@@ -331,7 +347,9 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
     }
 
     LaunchedEffect(selectedGroupId) {
-        selectedArticleId = null
+        // 1.6: arrivando col tasto Avanti il messaggio da aprire c'e' gia'.
+        selectedArticleId = articoloInArrivo
+        articoloInArrivo = null
         compose = null
         expandedRoots = emptySet()
         val gid = selectedGroupId ?: return@LaunchedEffect
@@ -361,7 +379,29 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text(Branding.APP_NAME) },
+                title = {
+                    // 1.6 / 180 (RPoggi): nella lettura a tutto schermo le
+                    // colonne spariscono, e con loro il nome del gruppo della
+                    // colonna 2. Li' la barra mostra il gruppo DELL'ARTICOLO
+                    // come sul telefono (stesso TitoloGruppo, stesso +N); senza
+                    // contatore, che i pannelli non hanno. Fuori dal tutto
+                    // schermo resta «NeReO»: il gruppo lo dice gia' la colonna 2.
+                    // `articles` e' un Flow di Room: quando il corpo arriva,
+                    // headersRaw si aggiorna e il +N compare da se'.
+                    val letto = if (fullScreenReading) articles.firstOrNull { it.id == selectedArticleId } else null
+                    val gruppoLetto = letto?.let { a -> groups.firstOrNull { it.id == a.groupId } }
+                    if (letto == null || gruppoLetto == null) {
+                        Text(Branding.APP_NAME)
+                    } else {
+                        val altri = altriGruppiCrosspost(crosspostGroups(letto.headersRaw), gruppoLetto.name)
+                        TitoloGruppo(
+                            nome = gruppoLetto.name,
+                            server = serverDaMostrare(servers, gruppoLetto.serverId),
+                            dettagli = if (altri > 0) "+$altri" else "",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                },
                 actions = {
                     // 1.3 (D): visibile solo con un articolo aperto — è lì che ha senso.
                     if (selectedArticleId != null) {
@@ -628,29 +668,17 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                             // Nella colonna 2, stretta, una riga di troppo si
                             // paga: per questo e' labelSmall e non un titolo.
                             val gruppoCorrente = groups.firstOrNull { it.id == selectedGroupId }
-                            val serverCorrente = if (servers.size <= 1) "" else
-                                servers.firstOrNull { it.id == gruppoCorrente?.serverId }
-                                    ?.let { etichettaServer(it.name, it.host) }.orEmpty()
-                            Column(Modifier.weight(1f)) {
-                                // 1.4.5 (§A11-bis, Dave Royal): con la sesta icona in
-                                // barra il nome si stringe, e lui ha chiesto che si
-                                // abbrevi come in colonna 1 invece di troncarsi e
-                                // basta. Una riga sola: qui la barra non puo' crescere.
-                                NomeGruppoAdattivo(
-                                    nome = gruppoCorrente?.name.orEmpty(),
-                                    righe = 1,
-                                    style = MaterialTheme.typography.titleSmall,
-                                )
-                                if (serverCorrente.isNotEmpty()) {
-                                    Text(
-                                        serverCorrente,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
+                            // 1.4.5 (§A11-bis, Dave Royal): con la sesta icona in
+                            // barra il nome si stringe, e lui ha chiesto che si
+                            // abbrevi come in colonna 1 invece di troncarsi e
+                            // basta. Una riga sola: qui la barra non puo' crescere.
+                            // 1.6 / 180: nome e server passano da TitoloGruppo.
+                            TitoloGruppo(
+                                nome = gruppoCorrente?.name.orEmpty(),
+                                server = serverDaMostrare(servers, gruppoCorrente?.serverId),
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.weight(1f),
+                            )
                             // 1.4.1 (build 108, Dave Royal) — LA BARRA DEI PANNELLI.
                             //
                             // La 107 aveva scambiato Aggiorna e "segna tutto
@@ -1202,6 +1230,44 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                             vaiDiscussioneSuccessiva = {
                                 idDiscussioneSuccessiva(flat, selectedArticleId)?.let { selectedArticleId = it }
                             },
+                            // 1.6: NON su `flat`. Con «solo non letti» il messaggio
+                            // appena letto ne esce e la posizione diventa -1, e la
+                            // vista raggruppata ha le sole radici. La sequenza si
+                            // costruisce al tocco, cosi' non costa niente a ogni
+                            // messaggio letto. Vedi TastoAvanti.kt.
+                            vaiAvanti = vai@{
+                                if (avantiInCorso) return@vai
+                                avantiInCorso = true
+                                scope.launch {
+                                    try {
+                                        val sequenza = withContext(Dispatchers.Default) {
+                                            buildThreadList(articoliVisibili, unreadOnly = false, view = vistaDiNavigazione())
+                                        }
+                                        val pos = sequenza.indexOfFirst { it.article.id == selectedArticleId }
+                                        when (val esito = esitoAvanti(repo, sequenza, pos, selectedGroupId)) {
+                                            null -> Unit
+                                            is EsitoAvanti.Messaggio -> {
+                                                selectedArticleId = esito.id
+                                                // nella vista raggruppata la discussione va aperta
+                                                sequenza.firstOrNull { it.article.id == esito.id }
+                                                    ?.let { expandedRoots = expandedRoots + radiceDi(it) }
+                                            }
+                                            EsitoAvanti.Fine -> android.widget.Toast.makeText(
+                                                ctx, ctx.getString(R.string.art_avanti_fine), android.widget.Toast.LENGTH_SHORT,
+                                            ).show()
+                                            is EsitoAvanti.AltroGruppo -> {
+                                                android.widget.Toast.makeText(
+                                                    ctx, ctx.getString(R.string.art_avanti_gruppo, esito.nome), android.widget.Toast.LENGTH_SHORT,
+                                                ).show()
+                                                articoloInArrivo = esito.articoloId
+                                                selectedGroupId = esito.gruppoId
+                                            }
+                                        }
+                                    } finally {
+                                        avantiInCorso = false
+                                    }
+                                }
+                            },
                             // i flag spengono il pulsante invece di lasciarlo
                             // premere a vuoto: un comando che non fa niente e non
                             // lo dice sembra funzionante, ed e' il difetto peggiore.
@@ -1211,6 +1277,18 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                             puoDiscussionePrecedente = idDiscussionePrecedente(flat, selectedArticleId) != null,
                             puoDiscussioneSuccessiva = idDiscussioneSuccessiva(flat, selectedArticleId) != null,
                         )
+                        // 1.6: i tasti del volume anche qui, ma mai mentre si
+                        // scrive nel pannello. Stessa forma di ArticleScreen.
+                        val navigazioneAttuale by rememberUpdatedState(navigazione)
+                        val volumeAttivo = compose == null && selectedArticleId != null
+                        DisposableEffect(volumeAttivo) {
+                            val mio: (TastiVolume.Verso) -> Unit = { v ->
+                                if (v == TastiVolume.Verso.AVANTI) navigazioneAttuale.vaiAvanti()
+                                else navigazioneAttuale.vaiPrecedente()
+                            }
+                            if (volumeAttivo) TastiVolume.gestore = mio
+                            onDispose { if (TastiVolume.gestore === mio) TastiVolume.gestore = null }
+                        }
                         ArticlePane(
                             repo, selectedArticleId, threadArticles, threadDepths,
                             onReply = { id, extra -> compose = ComposeTarget.Reply(id, extra) },
@@ -1293,6 +1371,9 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
 
     // Menu contestuale a pannello dal basso (vedi nota in ThreadListScreen:
     // con l'AlertDialog il pulsante "Annulla" finiva sovrapposto alle voci).
+    ricostruisciMembri?.let { membri ->
+        DialogoRicostruisci(repo, membri) { ricostruisciMembri = null }
+    }
     contextItem?.let { ctxItem ->
         val a = ctxItem.article
         ModalBottomSheet(onDismissRequest = { contextItem = null }) {
@@ -1377,6 +1458,31 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                     val ids = threadIdsOf(a.id)
                     scope.launch { repo.setReadBulk(ids, false, a.groupId) }
                     contextItem = null
+                }
+                // 1.6 (sondaggio sui gruppi): vedi filter/IgnoraDiscussione.kt.
+                val ignorata by produceState(false, a.id) { value = repo.eIgnorata(a.messageId) }
+                VoceMenuPannello(
+                    Icons.Default.VisibilityOff,
+                    stringResource(if (ignorata) R.string.common_unignore_thread else R.string.common_ignore_thread),
+                ) {
+                    val membri = membriDelThread(articles, mappaThread, a)
+                    contextItem = null
+                    scope.launch {
+                        if (ignorata) repo.smettiDiIgnorare(membri) else repo.ignoraDiscussione(membri)
+                        snackbar.showSnackbar(
+                            ctx.getString(if (ignorata) R.string.common_unignore_thread_done else R.string.common_ignore_thread_done),
+                        )
+                    }
+                }
+                // 1.6 (sondaggio sui gruppi): solo se manca davvero qualcosa.
+                val mancanti by produceState(0, a.id, articles.size) {
+                    value = repo.quantiMancanti(membriDelThread(articles, mappaThread, a))
+                }
+                if (mancanti > 0) {
+                    VoceMenuPannello(Icons.Default.Download, stringResource(R.string.common_rebuild_thread, mancanti)) {
+                        ricostruisciMembri = membriDelThread(articles, mappaThread, a)
+                        contextItem = null
+                    }
                 }
                 HorizontalDivider()
                 // beta19 (Roxy): nella vista a pannelli mancava del tutto il modo
@@ -1576,6 +1682,10 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                 // 1.4 (Henry The Mole): introduzione alla citazione per gruppo.
                 currentIntro = g?.replyIntro,
                 onPickIntro = { intro -> scope.launch { repo.setGroupReplyIntro(gid, intro) } },
+                // 1.6 (Dave Royal): identità per gruppo.
+                identita = identita,
+                currentIdentityId = g?.identityId,
+                onPickIdentity = { id -> scope.launch { repo.assignIdentityToGroup(gid, id) } },
             )
         } else {
             retentionDialog = false
@@ -2155,6 +2265,7 @@ private fun PostContinuo(
                     onRot13 = { rot13on = !rot13on },
                     onHeaders = { showHeaders = true },
                     onReply = rispondiAlPost,
+                    ricostruisci = ricostruisciDaLettura(repo, post),
                     onSalvaEml = {
                         salvaEml(
                             nomeFileEml(post.subject, post.messageId),
@@ -2487,6 +2598,7 @@ private fun ArticlePaneSingolo(
                         onRot13 = { rot13on = !rot13on },
                         onHeaders = { showHeaders = true },
                         onReply = rispondiAllArticolo,
+                        ricostruisci = ricostruisciDaLettura(repo, a),
                         onSalvaEml = {
                             salvaEml(
                                 nomeFileEml(a.subject, a.messageId),
@@ -2657,7 +2769,6 @@ private fun ComposePane(
     // 1.4 (Henry The Mole): introduzione alla citazione impostata su QUESTO
     // gruppo. null/vuota = si usa quella dell'identita'. Vedi introLine().
     var introGruppo by remember { mutableStateOf<String?>(null) }
-    var targetServerId by remember { mutableStateOf<Long?>(null) }
     var referencesHeader by remember { mutableStateOf<String?>(null) }
     var groupName by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
@@ -2720,10 +2831,9 @@ private fun ComposePane(
         targetGroupId?.let {
             val g = repo.groupById(it)
             groupName = g?.name ?: ""
-            targetServerId = g?.serverId
             introGruppo = g?.replyIntro
         }
-        val ident = repo.resolvedIdentity(targetServerId)
+        val ident = repo.identitaPerGruppo(targetGroupId)
         identity = ident
         fromName = ident.name
         fromEmail = ident.email
@@ -2974,10 +3084,13 @@ private fun ComposePane(
                             }
                             sending = true; error = null
                             runCatching {
-                                val ident = identity ?: repo.resolvedIdentity(targetServerId)
+                                val ident = identity ?: repo.identitaPerGruppo(targetGroupId)
                                 repo.postArticle(
                                     gid, fromName.trim(), fromEmail.trim(), subject.trim(),
-                                    bodyField.text, referencesHeader,
+                                    // 1.6: come la vista a pagine. Qui il corpo
+                                    // partiva senza nessun a capo a 72 colonne.
+                                    corpoDaInviare(bodyField.text, AppSettings.formatFlowedInUscita),
+                                    referencesHeader,
                                     // Correzione 1.2.9 (segnalazione di Marco): stesso fix di
                                     // ComposeScreen.kt — vuoto deve restare vuoto (= anonimo),
                                     // non essere sostituito col default. Vedi il commento
@@ -3030,6 +3143,7 @@ private fun ComposePane(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(vertical = 8.dp),
         )
+        RigaIdentita(repo, identity, fromName, fromEmail)
         // 1.4: l'avviso del Followup-To, identico alla vista a pagine.
         AvvisoFollowupTo(
             destinazione = destinazioneInVigore,

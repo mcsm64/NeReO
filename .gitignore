@@ -13,6 +13,8 @@ captures/
 # APK e bundle compilati (vanno nelle release, non nel codice)
 *.apk
 *.aab
+# Uscita della firma di Android Studio (APK, output-metadata.json, baselineProfiles)
+app/release/
 
 # Chiavi di firma: MAI nel repository
 *.jks

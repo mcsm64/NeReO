@@ -6,9 +6,9 @@ Scritto da zero in Kotlin + Jetpack Compose. Nasce dal MOD 17 di *Newsreader* di
 
 Il package interno resta `org.openusenet.reader` — invariato di proposito, per non rompere gli aggiornamenti già installati.
 
-**Versione 1.5.9** (versionCode 179) — 30 ottobre 2026
+**Versione 1.6** (versionCode 185) — 4 novembre 2026
 
-## Funzioni (1.5.9)
+## Funzioni (1.6)
 
 - Multi-server NNTP con SSL/TLS implicito **o STARTTLS** (RFC 3977 + RFC 4643 + RFC 4642) e autenticazione, con **verifica del nome host sul certificato** (RFC 6125) e fallback automatico IPv6/IPv4; CAPABILITIES letto e loggato alla connessione; riuso della connessione durante la lettura di un thread; **allarme se un server che offriva STARTTLS smette di annunciarlo** (RFC 4642 §5)
 - Ricerca e sottoscrizione gruppi, sync incrementale delle headline con `OVER` e ripiego automatico su `XOVER` per i server che non riconoscono `OVER` (es. Astraweb)
@@ -16,12 +16,26 @@ Il package interno resta `org.openusenet.reader` — invariato di proposito, per
 - **Multi-identità vera:** quante identità vuoi (nome, email, firma, User-Agent, X-No-Archive, intestazioni personalizzate, introduzione alla citazione, Face), ciascuna assegnabile a un server specifico — scrivi come "MCSM" su un server e come "TAF" su un altro, ognuna con il proprio indirizzo
 - Scrittura: risposte con citazione (quattro modalità), crosspost, firme, bozze locali **che si salvano da sole** (1.5.1); override per-server dell'autenticazione non cifrata
 - Decodifica header RFC 2047, quoted-printable, base64, charset multipli; **Face** (PNG, come MesNews) in lettura e in invio; **X-Face** in bianco e nero **in lettura** (dalla 1.5.5, non in invio); **Format=Flowed** (RFC 3676) in lettura
-- **Barre di lettura personalizzabili** in entrambe le viste: ventuno azioni, ognuna spostabile fra barra e menu, con l'ordine che decidi tu
+- **Barre di lettura personalizzabili** in entrambe le viste: ventitré azioni, ognuna spostabile fra barra e menu, con l'ordine che decidi tu
 - **«Conserva questo messaggio»**: un messaggio si scrive come file `.eml` in una cartella scelta una volta sola, e da lì non lo tocca più niente di NeReO — né la pulizia automatica, né una disiscrizione, né un riscarico
 - **Motore filtri a punteggio** stile slrn/Gnus: contains/wildcard/regex su From, Subject, Message-ID, Xpost, Body, lettore di news e tutte le intestazioni, più «nick = indirizzo» contro i sockpuppet; estensione alle risposte (nascoste o evidenziate); scope per gruppo (wildmat), scadenza, soglie kill/hide/highlight/watch; import/export kill-file testuale (formato slrn-like)
 - Backup e ripristino della configurazione, con cifratura opzionale
 - Material 3, tema chiaro/scuro/di sistema, dynamic color, tinte e dimensioni del testo, layout a pannelli per schermi larghi
 - Interfaccia in italiano e inglese, con **interruttore lingua dentro l'app** (Aspetto → Lingua) oltre alla voce di sistema su Android 13+
+
+## Novità della 1.6
+
+> Richieste di RPoggi, Bingo3331, Dave Royal e Marco, e le cinque voci del sondaggio sui gruppi.
+
+- **Il nome del gruppo in lettura** *(RPoggi via Usenet, 2/11, piano B; `+N` voluto da Marco)*. Nella barra di `ArticleScreen` il gruppo DELL'ARTICOLO (dal suo `groupId`: giusto anche da ricerca o link), abbreviato come in colonna 1 (`NomeGruppoAdattivo`); sotto, in piccolo, `[5/8] · +2 · server` — il `+N` conta gli altri gruppi di `Newsgroups:` (compare quando il corpo è scaricato), il server solo con più server. Lo stesso nella lettura a tutto schermo dei pannelli, dove le colonne spariscono. Il titolo «gruppo + server» della 1.4.4, che era scritto a mano in due posti, ora è un componente solo (`TitoloGruppo` + `serverDaMostrare` in `IntestazioneServer.kt`) usato dai quattro; elenco discussioni e colonna 2 invariati a schermo. 6 test nuovi
+- **Il proprio post non sparisce più dopo l'invio** *(Bingo3331 e HAL, 2/11)*. Se il server annuncia il messaggio ma l'overview non è ancora pronta, il segnalibro si ferma all'ultimo numero davvero ricevuto (`SegnalibroSync.kt`) e il messaggio arriva all'aggiornamento dopo.
+- **Nuova gamma viola** *(Marco)*: icona, avvio a tre barre su un disco, accento viola predefinito per chi installa da adesso, leggibile anche nel tema scuro, e tinta Purple coi colori nuovi.
+- **Riformatta la citazione** *(sondaggio sui gruppi)*: in Rifinisci citazione un comando rimette in ordine le righe citate a 72 colonne, conservando `>` e livelli. Non tocca il tuo testo, le firme, le righe vuote fra i capoversi, attribuzioni, tagli, elenchi e link lunghi. Le parole restano identiche (`RiformattaCitazione.kt`).
+- **A capo a 72 colonne anche dai pannelli**: `ComposePane` spediva il testo senza a capo e ignorava l'interruttore Format=Flowed; ora le due viste passano da `corpoDaInviare`. In f=f, inoltre, la forma `> > testo` non perde più un livello sulle righe spezzate.
+- **Tasto Avanti** *(sondaggio sui gruppi)*: un comando solo per il prossimo non letto, la discussione successiva e, a fine gruppo, il gruppo successivo con dei non letti, su tutti i server e nell'ordine dell'elenco. Quando non resta niente lo dice. Nella barra di lettura, nel menu dei pannelli e con volume giù, anche nei pannelli.
+- **Identità per gruppo** *(Dave Royal, sondaggio sui gruppi)*: nelle Impostazioni del gruppo si sceglie con quale identità scrivere; precedenza gruppo, server, predefinita. In un crosspost vale il gruppo da cui rispondi, e la scrittura lo mostra. Il backup ora conserva identità, introduzione e conservazione di ogni gruppo. Migrazione del database 12→13.
+- **Ignora discussione** *(sondaggio sui gruppi)*: dal menu della discussione. Le risposte future arrivano già lette, tranne quelle ai tuoi messaggi e i tuoi post. Si annulla dallo stesso menu; Segui e Ignora si escludono a vicenda.
+- **Ricostruisci discussione** *(sondaggio sui gruppi)*: se mancano i messaggi a cui si risponde, il menu li cerca sul server, anche in altri gruppi dello stesso server, e completa l'albero. Arrivano già letti, dalla stessa strada della sync e senza muovere il segnalibro (`nntp/RicercaMessageId.kt`). Con la conservazione a giorni possono sparire all'aggiornamento dopo.
 
 ## Novità della 1.5.9
 

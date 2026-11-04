@@ -1,8 +1,30 @@
 ======================================================================
- NeReO 1.5.9 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6 - Ne(ws) Re(ader) O(pen-source)
  Text-only Usenet (NNTP) newsreader for Android
- NeReO 1.5.9 (versionCode 179) - By MCSM - 2026/10/30
+ NeReO 1.6 (versionCode 185) - By MCSM - 2026/11/04
 ======================================================================
+ ***  VERSION 1.6  ***
+
+ Requests from RPoggi, Bingo3331, Dave Royal and Marco, and the five items of the survey on the groups.
+
+  * THE GROUP NAME WHILE READING. The bar at the top shows the group of the message and, underneath, the position in the thread [5/8]. A +2 means the message was crossposted to 2 more groups. With more than one server, the server name appears too. The group is the message's own, even when you open it from a search or a link. Same in full-screen reading of the split-pane view.
+
+  * YOUR OWN POST NO LONGER GOES MISSING AFTER SENDING. Right after a post some servers announce the message but do not deliver it yet: NeReO now asks for it again at the next refresh instead of skipping it for good. Reported by Bingo3331 and HAL.
+
+  * NEW PURPLE PALETTE: icon, start screen with three bars on a disc, purple as the default for new installs, easier to read in the dark theme, and the Purple tint with the new colours.
+
+  * REWRAP QUOTES. In the Trim quote window a command puts quoted lines back in order at 72 columns, keeping the > marks and the levels. It leaves alone your own text, signatures, blank lines between paragraphs and long links. From the survey on the groups.
+
+  * 72-COLUMN WRAPPING FROM THE PANES VIEW TOO. Sending from the panes view now wraps lines and follows Format=Flowed, as the phone view always did. Before, a long paragraph left as a single line.
+
+  * NEXT COMMAND. One command for the next unread message, the next thread and, at the end of the group, the next group with unread messages, on all servers. When nothing is left it says so. In the reading bar, in the panes menu and with volume down. From the survey on the groups.
+
+  * IDENTITY PER GROUP. In the group settings you choose the identity to post with in that group: the group comes first, then the server, then the default. Backups now carry the identity, introduction and retention of each group. Idea by Dave Royal, from the survey on the groups.
+
+  * IGNORE THREAD. From the thread menu: future replies arrive already read, except replies to your posts and your own posts. The same menu undoes it. From the survey on the groups.
+
+  * REBUILD THREAD. When the messages being replied to are missing, the menu looks for them on the server and completes the tree. They arrive already read. An expired reply cannot be searched for, and with retention by days they may disappear at the next refresh. From the survey on the groups.
+
  ***  VERSION 1.5.9  ***
 
  Requests from Marco and vort3.

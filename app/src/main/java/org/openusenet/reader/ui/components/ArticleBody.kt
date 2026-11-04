@@ -59,7 +59,10 @@ import androidx.compose.ui.unit.em
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.R
 import org.openusenet.reader.text.Faccina
+import org.openusenet.reader.text.LARGHEZZA_MIN_IMPAGINATA
+import org.openusenet.reader.text.MARCA_ELENCO
 import org.openusenet.reader.text.TABELLA_FACCINE
+import org.openusenet.reader.text.interruzioneVoluta
 import org.openusenet.reader.text.trovaFaccine
 
 // Palette a gradini per i livelli di citazione: tinte nettamente diverse.
@@ -67,7 +70,9 @@ private val LIGHT_QUOTES = listOf(
     Color(0xFF1565C0), // blu (livello 1, come Piao Hong)
     Color(0xFF1B7A3D), // verde
     Color(0xFFB25E00), // arancio
-    Color(0xFF7B1FA2), // viola
+    // 1.6: viola (prima #7B1FA2, troppo vicino al colore autore «porpora»
+    // #8E24AA: ΔE 6). 7,3:1 sul bianco, ΔE ≥ 18 da tutti gli altri viola.
+    Color(0xFF6A3D9A),
     Color(0xFF00757A), // teal
 )
 private val DARK_QUOTES = listOf(
@@ -83,9 +88,6 @@ private val URL_REGEX = Regex("""(?:https?://|www\.)[^\s<>()\[\]"']+""", RegexOp
 /** Righe consecutive con lo stesso ruolo (stesso livello di quote, o firma). */
 private data class BodyBlock(val depth: Int, val signature: Boolean, val lines: List<String>)
 
-/** Righe che iniziano così sono elenchi/enumerazioni: mai unirle alla precedente. */
-private val LIST_MARKER = Regex("""^([-*•·>]|\d{1,3}[.)])\s""")
-
 /**
  * Riflusso (de-wrap) delle righe di UN blocco (stesso livello di citazione, mai
  * la firma). L'a-capo forzato mostrato su schermo stretto lascia righe con
@@ -99,7 +101,7 @@ private val LIST_MARKER = Regex("""^([-*•·>]|\d{1,3}[.)])\s""")
  * riga successiva non ci sarebbe stata: `lunghezza_prec + 1 + prima_parola > W`.
  * È il modello reale dell'a-capo automatico, e si adatta a ogni autore.
  *
- * Salvaguardie: se il blocco non ha righe abbastanza lunghe (W < [WRAP_MIN_W])
+ * Salvaguardie: se il blocco non ha righe abbastanza lunghe (W < [LARGHEZZA_MIN_IMPAGINATA])
  * NON è testo impaginato (elenchi, versi, messaggi brevi) → lascio intatto. Le
  * righe che iniziano con un marcatore di elenco non vengono mai unite. Le righe
  * vuote separano i capoversi. Il prefisso di citazione viene tolto e rimesso
@@ -129,14 +131,14 @@ private val LIST_MARKER = Regex("""^([-*•·>]|\d{1,3}[.)])\s""")
  * congedi hanno di norma una riga vuota o la firma "-- "); reflow è comunque
  * opt-in e solo in lettura.
  */
-private const val WRAP_MIN_W = 30 // sotto questa larghezza: non è wrapping, è testo a righe corte per scelta
 private const val WRAP_MAX_W = 90 // tetto: evita che un URL lunghissimo falsi la stima
 
 // 1.2.4: una fine riga è "voluta" (da NON unire) solo quando la riga precedente,
 // oltre a essere corta, termina con punteggiatura terminale. Serve a proteggere
 // etichette ("Bar:"), saluti ("Ciao,") e frasi brevi, senza però lasciare orfane
 // le righe di una-due parole in mezzo a un capoverso.
-private val PUNTEGGIATURA_TERMINALE = setOf('.', ',', ':', ';', '!', '?', '…')
+// 1.6: la regola, l'elenco e la soglia minima sono SPOSTATI in text/WrapBody.kt,
+// perche' li usa anche «Riformatta» in scrittura.
 
 private fun reflowLines(lines: List<String>, depth: Int): List<String> {
     val prefix = if (depth > 0) ">".repeat(depth) + " " else ""
@@ -144,16 +146,14 @@ private fun reflowLines(lines: List<String>, depth: Int): List<String> {
     // larghezza di impaginazione stimata per questo blocco
     val w = (bare.filter { it.isNotBlank() }.maxOfOrNull { it.trimEnd().length } ?: 0)
         .coerceAtMost(WRAP_MAX_W)
-    if (w < WRAP_MIN_W) return lines // niente wrapping reale: lascio intatto (elenchi, versi, messaggi brevi)
+    if (w < LARGHEZZA_MIN_IMPAGINATA) return lines // niente wrapping reale: lascio intatto (elenchi, versi, messaggi brevi)
 
     val out = ArrayList<String>()
     val para = StringBuilder()
-    var prevLen = 0
-    var prevTerminale = false
+    var precedente = ""
     fun flush() {
         if (para.isNotEmpty()) { out.add(prefix + para.toString()); para.setLength(0) }
-        prevLen = 0
-        prevTerminale = false
+        precedente = ""
     }
     for ((i, content) in bare.withIndex()) {
         if (content.isBlank()) {
@@ -162,26 +162,21 @@ private fun reflowLines(lines: List<String>, depth: Int): List<String> {
             continue
         }
         val trimmed = content.trim()
-        val firstWord = trimmed.substringBefore(' ').length
-        // la riga precedente era "piena" (andata a capo per il margine) se la
-        // prima parola di questa non ci sarebbe stata
-        val precedentePiena = prevLen + 1 + firstWord > w
         // 1.2.4: interruzione VOLUTA solo se la riga precedente NON era piena E
         // finiva con punteggiatura terminale. Prima si spezzava su OGNI riga
         // precedente non piena: bastava un'orfana cortissima ("è", "sono",
-        // "nelle") a far scendere prevLen e a spezzare il capoverso, così
-        // l'orfana ricompariva al render. Ora un'orfana (che non finisce con
-        // punteggiatura) viene unita; a restare su riga propria sono solo
-        // etichette/saluti/frasi brevi che chiudono con . , : ; ! ? …
-        val interruzioneVoluta = prevTerminale && !precedentePiena
+        // "nelle") a spezzare il capoverso, così l'orfana ricompariva al render.
+        // Ora un'orfana (che non finisce con punteggiatura) viene unita; a
+        // restare su riga propria sono solo etichette/saluti/frasi brevi che
+        // chiudono con . , : ; ! ? …
+        val voluta = interruzioneVoluta(precedente, trimmed, w)
         when {
             para.isEmpty() -> para.append(trimmed)
-            LIST_MARKER.containsMatchIn(trimmed) -> { flush(); para.append(trimmed) } // elenco: mai unire
-            interruzioneVoluta -> { flush(); para.append(trimmed) }                    // interruzione voluta
-            else -> para.append(' ').append(trimmed)                                   // continuazione del capoverso
+            MARCA_ELENCO.containsMatchIn(trimmed) -> { flush(); para.append(trimmed) } // elenco: mai unire
+            voluta -> { flush(); para.append(trimmed) }                                 // interruzione voluta
+            else -> para.append(' ').append(trimmed)                                    // continuazione del capoverso
         }
-        prevLen = content.trimEnd().length
-        prevTerminale = trimmed.lastOrNull()?.let { it in PUNTEGGIATURA_TERMINALE } ?: false
+        precedente = content
     }
     flush()
     return out

@@ -26,7 +26,7 @@ object ReleaseNotes {
      * corretto. Ad ogni bump di versione in build.gradle.kts, aggiornare
      * SEMPRE anche questa riga e le [sections] sotto.
      */
-    const val VERSION = "1.5.9"
+    const val VERSION = "1.6"
 
     /**
      * Novità della versione corrente, in blocchi titolo → righe.
@@ -39,6 +39,30 @@ object ReleaseNotes {
      * strings.xml (tutte e tre le cartelle).
      */
     val sections: List<Pair<Int, List<Int>>> = listOf(
+        // 1.6 (treno in corso; versionCode 180 dal 2 novembre 2026). Chiavi
+        // rn_v16_* verificate libere nelle tre cartelle prima di usarle.
+        //  - l1  il nome del gruppo nella barra di lettura (RPoggi), con +N
+        //  - l2  il proprio post non sparisce piu' dopo l'invio (Bingo3331)
+        //  - l3  nuova gamma viola: icona, avvio a tre barre, accento (anche
+        //        predefinito), tinta Purple (Marco)
+        //  - l4  riformatta la citazione a 72 colonne (sondaggio sui gruppi)
+        //  - l5  a capo a 72 colonne anche dalla vista a pannelli (difetto
+        //        trovato nell'analisi del sondaggio)
+        //  - l6  tasto Avanti, volume giu' compreso (sondaggio sui gruppi)
+        //  - l7  identita' per gruppo (Dave Royal, sondaggio sui gruppi)
+        //  - l8  ignora discussione (sondaggio sui gruppi)
+        //  - l9  ricostruisci discussione (sondaggio sui gruppi)
+        R.string.rn_v16_title to listOf(
+            R.string.rn_v16_l1,
+            R.string.rn_v16_l2,
+            R.string.rn_v16_l3,
+            R.string.rn_v16_l4,
+            R.string.rn_v16_l5,
+            R.string.rn_v16_l6,
+            R.string.rn_v16_l7,
+            R.string.rn_v16_l8,
+            R.string.rn_v16_l9,
+        ),
         // 1.5.9 (treno in corso; versionCode 177 dal 27 ottobre 2026). Chiavi
         // rn_v159_* verificate libere nelle tre cartelle prima di usarle.
         //  - l1  faccine a caratteri mostrate come emoji (Marco, come MesNews)

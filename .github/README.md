@@ -8,7 +8,7 @@
 
 Written from scratch in Kotlin + Jetpack Compose. Its interface follows Piao Hong's *Newsreader* (MOD 17); its goal is to combine that familiarity with the depth of configuration of MesNews.
 
-**Latest version: 1.5.9** (versionCode 179) — 30 October 2026 · Android 8.0 or later
+**Latest version: 1.6** (versionCode 185) — 4 November 2026 · Android 8.0 or later
 
 ## Download
 
@@ -27,7 +27,7 @@ If you are updating, install the new APK over the existing one: do **not** unins
 - **Real multiple identities**: name, e-mail, signature, User-Agent, X-No-Archive, custom headers, quote introduction and Face, each one assignable to a specific server
 - Writing: replies with quoting (four modes), **"Quote" and "Quote and reply" from a text selection**, crossposting, signatures, local drafts **that save themselves**
 - RFC 2047 headers, quoted-printable, base64, multiple charsets; **Face** (PNG, as in MesNews) for reading and sending, black-and-white **X-Face** for reading; coloured initials when an author has neither; **Format=Flowed** (RFC 3676) for reading, optional for sending
-- **Customisable reading bars** in both views: twenty-one actions, each movable between bar and menu
+- **Customisable reading bars** in both views: twenty-three actions, each movable between bar and menu
 - **"Keep this message"**: writes a message as an `.eml` file into a folder you choose once
 - **Score-based filter engine** in the slrn/Gnus style: contains / wildcard / regex on From, Subject, Message-ID, Xpost, Body, newsreader and any header, plus "nick = address" against sockpuppets; extension to replies (hidden or highlighted); per-group scope (wildmat), expiry, kill/hide/highlight/watch thresholds; removing a rule undoes its effect; text kill-file import/export
 - Configuration backup and restore, with optional encryption

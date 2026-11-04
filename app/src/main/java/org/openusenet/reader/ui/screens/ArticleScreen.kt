@@ -34,6 +34,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import org.openusenet.reader.ui.TastiVolume
+import org.openusenet.reader.ui.icone.Download
 import org.openusenet.reader.ui.icone.ArrowBack
 import org.openusenet.reader.ui.icone.Reply
 import org.openusenet.reader.ui.icone.AccountTree
@@ -96,6 +97,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -116,6 +118,7 @@ import kotlinx.coroutines.launch
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.R
 import org.openusenet.reader.data.Article
+import org.openusenet.reader.data.Group
 import org.openusenet.reader.data.NewsRepository
 import org.openusenet.reader.ui.Routes
 import org.openusenet.reader.ui.components.QuoteColoredBody
@@ -221,6 +224,7 @@ fun ArticleScreen(
     }
     val scope = rememberCoroutineScope()
     val scroll = rememberScrollState()
+    var avantiInCorso by remember { mutableStateOf(false) }
     // wishlist beta12 (Marco): lo swipe verso il messaggio successivo deve
     // rispettare "solo non letti", non camminare sull'intera lista come fa
     // oggi — e avvisare invece di restare zitto quando non c'è più nulla,
@@ -254,8 +258,7 @@ fun ArticleScreen(
     // su flat[0] (salto alla prima discussione del gruppo) e goPrev() non
     // faceva nulla. Il raggruppamento e' un fatto di PRESENTAZIONE della lista;
     // dentro l'articolo la sequenza di lettura e' quella dell'albero completo.
-    val navView = if (AppSettings.threadView == ThreadViews.ROOTS)
-        ThreadViews.TREE else AppSettings.threadView
+    val navView = vistaDiNavigazione()
     val flat = remember(groupArticles, navView, AppSettings.threadSort) {
         buildThreadList(groupArticles, unreadOnly = false, view = navView)
     }
@@ -276,6 +279,24 @@ fun ArticleScreen(
     // posizione (1-based) e totale DENTRO la discussione corrente
     val posInThread = if (position < 0) 0 else position - threadStartIdx + 1
     val totalInThread = threadEndIdx - threadStartIdx
+
+    // 1.6 / 180 (RPoggi, via Usenet): il NOME DEL GRUPPO nella barra. E' il
+    // gruppo DELL'ARTICOLO (groupId qui sopra), non quello da cui si e'
+    // arrivati: giusto anche aprendo da una ricerca o da un link, e per un
+    // crosspost e' il gruppo in cui lo si sta leggendo. Il server compare solo
+    // con piu' server (serverDaMostrare, la regola della 1.4.4); `+N` sono gli
+    // altri gruppi del crosspost (Marco), da Newsgroups: di headersRaw — che
+    // arriva col corpo, quindi il segno compare appena il corpo e' scaricato.
+    val servers by repo.servers.collectAsState(initial = emptyList())
+    val gruppoArticolo by produceState<Group?>(null, groupId) {
+        value = groupId?.let { repo.groupById(it) }
+    }
+    val altriGruppi = remember(article?.headersRaw, gruppoArticolo) {
+        altriGruppiCrosspost(crosspostGroups(article?.headersRaw), gruppoArticolo?.name.orEmpty())
+    }
+
+    // 1.6 (sondaggio sui gruppi): null se il padre del messaggio c'e'.
+    val ricostruisci = ricostruisciDaLettura(repo, article)
 
     // albero completo del gruppo: base per la navigazione fra messaggi e discussioni
     val tree = remember(groupArticles, AppSettings.threadSort) {
@@ -319,12 +340,49 @@ fun ArticleScreen(
     }
     val esistonoNonLetti = esistonoNonLettiDopo(flat, position)
 
+    /**
+     * 1.6 (sondaggio sui gruppi): il tasto Avanti, vedi TastoAvanti.kt. Passando
+     * a un altro gruppo si esce da questo come uscendo dall'elenco, e la pila si
+     * ricompone gruppi → elenco nuovo → messaggio: Indietro torna all'elenco del
+     * gruppo in cui si e' arrivati. L'avviso e' un Toast perche' sopravvive al
+     * cambio di schermata, e [avantiInCorso] ferma i tocchi ripetuti.
+     */
+    fun goAvanti() {
+        if (avantiInCorso) return
+        avantiInCorso = true
+        scope.launch {
+            try {
+                when (val esito = esitoAvanti(repo, flat, position, groupId)) {
+                    null -> Unit
+                    is EsitoAvanti.Messaggio -> currentId = esito.id
+                    EsitoAvanti.Fine -> android.widget.Toast.makeText(
+                        ctx, ctx.getString(R.string.art_avanti_fine), android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                    is EsitoAvanti.AltroGruppo -> {
+                        android.widget.Toast.makeText(
+                            ctx, ctx.getString(R.string.art_avanti_gruppo, esito.nome), android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                        nav.previousBackStackEntry
+                            ?.takeIf { it.destination.route == Routes.THREADS_PATTERN }
+                            ?.let { DiscussioniAperte.clear(it.id) }
+                        groupId?.let { applicaUscitaGruppo(repo, it) }
+                        nav.navigate(Routes.threads(esito.gruppoId)) { popUpTo(Routes.GROUPS) }
+                        nav.navigate(Routes.article(esito.articoloId))
+                    }
+                }
+            } finally {
+                avantiInCorso = false
+            }
+        }
+    }
+
     // navigazione fra DISCUSSIONI (salta all'inizio del thread seguente/precedente)
     fun goNextThread() { idDiscussioneSuccessiva(tree, currentId)?.let { currentId = it } }
     // 1.5.7 / 175 (F8): i tasti del volume sfogliano, finche' questa schermata e'
     // visibile. rememberUpdatedState: il gestore registrato una volta chiama
     // sempre le funzioni della composizione PIU' RECENTE (posizione attuale).
-    val avantiAttuale by rememberUpdatedState({ goNext() })
+    // 1.6: volume giu' = Avanti.
+    val avantiAttuale by rememberUpdatedState({ goAvanti() })
     val indietroAttuale by rememberUpdatedState({ goPrev() })
     DisposableEffect(Unit) {
         val mio: (TastiVolume.Verso) -> Unit = { v ->
@@ -437,10 +495,23 @@ fun ArticleScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        if (totalInThread > 0 && position >= 0) "[$posInThread/$totalInThread]" else stringResource(R.string.art_title),
-                        maxLines = 1,
-                    )
+                    val contatore = if (totalInThread > 0 && position >= 0) "[$posInThread/$totalInThread]" else ""
+                    val g = gruppoArticolo
+                    if (g == null) {
+                        Text(contatore.ifEmpty { stringResource(R.string.art_title) }, maxLines = 1)
+                    } else {
+                        // 1.6 / 180 (piano B): gruppo sopra; contatore, +N e
+                        // server sotto in piccolo. titleMedium e non il
+                        // titleLarge della barra: qui le icone sono quattro e
+                        // al nome restano ~100dp su un telefono da 360.
+                        TitoloGruppo(
+                            nome = g.name,
+                            server = serverDaMostrare(servers, g.serverId),
+                            dettagli = listOf(contatore, if (altriGruppi > 0) "+$altriGruppi" else "")
+                                .filter { it.isNotEmpty() }.joinToString(" · "),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = { nav.indietroSicuro() }) {
@@ -512,6 +583,13 @@ fun ArticleScreen(
                                 leadingIcon = { Icon(Icons.Default.Block, contentDescription = null) },
                                 onClick = { showPlonkDialog = true; overflow = false },
                             )
+                            if (ricostruisci != null) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.rb_title)) },
+                                    leadingIcon = { Icon(Icons.Default.Download, contentDescription = null) },
+                                    onClick = { ricostruisci(); overflow = false },
+                                )
+                            }
                         }
                     }
                 },
@@ -540,6 +618,10 @@ fun ArticleScreen(
                     id = "next_unread",
                     enabled = esistonoNonLetti,
                     onClick = { goNextUnread() },
+                ),
+                ArticleBarAction(
+                    id = "avanti",
+                    onClick = { goAvanti() },
                 ),
                 ArticleBarAction(
                     id = "prev_thread",

@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- beta13: sfondo dello splashscreen, tinta viola profonda dell'app -->
-    <color name="splash_bg">#241047</color>
+    <!-- 1.6: scala viola 2 (tinta 288 gradi), il "viola di riferimento" di
+         icona e avvio. viola_base e' lo sfondo dell'icona e il disco
+         dell'avvio: un valore solo per tutti e due. -->
+    <color name="viola_base">#522F5B</color>
+    <!-- sfondo dello splashscreen: T10 della scala 2 (prima #241047) -->
+    <color name="splash_bg">#211325</color>
 </resources>

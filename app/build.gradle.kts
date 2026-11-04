@@ -2064,8 +2064,38 @@ android {
         // (piano A): emoji grande come il testo, misurata senza limiti e non
         // tagliata, segnaposto largo 1,0 em; faccine fra asterischi e trattini
         // bassi (*;-)*, _:-)_) convertite.
-        versionCode = 179
-        versionName = "1.5.9"
+        // 1.5.9 / 179 PUBBLICATA il 2 novembre 2026.
+        // versionCode 180 (2 novembre 2026) - versionName CAMBIA (1.5.9 pubblica;
+        // 1.6 deciso da Marco, treno APERTO). IL NOME DEL GRUPPO IN LETTURA
+        // (RPoggi, via Usenet): nella barra di ArticleScreen gruppo sopra,
+        // contatore [n/tot], +N dei crosspost (voluto da Marco) e server sotto;
+        // lo stesso nel tutto schermo dei pannelli. Il titolo «gruppo + server»
+        // della 1.4.4, che era in due copie, ora e' TitoloGruppo
+        // (IntestazioneServer.kt) per tutti e quattro i posti.
+        // versionCode 181 (4 novembre 2026) - versionName INVARIATO (1.6 non e'
+        // pubblicata): la 180 e' gia' installata sul telefono di Marco, quindi
+        // il numero e' bruciato. Porta le prime due voci del sondaggio sui
+        // gruppi per la prova sul telefono: Riformatta la citazione, tasto
+        // Avanti, a capo a 72 colonne anche dai pannelli, `> > ` in f=f.
+        // versionCode 182 (4 novembre 2026) - versionName INVARIATO: la 181 e'
+        // stata provata sul telefono di Marco (prove 1-44 OK). MIGRAZIONE
+        // 12 -> 13 DA SOLA, nessun lettore: groups.identityId e tabella
+        // ignored_ids. Se i dati sopravvivono, Identita' per gruppo e Ignora
+        // discussione arrivano dopo con un solo sospettato ciascuna.
+        // versionCode 183 (4 novembre 2026) - versionName INVARIATO: migrazione
+        // superata sul telefono di Marco (prove 46-52). IDENTITA' PER GRUPPO
+        // (Dave Royal): gruppo -> server -> predefinita, riga in scrittura,
+        // backup; il sync non riscrive piu' tutta la riga del gruppo.
+        // versionCode 184 (4 novembre 2026) - versionName INVARIATO: identita'
+        // per gruppo superata sul telefono di Marco (prove 53-66). IGNORA
+        // DISCUSSIONE: registro ignored_ids al sync, risposte a me e miei post
+        // restano non letti, voce nei due menu, backup.
+        // versionCode 185 (4 novembre 2026) - versionName INVARIATO: la 184 e'
+        // sul telefono di Marco (prove 68-83 OK). RICOSTRUISCI DISCUSSIONE
+        // (piano A): HEAD per Message-ID, stessa strada della sync, gia' letti,
+        // segnalibro fermo, nessuna migrazione.
+        versionCode = 185
+        versionName = "1.6"
     }
 
     buildTypes {

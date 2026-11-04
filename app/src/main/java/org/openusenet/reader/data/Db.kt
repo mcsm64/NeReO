@@ -27,8 +27,10 @@ import java.util.Locale
         Identity::class,
         // 1.4 (TOFU): identità TLS osservate e approvate, una per riga server.
         TlsPin::class,
+        // 1.6 (sondaggio sui gruppi): registro delle discussioni ignorate.
+        IgnoredId::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,6 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun availableGroupDao(): AvailableGroupDao
     abstract fun draftDao(): DraftDao
     abstract fun poisonedIdDao(): PoisonedIdDao
+    abstract fun ignoredIdDao(): IgnoredIdDao
     abstract fun identityDao(): IdentityDao
 
     /** 1.4: conteggi di tutte le tabelle — Diagnostica database in Manutenzione. */
@@ -268,6 +271,36 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 1.6 — UNA MIGRAZIONE, DUE MODIFICHE, NESSUN LETTORE. Stessa regola
+         * della 11 -> 12: viaggia da sola in una build, e le funzioni che la
+         * useranno (Identita' per gruppo, Ignora discussione) arrivano dopo.
+         *
+         * 1. `groups.identityId`: nullable, nessun default, stessa forma di
+         *    `groups.replyIntro`. Le righe esistenti restano NULL, cioe'
+         *    «eredita»: nessun gruppo cambia comportamento.
+         * 2. `ignored_ids`: tabella nuova, non tocca niente che esista.
+         *
+         * Una CREATE TABLE e una ALTER TABLE ADD COLUMN senza default non
+         * riscrivono le righe: durata istantanea anche su archivi grandi.
+         *
+         * ATTENZIONE alla forma: chiave primaria su `messageId` (TEXT NOT NULL)
+         * e nome dell'indice ESATTAMENTE index_<tabella>_<colonna>. Provata su
+         * SQLite contro lo schema generato da Room, vedi NeReO_1.6_180.md.
+         */
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE groups ADD COLUMN identityId INTEGER")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `ignored_ids` (" +
+                        "`messageId` TEXT NOT NULL, " +
+                        "`epoch` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`messageId`))"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_ignored_ids_epoch` ON `ignored_ids` (`epoch`)")
+            }
+        }
+
         private const val DB_NAME = "openusenet.db"
 
         /**
@@ -284,7 +317,7 @@ abstract class AppDatabase : RoomDatabase() {
          * caso peggiore e' un backup di scorta inutile (vedi DbSafety): mai una
          * perdita di dati. Restano comunque nella checklist di rilascio.
          */
-        private const val SCHEMA_VERSION = 12
+        private const val SCHEMA_VERSION = 13
 
         /**
          * 1.4: la versione DICHIARATA, leggibile da fuori per la Diagnostica
@@ -296,7 +329,7 @@ abstract class AppDatabase : RoomDatabase() {
         const val VERSIONE_SCHEMA_DICHIARATA = SCHEMA_VERSION
         private val PASSI_MIGRAZIONE = listOf(
             2 to 3, 3 to 4, 4 to 5, 5 to 6, 6 to 7, 7 to 8, 8 to 9, 9 to 10, 10 to 11,
-            11 to 12,
+            11 to 12, 12 to 13,
         )
 
         fun get(context: Context): AppDatabase =
@@ -313,7 +346,7 @@ abstract class AppDatabase : RoomDatabase() {
                         .addMigrations(
                             MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
                             MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
-                            MIGRATION_11_12,
+                            MIGRATION_11_12, MIGRATION_12_13,
                         )
                         // backstop: se compare uno scarto di schema non previsto, riparte pulito
                         // (ma solo DOPO che proteggiPrimaDelWipe ha messo in salvo i dati).

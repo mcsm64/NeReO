@@ -38,6 +38,44 @@ package org.openusenet.reader.text
 const val BODY_MAX_COLS = 72
 
 /**
+ * 1.6 — IL CORPO COME VA SULLA RETE, in un posto solo.
+ *
+ * ⚠️ Il difetto che chiude: la scelta fra [avvolgiFlowed] e [wrapBody] stava
+ * dentro `ComposeScreen`, e `ComposePane` (vista a pannelli) spediva il testo
+ * tale e quale: nessun a capo a 72 colonne (rischio «441 Line too long») e
+ * interruttore f=f ignorato. `postArticle` non manda a capo: decide solo il
+ * `Content-Type`, guardando il corpo che riceve.
+ */
+fun corpoDaInviare(testo: String, flowed: Boolean): String =
+    if (flowed) avvolgiFlowed(testo) else wrapBody(testo)
+
+/**
+ * Le tre regole per riconoscere un capoverso andato a capo, in comune fra la
+ * lettura (`reflowLines` in ArticleBody.kt) e «Riformatta» in scrittura.
+ *
+ * Righe che iniziano cosi' sono elenchi o enumerazioni: mai unirle alla precedente.
+ */
+val MARCA_ELENCO = Regex("""^([-*•·>]|\d{1,3}[.)])\s""")
+
+/** Sotto questa larghezza non e' testo andato a capo: sono righe corte per scelta. */
+const val LARGHEZZA_MIN_IMPAGINATA = 30
+
+private val PUNTEGGIATURA_TERMINALE = setOf('.', ',', ':', ';', '!', '?', '…')
+
+/**
+ * La fine di [precedente] e' voluta da chi ha scritto? Si', se la riga finisce
+ * con punteggiatura E non era piena: la prima parola di [seguente] ci sarebbe
+ * stata dentro [larghezza]. Protegge etichette, saluti e frasi brevi; le orfane
+ * di una-due parole, che finiscono senza punteggiatura, si riuniscono.
+ */
+fun interruzioneVoluta(precedente: String, seguente: String, larghezza: Int): Boolean {
+    val prec = precedente.trimEnd()
+    val ultimo = prec.lastOrNull() ?: return false
+    val primaParola = seguente.trim().substringBefore(' ').length
+    return ultimo in PUNTEGGIATURA_TERMINALE && prec.length + 1 + primaParola <= larghezza
+}
+
+/**
  * Manda a capo il corpo del messaggio rispettando le convenzioni Usenet.
  *
  * Regole applicate, in ordine di importanza:
@@ -169,6 +207,28 @@ private fun protezioneServe(prof: Int, contenuto: String): Boolean =
         contenuto.startsWith(">") ||   // §4.4: obbligatorio (riga non citata che comincia con >)
         contenuto.startsWith("From ")  // §4.4: obbligatorio (From-munging)
 
+/**
+ * 1.6 — DOVE FINISCONO I `>` DI TESTA, anche nella forma `> > testo`.
+ *
+ * `> > testo` e' cio' che NeReO stessa produce rispondendo a un messaggio gia'
+ * citato. Per la RFC la profondita' conta i soli `>` attaccati
+ * ([profonditaCitazione], che resta cosi' in LETTURA: e' la norma per i
+ * messaggi altrui), ma qui i `>` li stiamo SCRIVENDO noi: contarne uno solo
+ * lasciava l'altro nel contenuto, e la riga spezzata proseguiva a livello 1.
+ * I `>` si riconoscono separati da UNO spazio e si riemettono attaccati, nella
+ * forma canonica del §4.5.
+ */
+private fun fineTestaCitazione(riga: String): Int {
+    var fine = 0
+    var i = 0
+    while (i < riga.length && riga[i] == '>') {
+        fine = i + 1
+        i = fine
+        if (i + 1 < riga.length && riga[i] == ' ' && riga[i + 1] == '>') i++
+    }
+    return fine
+}
+
 fun avvolgiFlowed(text: String, cols: Int = BODY_MAX_COLS): String {
     val out = ArrayList<String>()
     var nellaFirma = false
@@ -201,8 +261,9 @@ fun avvolgiFlowed(text: String, cols: Int = BODY_MAX_COLS): String {
         if (riga.trimEnd() == "--" || riga == "-- ") nellaFirma = true
         if (nellaFirma) { out.add(riga); continue }
 
-        val prof = profonditaCitazione(riga)
-        var contenuto = riga.substring(prof)
+        val fineTesta = fineTestaCitazione(riga)
+        val prof = riga.substring(0, fineTesta).count { it == '>' }
+        var contenuto = riga.substring(fineTesta)
         // ⚠️ LO SPAZIO DOPO I `>` SI TOGLIE, QUELLO A INIZIO RIGA NO, e la
         // differenza non e' un capriccio.
         //

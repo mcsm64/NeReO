@@ -79,7 +79,7 @@
     <string name="app_text_size_note">The size applies to the whole interface, not just to message reading.</string>
     <string name="app_collapse_blank">Smart line merging (removes consecutive blank lines)</string>
     <string name="app_volume_keys">Volume keys turn the page</string>
-    <string name="app_volume_keys_note">In full-screen reading, volume down opens the next message and volume up the previous one. Everywhere else the keys change the volume as usual.</string>
+    <string name="app_volume_keys_note">In reading, volume down is Next (next unread message, then the next group with unread messages) and volume up opens the previous message. Everywhere else the keys change the volume as usual.</string>
     <string name="app_animations">Screen transition animation</string>
     <string name="app_animations_note">The short fade when you open a message or another screen. Turn it off and screens change instantly. Menus keep their own very brief animation.</string>
     <string name="app_shorten_quotes">Shorten quoted text (tap to expand)</string>
@@ -446,6 +446,7 @@
     <string name="cmp_chars">%d characters</string>
     <string name="cmp_send">Send</string>
     <string name="cmp_group">Group: %s</string>
+    <string name="cmp_identity">Identity: %s</string>
     <string name="cmp_groups">Groups: %s</string>
     <string name="cmp_followup_gruppi">The author asked for follow-ups to continue in %1$s, so NeReO will post there instead of %2$s. Open the groups selector if you want to decide yourself.</string>
     <string name="cmp_followup_poster">The author asked for replies by e-mail, not on the group (Followup-To: poster). NeReO does not send mail, so this reply will still go out on the group - now you know it, which is different from not knowing.</string>
@@ -453,6 +454,9 @@
     <string name="tl_group_intro">Quote intro for this group</string>
     <string name="tl_group_intro_tip" formatted="false">Replaces the intro of your identity when replying in this group - it does not join the random draw. Typically used to write it in the language of the group. Leave it empty to use your identity\'s intro. The same placeholders work here: %autore% %data% %gruppo% and the rest.</string>
     <string name="tl_group_intro_label">Intro line (empty = use identity)</string>
+    <string name="tl_group_identity">Identity for this group</string>
+    <string name="tl_group_identity_tip">Name, address, signature and everything else you post with in this group. The group introduction above, if set, still wins.</string>
+    <string name="tl_group_identity_inherit">Same as the server</string>
     <string name="mnt_letto_messageid">A crossposted message read in one group counts as read in the others</string>
     <string name="art_reload">Reload message</string>
     <string name="tls_title">TLS identity</string>
@@ -500,6 +504,7 @@
     <string name="trim_note">Tap the X to remove a quoted line. The rest of the message is left untouched.</string>
     <string name="trim_remove_cd">Remove this quoted line</string>
     <string name="trim_apply">Apply</string>
+    <string name="trim_reflow">Rewrap to 72 columns</string>
     <string name="xp_title">Crossposted message</string>
     <string name="xp_title_followup">Where the reply goes</string>
     <string name="xp_note_followup">The author asked for follow-ups in %1$s. You can add the original groups (max %2$d groups).</string>
@@ -563,6 +568,9 @@
     <string name="art_prev_msg">Previous message (in this thread)</string>
     <string name="art_next_msg">Next message (in this thread)</string>
     <string name="art_next_unread">Next unread</string>
+    <string name="art_avanti">Next (unread, then next group)</string>
+    <string name="art_avanti_gruppo">Next group: %1$s</string>
+    <string name="art_avanti_fine">Nothing left to read, in any group.</string>
     <string name="art_prev_thread">Previous thread</string>
     <string name="art_next_thread">Next thread</string>
     <string name="art_back_index">Back to index</string>
@@ -627,7 +635,7 @@
     <string name="common_download_all_bodies_menu">Download all bodies…</string>
     <string name="common_hide_filtered">Hide filtered messages</string>
     <string name="common_show_filtered">Show filtered messages</string>
-    <string name="common_group_retention_menu">Retention for this group…</string>
+    <string name="common_group_retention_menu">Settings for this group…</string>
     <string name="tl_all_read_empty">All read in this group.\nOpen the ⋮ menu and choose \"Show filtered\" or change view.</string>
     <string name="tl_no_articles">No articles. Tap the sync icon above.</string>
     <string name="tl_restore_message">Restore this message</string>
@@ -639,6 +647,17 @@
     <string name="common_mark_message_read">Mark message as read</string>
     <string name="common_mark_thread_read">Mark thread as read</string>
     <string name="common_mark_thread_unread">Mark thread as unread</string>
+    <string name="common_ignore_thread">Ignore thread</string>
+    <string name="common_unignore_thread">Stop ignoring</string>
+    <string name="common_ignore_thread_done">Thread ignored: replies will arrive already read, except those to you.</string>
+    <string name="common_unignore_thread_done">The thread is no longer ignored.</string>
+    <string name="common_rebuild_thread">Rebuild thread (%1$d missing)</string>
+    <string name="rb_title">Rebuild thread</string>
+    <string name="rb_avanzamento">Searched %1$d of %2$d</string>
+    <string name="rb_esito">Found %1$d, not available %2$d on server %3$s.</string>
+    <string name="rb_scartati">Discarded by filters: %1$d.</string>
+    <string name="rb_restanti">Stopped at the limit: %1$d left, try again to continue.</string>
+    <string name="rb_errore">Interrupted: %1$s</string>
     <string name="common_ignore_author">Plonk author and replies</string>
     <string name="common_ignore_author_success">Plonked: %1$s — replies to their posts hidden too</string>
     <string name="common_author_unidentified">Unable to identify the author</string>
@@ -671,7 +690,7 @@
     <string name="tl_use_default">Use default value</string>
     <string name="tl_never_keep_all">Never (keep all)</string>
     <string name="tl_keep_latest_threads">Latest %1$d threads</string>
-    <string name="tl_group_retention">Group retention</string>
+    <string name="tl_group_retention">Group settings</string>
     <string name="tl_retention_body">After every sync, read messages are deleted (unread and followed ones remain). You can choose to keep messages by TIME or by NUMBER of threads.</string>
     <string name="tl_by_thread_count">By number of threads</string>
     <string name="tl_thread_count_tip">Recommended for low-traffic groups: they do not empty over time.</string>
@@ -1061,6 +1080,16 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">X-Faces are shown. The classic black-and-white Usenet face (the X-Face header, sent by MesNews and many traditional newsreaders) now appears next to the author\'s name, where until now only the colour Face did. Tap it to enlarge it: it stays sharp, square by square. Order: Face first, then X-Face, then the coloured initials. NeReO shows X-Faces but does not send them.</string>
     <string name="rn_v155_l8">New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the \"newest first\" orders it also notices a reply inside the thread that is already at the top. With the \"oldest first\" orders, where new messages are at the bottom, you stay where you were. In the panel view too.</string>
+    <string name="rn_v16_title">New in 1.6</string>
+    <string name="rn_v16_l4">Rewrap quotes: while writing, the Trim quote window has a new command that puts quoted lines back in order at 72 columns, keeping the &gt; marks and the levels. It leaves alone your own text, signatures, blank lines between paragraphs and long links. From the survey on the groups.</string>
+    <string name="rn_v16_l5">Sending from the panes view now wraps lines at 72 columns and follows the Format=Flowed setting, as the phone view always did. Before, a long paragraph left as a single line and some servers could refuse it.</string>
+    <string name="rn_v16_l6">New Next command: one button for the next unread message, then the next thread and, at the end of the group, the next group with unread messages, on all servers in the order of the list. When nothing is left it says so. You find it in the reading bar (the panes view has it in the menu; Customize bars moves it). The volume keys, if enabled, now use it for volume down, in the panes view too. From the survey on the groups.</string>
+    <string name="rn_v16_l7">Identity per group: the group settings let you pick the identity to post with in that group (name, address, signature, Face, User-Agent, headers). The group comes first, then the server, then the default identity. In a crosspost the identity is that of the group you reply from, and the writing screen shows it. Backups now carry it, together with the group introduction, which was missing. Idea by Dave Royal, from the survey on the groups.</string>
+    <string name="rn_v16_l8">Ignore thread: from the menu of a thread, with a long press. Future replies arrive already read, except replies to your posts and your own posts. The same menu undoes it with Stop ignoring; what arrived read stays read. Watch and Ignore exclude each other. From the survey on the groups.</string>
+    <string name="rn_v16_l9">Rebuild thread: when the messages being replied to are missing, expired or never downloaded, the thread menu and the message menu offer to look for them on the server and complete the tree. They arrive already read. It recovers the messages named by the replies, also from other groups on the same server; an expired reply cannot be searched for. With retention by days they may disappear again at the next refresh. From the survey on the groups.</string>
+    <string name="rn_v16_l1">While reading, the bar at the top shows the group of the message, with the position in the thread [5/8] underneath. A +2 means the message was crossposted to 2 more groups. With more than one server, the server name appears too. Same in full-screen reading of the panes view.</string>
+    <string name="rn_v16_l2">Your own post no longer goes missing after sending. Right after a post some servers (Astraweb, for example) already announce the new message but do not deliver it yet: NeReO now asks for it again at the next refresh instead of skipping it for good.</string>
+    <string name="rn_v16_l3">New purple palette. The icon has new colours, and the start screen now shows its three bars on a purple disc instead of the old logo. The purple in Appearance → Button colour is easier to read, especially in the dark theme, and it is the default colour for new installs. The Purple tint uses the new colours too, with more readable text.</string>
     <string name="rn_v159_title">New in 1.5.9</string>
     <string name="rn_v159_l1">Text smileys become emoji, as in MesNews: \"8-o 8-o\" shows two astonished faces. On screen only: copying, quoting, replies, search, filters and export keep the original characters, and links are never touched. You can turn it off in Appearance.</string>
     <string name="rn_v159_l2">Back from a message to the thread list, the threads you had opened are still open, and the message you just read is shaded lightly. Leaving the group still closes them all.</string>

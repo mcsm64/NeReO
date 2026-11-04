@@ -77,6 +77,45 @@ fun idPrimoNonLettoDopo(flat: List<ThreadItem>, posizione: Int): Long? {
     return flat.drop(posizione + 1).firstOrNull { !it.article.read }?.article?.id
 }
 
+/**
+ * 1.6 (tasto Avanti) — il prossimo messaggio da leggere IN QUESTO GRUPPO: prima
+ * quelli dopo [posizione], poi si riparte dall'inizio. Con le discussioni piu'
+ * recenti in cima, i non letti stanno spesso SOPRA di dove ci si trova: senza il
+ * giro, Avanti lascerebbe il gruppo con dei messaggi ancora da leggere.
+ *
+ * Il messaggio corrente non conta mai: appena aperto e' gia' letto.
+ *
+ * Qui [posizione] negativa non e' un pericolo, a differenza delle funzioni qui
+ * sopra: un messaggio nascosto aperto da una ricerca non sta nella sequenza, e
+ * «il primo non letto del gruppo» e' la risposta giusta anche da li'.
+ */
+fun idNonLettoNelGruppo(sequenza: List<ThreadItem>, posizione: Int): Long? {
+    if (posizione < 0) return sequenza.firstOrNull { !it.article.read }?.article?.id
+    return idPrimoNonLettoDopo(sequenza, posizione)
+        ?: sequenza.take(posizione).firstOrNull { !it.article.read }?.article?.id
+}
+
+/** Un gruppo visto dal tasto Avanti: solo cio' che serve a sceglierlo. */
+data class GruppoDaLeggere(val id: Long, val nonLetti: Int)
+
+/**
+ * 1.6 (tasto Avanti) — il gruppo successivo con dei non letti, nell'ordine
+ * dell'elenco ([gruppi] e' quello: tutti i server), ripartendo dall'inizio dopo
+ * l'ultimo. Il gruppo corrente non e' mai la risposta.
+ *
+ * [scartati]: gruppi gia' provati, il cui contatore prometteva messaggi che non
+ * c'erano. Senza, un contatore sbagliato farebbe girare il tasto sempre li'.
+ */
+fun idGruppoConNonLetti(
+    gruppi: List<GruppoDaLeggere>,
+    correnteId: Long?,
+    scartati: Set<Long> = emptySet(),
+): Long? {
+    val indice = gruppi.indexOfFirst { it.id == correnteId }
+    val giro = gruppi.drop(indice + 1) + gruppi.take(indice.coerceAtLeast(0))
+    return giro.firstOrNull { it.nonLetti > 0 && it.id !in scartati }?.id
+}
+
 /** true se dopo [posizione] c'e' almeno un messaggio da leggere. */
 fun esistonoNonLettiDopo(flat: List<ThreadItem>, posizione: Int): Boolean =
     posizione >= 0 && flat.drop(posizione + 1).any { !it.article.read }
@@ -138,6 +177,8 @@ data class NavigazioneMessaggi(
     val vaiPrimoNonLetto: () -> Unit,
     val vaiDiscussionePrecedente: () -> Unit,
     val vaiDiscussioneSuccessiva: () -> Unit,
+    /** 1.6: sempre premibile, perche' quando non c'e' altro lo dice lui. */
+    val vaiAvanti: () -> Unit,
     val puoPrecedente: Boolean = false,
     val puoSuccessivo: Boolean = false,
     val esistonoNonLetti: Boolean = false,
@@ -147,7 +188,7 @@ data class NavigazioneMessaggi(
 
 /** Le azioni di barra che [NavigazioneMessaggi] sa eseguire da sola. */
 val AZIONI_NAVIGAZIONE = setOf(
-    "prev_msg", "next_msg", "next_unread", "prev_thread", "next_thread",
+    "prev_msg", "next_msg", "next_unread", "avanti", "prev_thread", "next_thread",
 )
 
 /**
@@ -160,6 +201,7 @@ fun NavigazioneMessaggi.esegui(id: String): Boolean {
         "prev_msg" -> vaiPrecedente()
         "next_msg" -> vaiSuccessivo()
         "next_unread" -> vaiPrimoNonLetto()
+        "avanti" -> vaiAvanti()
         "prev_thread" -> vaiDiscussionePrecedente()
         "next_thread" -> vaiDiscussioneSuccessiva()
         else -> return false

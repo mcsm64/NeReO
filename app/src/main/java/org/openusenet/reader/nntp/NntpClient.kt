@@ -149,6 +149,9 @@ data class NntpResponse(val code: Int, val text: String) {
     val isPositive get() = code in 200..299
 }
 
+/** 1.6: le intestazioni di un articolo e il numero dichiarato dal server (0 = nessuno). */
+class TestaArticolo(val numero: Long, val righe: List<ByteArray>)
+
 data class GroupEntry(val name: String, val high: Long, val low: Long, val status: String)
 
 data class GroupStats(val estimatedCount: Long, val low: Long, val high: Long, val name: String)
@@ -922,6 +925,22 @@ class NntpClient(
     fun head(numberOrId: String): List<ByteArray> = fetchMultilineRaw("HEAD $numberOrId", 221)
 
     fun body(numberOrId: String): List<ByteArray> = fetchMultilineRaw("BODY $numberOrId", 222)
+
+    /**
+     * 1.6: come [head], ma tiene il numero della riga di risposta (`221 n <id>`),
+     * che [head] butta via. 0 = il server non lo dice. Vedi RicercaMessageId.kt.
+     */
+    fun headConNumero(numberOrId: String): TestaArticolo {
+        val r = command("HEAD $numberOrId")
+        if (r.code != 221) throw NntpException(r.code, r.text)
+        return TestaArticolo(r.text.substringBefore(' ').toLongOrNull() ?: 0L, readMultilineRaw())
+    }
+
+    /** 1.6: il Message-ID dell'articolo [number] del gruppo selezionato, o null. */
+    fun messageIdDelNumero(number: Long): String? {
+        val r = command("STAT $number")
+        return if (r.code == 223) r.text.split(' ').getOrNull(1) else null
+    }
 
     /** POST di un articolo già formattato (header + riga vuota + corpo). */
     fun post(rawArticleLines: List<String>) {

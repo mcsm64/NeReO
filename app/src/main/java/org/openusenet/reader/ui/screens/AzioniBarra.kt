@@ -33,6 +33,8 @@
 package org.openusenet.reader.ui.screens
 
 import androidx.compose.material.icons.Icons
+import org.openusenet.reader.ui.icone.Avanti
+import org.openusenet.reader.ui.icone.Download
 import org.openusenet.reader.ui.icone.NavigateBefore
 import org.openusenet.reader.ui.icone.NavigateNext
 import org.openusenet.reader.ui.icone.Reply
@@ -77,6 +79,8 @@ val CATALOGO_BARRE: List<AzioneBarra> = listOf(
     AzioneBarra("prev_msg", Icons.AutoMirrored.Filled.NavigateBefore, R.string.art_prev_msg),
     AzioneBarra("next_msg", Icons.AutoMirrored.Filled.NavigateNext, R.string.art_next_msg),
     AzioneBarra("next_unread", Icons.Default.MarkChatUnread, R.string.art_next_unread),
+    // 1.6 (sondaggio sui gruppi): prossimo non letto, poi il gruppo successivo.
+    AzioneBarra("avanti", Icons.Default.Avanti, R.string.art_avanti),
     AzioneBarra("prev_thread", Icons.Default.KeyboardDoubleArrowLeft, R.string.art_prev_thread),
     AzioneBarra("next_thread", Icons.Default.KeyboardDoubleArrowRight, R.string.art_next_thread),
     AzioneBarra("back_index", Icons.AutoMirrored.Filled.Toc, R.string.art_back_index),
@@ -110,6 +114,8 @@ val CATALOGO_BARRE: List<AzioneBarra> = listOf(
     AzioneBarra("conserva", Icons.Default.Storage, R.string.art_conserva),
     // 1.4: butta la copia locale e riscarica il corpo dal server.
     AzioneBarra("ricarica", Icons.Default.Refresh, R.string.art_reload),
+    // 1.6 (sondaggio sui gruppi): solo nei pannelli; al telefono sta nel menu ⋮.
+    AzioneBarra("ricostruisci", Icons.Default.Download, R.string.rb_title),
     AzioneBarra("link", Icons.Default.Link, R.string.art_copy_link),
     // 1.4.6 (par. B13, BIG Umberto): porta all'elenco del gruppo, posizionato
     // sul messaggio e con la sua discussione aperta. SOLO nella vista a pagine:

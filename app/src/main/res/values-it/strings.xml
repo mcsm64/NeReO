@@ -85,7 +85,7 @@
     <string name="app_text_size_note">La dimensione vale per tutta l\'interfaccia, non solo per la lettura dei messaggi.</string>
     <string name="app_collapse_blank">Fusione linee intelligente (elimina righe vuote consecutive)</string>
     <string name="app_volume_keys">I tasti del volume sfogliano i messaggi</string>
-    <string name="app_volume_keys_note">Nella lettura a schermo intero, volume giù apre il messaggio successivo e volume su il precedente. Altrove i tasti regolano il volume come sempre.</string>
+    <string name="app_volume_keys_note">Durante la lettura, volume giù fa Avanti (prossimo non letto, poi il gruppo successivo con dei non letti) e volume su apre il messaggio precedente. Altrove i tasti regolano il volume come sempre.</string>
     <string name="app_animations">Animazione tra le schermate</string>
     <string name="app_animations_note">La breve dissolvenza quando apri un messaggio o un\'altra schermata. Spenta, le schermate cambiano all\'istante. I menu mantengono la loro animazione, brevissima.</string>
     <string name="app_shorten_quotes">Accorcia il testo citato (tocca per espandere)</string>
@@ -452,6 +452,7 @@
     <string name="cmp_chars">%d caratteri</string>
     <string name="cmp_send">Invia</string>
     <string name="cmp_group">Gruppo: %s</string>
+    <string name="cmp_identity">Identità: %s</string>
     <string name="cmp_groups">Gruppi: %s</string>
     <string name="cmp_followup_gruppi">L\'autore ha chiesto che le risposte proseguano in %1$s, quindi NeReO pubblichera\' li\' invece che in %2$s. Apri il selettore dei gruppi se vuoi decidere tu.</string>
     <string name="cmp_followup_poster">L\'autore ha chiesto risposte per posta, non sul gruppo (Followup-To: poster). NeReO non manda posta, quindi questa risposta uscira\' comunque sul gruppo: ora lo sai, che e\' diverso dal non saperlo.</string>
@@ -459,6 +460,9 @@
     <string name="tl_group_intro">Introduzione alla citazione per questo gruppo</string>
     <string name="tl_group_intro_tip" formatted="false">Sostituisce l\'introduzione della tua identita\' quando rispondi in questo gruppo: non entra nel sorteggio. Serve tipicamente a scriverla nella lingua del gruppo. Lasciala vuota per usare quella dell\'identita\'. Valgono gli stessi segnaposto: %autore% %data% %gruppo% e gli altri.</string>
     <string name="tl_group_intro_label">Riga di introduzione (vuota = usa l\'identita\')</string>
+    <string name="tl_group_identity">Identità per questo gruppo</string>
+    <string name="tl_group_identity_tip">Nome, indirizzo, firma e tutto il resto con cui scrivi in questo gruppo. L\'introduzione del gruppo qui sopra, se c\'è, continua a vincere.</string>
+    <string name="tl_group_identity_inherit">Come il server</string>
     <string name="mnt_letto_messageid">Un messaggio crospostato letto in un gruppo risulta letto anche negli altri</string>
     <string name="art_reload">Ricarica il messaggio</string>
     <string name="tls_title">Identita\' TLS</string>
@@ -506,6 +510,7 @@
     <string name="trim_note">Tocca la X per togliere una riga citata. Il resto del messaggio non viene toccato.</string>
     <string name="trim_remove_cd">Togli questa riga citata</string>
     <string name="trim_apply">Applica</string>
+    <string name="trim_reflow">Riformatta a 72 colonne</string>
     <string name="xp_title">Messaggio crosspostato</string>
     <string name="xp_title_followup">Dove va la risposta</string>
     <string name="xp_note_followup">L\'autore ha chiesto che le risposte proseguano in %1$s. Puoi aggiungere i gruppi dell\'originale (max %2$d gruppi).</string>
@@ -569,6 +574,9 @@
     <string name="art_prev_msg">Messaggio precedente (in questa discussione)</string>
     <string name="art_next_msg">Messaggio successivo (in questa discussione)</string>
     <string name="art_next_unread">Primo non letto successivo</string>
+    <string name="art_avanti">Avanti (non letti, poi gruppo successivo)</string>
+    <string name="art_avanti_gruppo">Gruppo successivo: %1$s</string>
+    <string name="art_avanti_fine">Non c\'è più niente da leggere, in nessun gruppo.</string>
     <string name="art_prev_thread">Discussione precedente</string>
     <string name="art_next_thread">Discussione successiva</string>
     <string name="art_back_index">Torna all\'indice</string>
@@ -633,7 +641,7 @@
     <string name="common_download_all_bodies_menu">Scarica tutti i corpi…</string>
     <string name="common_hide_filtered">Nascondi i filtrati</string>
     <string name="common_show_filtered">Mostra i filtrati</string>
-    <string name="common_group_retention_menu">Conservazione di questo gruppo…</string>
+    <string name="common_group_retention_menu">Impostazioni di questo gruppo…</string>
     <string name="tl_all_read_empty">Tutto letto in questo gruppo.\nApri il menù ⋮ e scegli \"Mostra i filtrati\" o cambia vista.</string>
     <string name="tl_no_articles">Nessun articolo. Tocca l’icona di sincronizzazione in alto.</string>
     <string name="tl_restore_message">Ripristina questo messaggio</string>
@@ -645,6 +653,17 @@
     <string name="common_mark_message_read">Segna il messaggio come letto</string>
     <string name="common_mark_thread_read">Segna la discussione come letta</string>
     <string name="common_mark_thread_unread">Segna la discussione da leggere</string>
+    <string name="common_ignore_thread">Ignora discussione</string>
+    <string name="common_unignore_thread">Non ignorare più</string>
+    <string name="common_ignore_thread_done">Discussione ignorata: le risposte arriveranno già lette, tranne quelle a te.</string>
+    <string name="common_unignore_thread_done">La discussione non è più ignorata.</string>
+    <string name="common_rebuild_thread">Ricostruisci discussione (%1$d mancanti)</string>
+    <string name="rb_title">Ricostruisci discussione</string>
+    <string name="rb_avanzamento">Cercati %1$d di %2$d</string>
+    <string name="rb_esito">Trovati %1$d, non disponibili %2$d sul server %3$s.</string>
+    <string name="rb_scartati">Scartati dai filtri: %1$d.</string>
+    <string name="rb_restanti">Fermato al limite: ne restano %1$d, riprova per continuare.</string>
+    <string name="rb_errore">Interrotto: %1$s</string>
     <string name="common_ignore_author">Plonk autore e risposte</string>
     <string name="common_ignore_author_success">Plonk: %1$s — nascoste anche le risposte ai suoi post</string>
     <string name="common_author_unidentified">Impossibile identificare l’autore</string>
@@ -677,7 +696,7 @@
     <string name="tl_use_default">Usa il valore predefinito</string>
     <string name="tl_never_keep_all">Mai (conserva tutto)</string>
     <string name="tl_keep_latest_threads">ultime %1$d discussioni</string>
-    <string name="tl_group_retention">Conservazione del gruppo</string>
+    <string name="tl_group_retention">Impostazioni del gruppo</string>
     <string name="tl_retention_body">Dopo ogni sync elimina i messaggi già letti (non letti e seguiti restano). Puoi scegliere di conservare per TEMPO o per NUMERO di discussioni.</string>
     <string name="tl_by_thread_count">Per numero di discussioni</string>
     <string name="tl_thread_count_tip">Consigliato sui gruppi poco frequentati: non si svuotano col tempo.</string>
@@ -1067,6 +1086,16 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">Le X-Face si vedono. La classica faccina in bianco e nero di Usenet (l\'intestazione X-Face, mandata da MesNews e da molti lettori tradizionali) compare ora accanto al nome dell\'autore, dove finora compariva solo la Face a colori. Toccala per ingrandirla: resta nitida, a quadretti. L\'ordine è: prima la Face, poi la X-Face, poi le iniziali colorate. NeReO mostra le X-Face ma non le invia.</string>
     <string name="rn_v155_l8">I messaggi nuovi restano davvero in vista. La correzione della 1.5.4 funzionava solo quando NeReO ti aveva appena riportato dove eri rimasto: al primo ingresso nel gruppo dopo aver aperto l\'app, o quando la lista era già in cima, i messaggi che arrivavano con la sincronizzazione potevano ancora finire sopra il bordo dello schermo. Ora, ogni volta che apri un gruppo, se arrivano messaggi nuovi e non hai ancora spostato la lista col dito, sale in cima a mostrarli. Con gli ordinamenti \"dai più recenti\" si accorge anche di una risposta dentro la discussione che è già in cima. Con gli ordinamenti \"dai più vecchi\", dove i nuovi stanno in fondo, resti dove sei. Anche nella vista a pannelli.</string>
+    <string name="rn_v16_title">Novità della 1.6</string>
+    <string name="rn_v16_l4">Riformatta la citazione: mentre scrivi, la finestra per rifinire la citazione ha un comando nuovo che rimette in ordine le righe citate a 72 colonne, conservando i segni &gt; e i livelli. Non tocca il tuo testo, le firme, le righe vuote fra i capoversi e i link lunghi. Dal sondaggio sui gruppi.</string>
+    <string name="rn_v16_l5">L\'invio dalla vista a pannelli ora manda a capo a 72 colonne e rispetta l\'impostazione Format=Flowed, come ha sempre fatto la vista a pagine. Prima un capoverso lungo partiva su una riga sola e alcuni server potevano rifiutarlo.</string>
+    <string name="rn_v16_l6">Nuovo comando Avanti: un tasto solo per il prossimo non letto, poi la discussione successiva e, a fine gruppo, il gruppo successivo con dei non letti, su tutti i server e nell\'ordine dell\'elenco. Quando non resta niente te lo dice. Lo trovi nella barra di lettura (nella vista a pannelli è nel menu; con Personalizza barre lo sposti dove vuoi). I tasti del volume, se attivi, ora lo usano per volume giù, anche nei pannelli. Dal sondaggio sui gruppi.</string>
+    <string name="rn_v16_l7">Identità per gruppo: nelle impostazioni del gruppo puoi scegliere con quale identità scrivere in quel gruppo (nome, indirizzo, firma, Face, User-Agent, intestazioni). Prima conta il gruppo, poi il server, poi l\'identità predefinita. In un crosspost vale l\'identità del gruppo da cui rispondi, e la schermata di scrittura la mostra. Il backup ora la conserva, insieme all\'introduzione del gruppo, che mancava. Idea di Dave Royal, dal sondaggio sui gruppi.</string>
+    <string name="rn_v16_l8">Ignora discussione: dal menu di una discussione, tenendo premuto. Le risposte future arrivano già lette, tranne le risposte ai tuoi messaggi e i tuoi post. Dallo stesso menu si annulla con Non ignorare più; ciò che è arrivato letto resta letto. Segui e Ignora si escludono a vicenda. Dal sondaggio sui gruppi.</string>
+    <string name="rn_v16_l9">Ricostruisci discussione: se mancano i messaggi a cui si risponde, scaduti o mai scaricati, il menu della discussione e quello del messaggio offrono di cercarli sul server e completare l\'albero. Arrivano già letti. Si recuperano i messaggi citati dalle risposte, anche da altri gruppi dello stesso server; una risposta scaduta non si può cercare. Con la conservazione a giorni attiva possono sparire di nuovo al prossimo aggiornamento. Dal sondaggio sui gruppi.</string>
+    <string name="rn_v16_l1">Mentre leggi, la barra in alto mostra il gruppo del messaggio e, sotto, la posizione nella discussione [5/8]. Un +2 vuol dire che il messaggio è stato crospostato in altri 2 gruppi. Con più di un server compare anche il nome del server. Lo stesso nella lettura a tutto schermo della vista a pannelli.</string>
+    <string name="rn_v16_l2">Il tuo messaggio non sparisce più dopo l\'invio. Subito dopo un invio alcuni server (Astraweb, per esempio) annunciano già il messaggio nuovo ma non lo consegnano ancora: ora NeReO lo richiede al prossimo aggiornamento invece di saltarlo per sempre.</string>
+    <string name="rn_v16_l3">Nuova gamma viola. L\'icona ha colori nuovi e all\'avvio compaiono le sue tre barre su un disco viola, al posto del vecchio logo. Il viola di Aspetto → Colore Tasti è più leggibile, soprattutto nel tema scuro, ed è il colore predefinito per chi installa NeReO da adesso. Anche la tinta Purple usa i colori nuovi, con un testo più leggibile.</string>
     <string name="rn_v159_title">Novità della 1.5.9</string>
     <string name="rn_v159_l1">Le faccine a caratteri diventano emoji, come in MesNews: \"8-o 8-o\" mostra due faccine stupite. Solo a schermo: copia, citazioni, risposte, ricerca, filtri ed esportazione usano i caratteri originali, e i link non vengono mai toccati. Si spegne in Aspetto.</string>
     <string name="rn_v159_l2">Tornando da un messaggio all\'elenco, le discussioni aperte restano aperte e il messaggio appena letto ha uno sfondo leggero. Uscendo dal gruppo si richiudono tutte, come prima.</string>

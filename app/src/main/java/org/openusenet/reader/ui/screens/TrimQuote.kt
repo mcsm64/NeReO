@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.openusenet.reader.R
+import org.openusenet.reader.ui.riformattaCitazioni
 
 /** Riga "citata" = comincia con ">" (eventuali spazi iniziali ammessi). */
 fun isQuotedLine(line: String): Boolean = line.trimStart().startsWith(">")
@@ -98,6 +99,15 @@ fun TrimQuoteDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
+                    // 1.6 (sondaggio sui gruppi): sta QUI perche' questo dialogo e'
+                    // gia' condiviso dalle due viste, e cosi' si taglia e si
+                    // riformatta nello stesso gesto: vale sulle righe rimaste.
+                    TextButton(
+                        onClick = {
+                            val nuovo = riformattaCitazioni(removeLinesByIndex(body, rimosse))
+                            onResult(TextFieldValue(nuovo, androidx.compose.ui.text.TextRange(nuovo.length)))
+                        },
+                    ) { Text(stringResource(R.string.trim_reflow)) }
                     citate.forEach { idx ->
                         val tolta = idx in rimosse
                         Row(
