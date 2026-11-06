@@ -13,6 +13,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import org.openusenet.reader.data.Article
 import org.openusenet.reader.data.Identity
+import org.openusenet.reader.text.spezzaRigheFirma
 import org.openusenet.reader.thread.Threader
 import org.openusenet.reader.ui.righeCitate
 import org.openusenet.reader.ui.sembraAttribuzione
@@ -48,7 +49,7 @@ fun etichettaModalitaCitazione(mode: String): String = when (mode) {
 /** Separatore fra voci multiple (firme, introduzioni) nei campi di testo. */
 const val MULTI_SEPARATOR = "%%"
 
-/** Netiquette: la firma vale al massimo 4 righe da 72 colonne. */
+/** Netiquette: 4 righe da 72 colonne. Una riga piu' lunga si spezza, non si taglia. */
 const val SIG_MAX_LINES = 4
 const val SIG_MAX_COLS = 72
 
@@ -114,6 +115,14 @@ fun rot13(text: String): String = buildString(text.length) {
  *
  * Vale in entrambi i sensi, perche' la funzione e' una sola: quando la firma
  * si COMPONE (invio) e quando si LEGGE quella altrui (ArticleBody).
+ *
+ * 1.6.1 (BIG Umberto) — LA RIGA LUNGA NON SI TAGLIA PIU'. Qui c'era un
+ * `take(SIG_MAX_COLS)`: una frase di tre righe scritta su una riga sola partiva
+ * mozzata a 72 caratteri, e al lettore veniva tagliata la firma altrui allo
+ * stesso modo. Ora questa funzione conta soltanto le righe; a 72 colonne ci
+ * pensa [signatureBlock] con [spezzaRigheFirma], alle parole. Il limite delle
+ * quattro vale sulle righe SCRITTE dall'utente: contarle dopo averle spezzate
+ * avrebbe tagliato di nuovo tutto cio' che supera i 288 caratteri.
  */
 fun trimSignatureLines(lines: List<String>): List<String> {
     val out = ArrayList<String>(lines.size.coerceAtMost(SIG_MAX_PHYSICAL_LINES))
@@ -128,7 +137,7 @@ fun trimSignatureLines(lines: List<String>): List<String> {
         }
         if (conTesto >= SIG_MAX_LINES) break
         conTesto++
-        out.add(if (riga.length > SIG_MAX_COLS) riga.take(SIG_MAX_COLS) else riga)
+        out.add(riga)
     }
     while (out.isNotEmpty() && out.last().isBlank()) out.removeAt(out.size - 1)
     return out
@@ -163,7 +172,7 @@ fun signatureBlock(identity: Identity): String {
     // 1.2.13: la sostituzione vive ora in Branding.espandiVersione, condivisa
     // con lo User-Agent — una sola definizione, così le due non divergono.
     val conVersione = org.openusenet.reader.Branding.espandiVersione(chosen)
-    return "-- \n" + trimSignatureLines(conVersione.lines()).joinToString("\n")
+    return "-- \n" + spezzaRigheFirma(trimSignatureLines(conVersione.lines()), SIG_MAX_COLS).joinToString("\n")
 }
 
 /**

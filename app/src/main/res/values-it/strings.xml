@@ -377,7 +377,7 @@
     <string name="id_add_sig">Aggiungi la firma ai messaggi in uscita</string>
     <string name="id_random_sig">Firma casuale: se ne inserisci più d\'una, ne estraggo una a sorte</string>
     <string name="id_sig_label">Firma (senza il delimitatore \"-- \": lo aggiungo io)</string>
-    <string name="id_sig_note">Per più firme separale con una riga contenente %1$s. Ogni firma è limitata a %2$d righe di testo da %3$d colonne (netiquette Usenet); le righe vuote intercalate non contano nel limite. Segnaposto: %%versione%% → versione in uso; %%nereo%% → NeReO + versione.</string>
+    <string name="id_sig_note">Per più firme separale con una riga contenente %1$s. Ogni firma vale al massimo %2$d righe di testo (netiquette Usenet); una riga più lunga di %3$d colonne non viene tagliata, va a capo da sola alle parole. Le righe vuote intercalate non contano nel limite. Segnaposto: %%versione%% → versione in uso; %%nereo%% → NeReO + versione.</string>
     <string name="id_sig_note2">Netiquette: massimo 4 righe, 72 caratteri per riga. In composizione la firma resta modificabile come testo normale.</string>
     <string name="id_privacy">Privacy</string>
     <string name="id_useragent">User-Agent dichiarato nei post</string>
@@ -431,6 +431,8 @@
     <string name="msg_new_articles">%d nuovi articoli</string>
     <string name="msg_no_new">Nessun nuovo articolo</string>
     <string name="msg_error">Errore: %s</string>
+    <string name="msg_sync_not_updated">Non aggiornato: %s</string>
+    <string name="msg_sync_no_answer">non risponde</string>
     <string name="msg_bodies_downloaded">Scaricati %d corpi</string>
     <string name="msg_redownloaded">Riscaricati %d articoli</string>
     <string name="cmp_reply">Rispondi</string>
@@ -456,6 +458,7 @@
     <string name="cmp_groups">Gruppi: %s</string>
     <string name="cmp_followup_gruppi">L\'autore ha chiesto che le risposte proseguano in %1$s, quindi NeReO pubblichera\' li\' invece che in %2$s. Apri il selettore dei gruppi se vuoi decidere tu.</string>
     <string name="cmp_followup_poster">L\'autore ha chiesto risposte per posta, non sul gruppo (Followup-To: poster). NeReO non manda posta, quindi questa risposta uscira\' comunque sul gruppo: ora lo sai, che e\' diverso dal non saperlo.</string>
+    <string name="cmp_pubblicato_altrove">⚠ L\'originale è pubblicato in %1$s: la tua risposta uscirà in %2$s e chi ha scritto lì può non vederla. Puoi aggiungere il gruppo col pulsante dei gruppi.</string>
     <string name="cmp_followup_apri_posta">Apri con l\'app di posta</string>
     <string name="tl_group_intro">Introduzione alla citazione per questo gruppo</string>
     <string name="tl_group_intro_tip" formatted="false">Sostituisce l\'introduzione della tua identita\' quando rispondi in questo gruppo: non entra nel sorteggio. Serve tipicamente a scriverla nella lingua del gruppo. Lasciala vuota per usare quella dell\'identita\'. Valgono gli stessi segnaposto: %autore% %data% %gruppo% e gli altri.</string>
@@ -514,6 +517,7 @@
     <string name="xp_title">Messaggio crosspostato</string>
     <string name="xp_title_followup">Dove va la risposta</string>
     <string name="xp_note_followup">L\'autore ha chiesto che le risposte proseguano in %1$s. Puoi aggiungere i gruppi dell\'originale (max %2$d gruppi).</string>
+    <string name="xp_note_altrove">Questo messaggio è pubblicato in %1$s, non in questo gruppo. Puoi far uscire la risposta anche lì (max %2$d gruppi).</string>
     <string name="xp_group_autore">%s  (chiesto dall\'autore)</string>
     <string name="xp_reply_only_in">Rispondi solo in %s</string>
     <string name="xp_note">Questo messaggio è pubblicato in %1$d gruppi. Scegli dove far uscire la tua risposta (max %2$d gruppi).</string>
@@ -573,7 +577,7 @@
     <string name="art_plonk_menu">Plonk autore…</string>
     <string name="art_prev_msg">Messaggio precedente (in questa discussione)</string>
     <string name="art_next_msg">Messaggio successivo (in questa discussione)</string>
-    <string name="art_next_unread">Primo non letto successivo</string>
+    <string name="art_next_unread">Prossimo non letto della discussione</string>
     <string name="art_avanti">Avanti (non letti, poi gruppo successivo)</string>
     <string name="art_avanti_gruppo">Gruppo successivo: %1$s</string>
     <string name="art_avanti_fine">Non c\'è più niente da leggere, in nessun gruppo.</string>
@@ -583,6 +587,7 @@
     <string name="art_top">Inizio messaggio</string>
     <string name="art_bottom">Fine messaggio</string>
     <string name="art_crossposted">⚠ Crosspostato in %1$d gruppi: %2$s</string>
+    <string name="art_pubblicato_in">⚠ Pubblicato in: %1$s</string>
     <string name="art_face_cd">Face dell\'autore</string>
     <string name="art_xface_cd">X-Face dell\'autore</string>
     <string name="art_date_today">oggi %1$s</string>
@@ -1054,6 +1059,8 @@
     <string name="app_reflow_text_note">Ricompone le righe spezzate dall\u2019a-capo classico a 72 colonne, così i capoversi riempiono lo schermo; le righe corte volute (elenchi, versi) restano. Solo in lettura.</string>
     <string name="app_faccine">Mostra le faccine come emoji</string>
     <string name="app_faccine_note">Solo a schermo, come in MesNews: :-) 8-o e simili diventano emoji quando sono isolate (mai dentro link o parole). Copia, citazioni, ricerca e filtri usano i caratteri originali.</string>
+    <string name="app_enfasi">Mostra grassetto, corsivo e sottolineato</string>
+    <string name="app_enfasi_note">Solo a schermo, come in MesNews: *parola* in grassetto, /parola/ in corsivo, _parola_ sottolineata. I segni spariscono, ma copia, citazioni, ricerca e filtri li conservano. Mai dentro link e firme.</string>
     <!-- 1.2.2: riflusso testo -->
     <string name="rn_v122_l5">Nuova opzione «Riflusso testo» (Aspetto): ricompone i capoversi spezzati dall\u2019a-capo classico a 72 colonne, così i post si leggono ordinati su schermo stretto invece di mostrare righe orfane di una-due parole. Spenta di default.</string>
     <!-- 1.2.2: fix vista a pannelli (Dave Royal) -->
@@ -1086,6 +1093,14 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">Le X-Face si vedono. La classica faccina in bianco e nero di Usenet (l\'intestazione X-Face, mandata da MesNews e da molti lettori tradizionali) compare ora accanto al nome dell\'autore, dove finora compariva solo la Face a colori. Toccala per ingrandirla: resta nitida, a quadretti. L\'ordine è: prima la Face, poi la X-Face, poi le iniziali colorate. NeReO mostra le X-Face ma non le invia.</string>
     <string name="rn_v155_l8">I messaggi nuovi restano davvero in vista. La correzione della 1.5.4 funzionava solo quando NeReO ti aveva appena riportato dove eri rimasto: al primo ingresso nel gruppo dopo aver aperto l\'app, o quando la lista era già in cima, i messaggi che arrivavano con la sincronizzazione potevano ancora finire sopra il bordo dello schermo. Ora, ogni volta che apri un gruppo, se arrivano messaggi nuovi e non hai ancora spostato la lista col dito, sale in cima a mostrarli. Con gli ordinamenti \"dai più recenti\" si accorge anche di una risposta dentro la discussione che è già in cima. Con gli ordinamenti \"dai più vecchi\", dove i nuovi stanno in fondo, resti dove sei. Anche nella vista a pannelli.</string>
+    <string name="rn_v161_title">Novità della 1.6.1</string>
+    <string name="rn_v161_l1">Aggiornamento di più server: uno che non risponde non ferma più gli altri. Si prova una volta sola invece che per ogni gruppo, e alla fine un messaggio dice quali sono rimasti fuori. L\'esito si vede ora anche nella vista a pannelli. Segnalato da BIG Umberto.</string>
+    <string name="rn_v161_l2">La firma lunga non viene più tagliata. Una riga di firma oltre i 72 caratteri partiva troncata, anche se in Identità era salvata intera: ora va a capo da sola alle parole, e la firma salvata torna tutta da sola, senza riscriverla. Anche le firme lunghe degli altri si leggono intere. Segnalato da BIG Umberto.</string>
+    <string name="rn_v161_l3">Riflusso testo più rispettoso di come è scritto un messaggio. Una colonna di numeri resta una colonna, un link da solo su una riga resta da solo, e dopo un punto un a capo seguito da una maiuscola viene conservato; i capoversi andati a capo a 72 colonne si ricompongono come prima. La stessa regola vale per «Riformatta la citazione». Segnalato da BIG Umberto.</string>
+    <string name="rn_v161_l4">Il tasto del prossimo non letto ora resta nella discussione che stai leggendo, anche sopra il messaggio corrente, e diventa grigio quando lì non c\'è altro: prima passava alla discussione dopo senza dirlo. Se lo usavi per leggere tutto il gruppo, usa Avanti: lo trovi nella barra o nel menu, e lo sposti da Aspetto. Segnalato da BIG Umberto.</string>
+    <string name="rn_v161_l5">Messaggi di un altro gruppo. Una discussione ricostruita può contenere messaggi pubblicati altrove: ora un avviso rosso dice dove, e rispondendo trovi il pulsante per aggiungere quel gruppo, altrimenti l\'autore non vedrebbe la risposta. I gruppi non cambiano da soli. Vale per ogni messaggio che non appartiene al gruppo che stai leggendo. Segnalato da Dave Royal.</string>
+    <string name="rn_v161_l6">Grassetto, corsivo e sottolineato, come in MesNews: *parola* si legge in grassetto, /parola/ in corsivo, _parola_ sottolineata, e i segni spariscono. Solo a schermo: copia, citazioni, risposte, ricerca e filtri conservano i segni. Mai dentro link e firme. Si spegne in Aspetto.</string>
+    <string name="rn_v161_l7">Le discussioni seguite restano in cima solo se hanno messaggi non letti. Una seguita tutta letta torna al suo posto secondo l\'ordinamento scelto, e risale quando arriva una risposta. Vale per l\'albero, le discussioni raggruppate e i pannelli. Grazie a Cercaparole.</string>
     <string name="rn_v16_title">Novità della 1.6</string>
     <string name="rn_v16_l4">Riformatta la citazione: mentre scrivi, la finestra per rifinire la citazione ha un comando nuovo che rimette in ordine le righe citate a 72 colonne, conservando i segni &gt; e i livelli. Non tocca il tuo testo, le firme, le righe vuote fra i capoversi e i link lunghi. Dal sondaggio sui gruppi.</string>
     <string name="rn_v16_l5">L\'invio dalla vista a pannelli ora manda a capo a 72 colonne e rispetta l\'impostazione Format=Flowed, come ha sempre fatto la vista a pagine. Prima un capoverso lungo partiva su una riga sola e alcuni server potevano rifiutarlo.</string>

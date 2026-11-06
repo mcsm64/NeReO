@@ -328,17 +328,24 @@ fun ArticleScreen(
 
     /**
      * Salta al primo messaggio DA LEGGERE dopo quello corrente, nell'ordine
-     * della vista. Il messaggio attuale, appena aperto, risulta già letto:
-     * per questo si parte da position+1 e non da position. Restituisce false
-     * se non ce ne sono altri (il chiamante avvisa invece di restare fermo
-     * in silenzio — vedi la lezione della regressione beta7).
+     * della vista, poi riparte dall'inizio. Il messaggio attuale, appena
+     * aperto, risulta già letto: per questo si parte da position+1 e non da
+     * position. Restituisce false se non ce ne sono altri (il chiamante avvisa
+     * invece di restare fermo in silenzio — vedi la lezione della regressione
+     * beta7).
+     *
+     * 1.6.1 / 187: il giro serve perché una seguita appena letta scende, e i
+     * non letti restano SOPRA di dove ci si trova. Andando solo avanti lo swipe
+     * li saltava e diceva che non ce n'erano altri.
      */
     fun goNextUnread(): Boolean {
-        val next = idPrimoNonLettoDopo(flat, position) ?: return false
+        val next = idNonLettoNelGruppo(flat, position) ?: return false
         currentId = next
         return true
     }
-    val esistonoNonLetti = esistonoNonLettiDopo(flat, position)
+    // 1.6.1 (BIG Umberto): il fumetto resta nella discussione. goNextUnread
+    // sopra resta per lo swipe con «solo non letti», che la attraversa.
+    val nonLettoDiscussione = idNonLettoNellaDiscussione(threadItems, currentId)
 
     /**
      * 1.6 (sondaggio sui gruppi): il tasto Avanti, vedi TastoAvanti.kt. Passando
@@ -616,8 +623,8 @@ fun ArticleScreen(
                 ),
                 ArticleBarAction(
                     id = "next_unread",
-                    enabled = esistonoNonLetti,
-                    onClick = { goNextUnread() },
+                    enabled = nonLettoDiscussione != null,
+                    onClick = { nonLettoDiscussione?.let { currentId = it } },
                 ),
                 ArticleBarAction(
                     id = "avanti",
@@ -908,15 +915,11 @@ fun ArticleScreen(
                 // wishlist beta11 (Marco odia il crossposting): badge visibile già in
                 // lettura, non solo al momento di rispondere. Nessuna nuova richiesta
                 // di rete: legge Newsgroups: da headersRaw, già scaricato con fetchBody.
-                val crossgroups = remember(a.headersRaw) { crosspostGroups(a.headersRaw) }
-                if (crossgroups.size > 1) {
-                    Text(
-                        stringResource(R.string.art_crossposted, crossgroups.size, crossgroups.joinToString(", ")),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 2.dp, bottom = 4.dp),
-                    )
-                }
+                // 1.6.1 / 187: un componente solo, vedi RigaGruppiMessaggio.
+                RigaGruppiMessaggio(
+                    a.headersRaw, gruppoArticolo?.name.orEmpty(),
+                    Modifier.padding(top = 2.dp, bottom = 4.dp),
+                )
                 // 1.5.5 (G1 + G3): Face o iniziali colorate, nome, indirizzo,
                 // data «oggi / ieri / giorno». La decodifica della Face, con le
                 // difese della 1.2.12, e' SPOSTATA in IntestazioneAutore.kt: le

@@ -2094,8 +2094,26 @@ android {
         // sul telefono di Marco (prove 68-83 OK). RICOSTRUISCI DISCUSSIONE
         // (piano A): HEAD per Message-ID, stessa strada della sync, gia' letti,
         // segnalibro fermo, nessuna migrazione.
-        versionCode = 185
-        versionName = "1.6"
+        // versionCode 186 (4 novembre 2026) - versionName 1.6.1, deciso da Marco: la
+        // 1.6 e' pubblica. BIG Umberto: un server che non risponde non ferma piu'
+        // gli altri (giroDelServer, un tentativo solo, riepilogo per server).
+        // 5 novembre, stesso numero (la 186 non e' mai stata firmata): altre
+        // segnalazioni di BIG Umberto. Firma lunga spezzata invece che troncata,
+        // riflusso in text/Riflusso.kt (colonne, link, a capo voluti), tasto
+        // del prossimo non letto dentro la discussione.
+        // versionCode 187 (5 novembre 2026) - versionName INVARIATO, deciso da
+        // Marco: la 186 e' firmata solo per le prove sue e di BIG Umberto e non
+        // uscira', ma la prossima pubblica resta 1.6.1 per non lasciare un vuoto
+        // nei rilasci. Entrano qui grassetto, corsivo e sottolineato come
+        // MesNews (text/Enfasi.kt) e l'avviso «Pubblicato in» sui messaggi che non
+        // sono del gruppo in lettura (Dave Royal, gruppiAltrove).
+        // versionCode 188 (5 novembre 2026) - versionName INVARIATO: la 187 e'
+        // firmata solo per le prove di Marco, non e' pubblica. Il suo collaudo
+        // ha mostrato i segni di *grassetto* ancora visibili: col monospazio,
+        // acceso di default, restavano per scelta. Ora si nascondono sempre.
+        // Entra anche «seguite in cima solo con non letti» (Cercaparole).
+        versionCode = 188
+        versionName = "1.6.1"
     }
 
     buildTypes {

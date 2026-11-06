@@ -993,7 +993,7 @@ id_random_sig =
 # en: Signature (without the "-- " delimiter: I add it)
 id_sig_label =
 
-# en: For several signatures separate them with a line containing %1$s. Each signature is limited to %2$d lines of text at %3$d columns (Usenet netiquette); blank lines in between do not count toward the limit. Placeholders: %%versione%% → version in use; %%nereo%% → NeReO + version.
+# en: For several signatures separate them with a line containing %1$s. Each signature is limited to %2$d lines of text (Usenet netiquette); a line longer than %3$d columns is not cut, it wraps by itself at the words. Blank lines in between do not count toward the limit. Placeholders: %%versione%% → version in use; %%nereo%% → NeReO + version.
 id_sig_note =
 
 # en: Netiquette: maximum 4 lines, 72 characters per line. While composing, the signature stays editable as normal text.
@@ -1134,6 +1134,12 @@ msg_no_new =
 # en: Error: %s
 msg_error =
 
+# en: Not updated: %s
+msg_sync_not_updated =
+
+# en: not answering
+msg_sync_no_answer =
+
 # en: %d bodies downloaded
 msg_bodies_downloaded =
 
@@ -1205,6 +1211,9 @@ cmp_followup_gruppi =
 
 # en: The author asked for replies by e-mail, not on the group (Followup-To: poster). NeReO does not send mail, so this reply will still go out on the group - now you know it, which is different from not knowing.
 cmp_followup_poster =
+
+# en: ⚠ The original was posted to %1$s: your reply will go to %2$s, and people there may not see it. You can add the group with the groups button.
+cmp_pubblicato_altrove =
 
 # en: Open in mail app
 cmp_followup_apri_posta =
@@ -1374,6 +1383,9 @@ xp_title_followup =
 # en: The author asked for follow-ups in %1$s. You can add the original groups (max %2$d groups).
 xp_note_followup =
 
+# en: This message was posted to %1$s, not to this group. Your reply can go there too (max %2$d groups).
+xp_note_altrove =
+
 # en: %s  (asked by the author)
 xp_group_autore =
 
@@ -1539,7 +1551,7 @@ art_prev_msg =
 # en: Next message (in this thread)
 art_next_msg =
 
-# en: Next unread
+# en: Next unread in thread
 art_next_unread =
 
 # en: Next (unread, then next group)
@@ -1568,6 +1580,9 @@ art_bottom =
 
 # en: ⚠ Crossposted to %1$d groups: %2$s
 art_crossposted =
+
+# en: ⚠ Originally posted to: %1$s
+art_pubblicato_in =
 
 # en: Author's Face
 art_face_cd =
@@ -2255,6 +2270,12 @@ app_faccine =
 
 # en: On screen only, as in MesNews: :-) 8-o and similar become emoji when they stand on their own (never inside links or words). Copy, quoting, search and filters keep the original characters.
 app_faccine_note =
+
+# en: Show bold, italic and underline
+app_enfasi =
+
+# en: On screen only, as in MesNews: *word* in bold, /word/ in italics, _word_ underlined. The marks disappear, but copying, quotes, search and filters keep them. Never inside links and signatures.
+app_enfasi_note =
 
 # en: Refresh only with the icon (disable swipe) in the panel view
 app_pane_refresh_icon_only =
@@ -2974,6 +2995,30 @@ rn_v155_l7 =
 
 # en: New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the "newest first" orders it also notices a reply inside the thread that is already at the top. With the "oldest first" orders, where new messages are at the bottom, you stay where you were. In the panel view too.
 rn_v155_l8 =
+
+# en: New in 1.6.1
+rn_v161_title =
+
+# en: Updating several servers: one that does not answer no longer stops the others. It is tried once instead of once per group, and at the end a message names the servers left out. The result of an update now also shows in the panes view. Reported by BIG Umberto.
+rn_v161_l1 =
+
+# en: Long signatures are no longer cut. A signature line over 72 characters was sent truncated, even though it was saved whole in Identity: it now wraps by itself at the words, and your saved signature comes back whole with nothing to retype. Other people's long signatures are shown whole too. Reported by BIG Umberto.
+rn_v161_l2 =
+
+# en: Reflow text respects better how a message was written. A column of numbers stays a column, a link alone on its line stays alone, and a line break after a full stop followed by a capital letter is kept; paragraphs wrapped at 72 columns are rejoined as before. The same rule applies to «Rewrap quotes». Reported by BIG Umberto.
+rn_v161_l3 =
+
+# en: The next unread button now stays in the thread you are reading, including messages above the current one, and turns grey when nothing is left there: before, it moved on to the next thread without saying so. If you used it to read the whole group, use Next: it is in the bar or in the menu, and you can move it from Appearance. Reported by BIG Umberto.
+rn_v161_l4 =
+
+# en: Messages from another group. A rebuilt thread can contain messages posted elsewhere: a red notice now says where, and when replying you get the button to add that group, otherwise the author would not see your reply. Groups never change by themselves. This applies to any message that does not belong to the group you are reading. Reported by Dave Royal.
+rn_v161_l5 =
+
+# en: Bold, italics and underline, as in MesNews: *word* reads in bold, /word/ in italics, _word_ underlined, and the marks disappear. On screen only: copying, quotes, replies, search and filters keep the marks. Never inside links and signatures. It can be switched off in Appearance.
+rn_v161_l6 =
+
+# en: Followed threads stay at the top only while they have unread messages. A fully read followed thread goes back to its place in the chosen sort order, and comes back up when a reply arrives. This applies to the tree, grouped and split-pane views. Thanks to Cercaparole.
+rn_v161_l7 =
 
 # en: New in 1.6
 rn_v16_title =

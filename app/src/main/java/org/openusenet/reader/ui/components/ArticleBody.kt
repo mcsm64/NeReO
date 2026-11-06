@@ -49,6 +49,8 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
@@ -56,13 +58,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.R
 import org.openusenet.reader.text.Faccina
-import org.openusenet.reader.text.LARGHEZZA_MIN_IMPAGINATA
-import org.openusenet.reader.text.MARCA_ELENCO
 import org.openusenet.reader.text.TABELLA_FACCINE
-import org.openusenet.reader.text.interruzioneVoluta
+import org.openusenet.reader.text.TipoEnfasi
+import org.openusenet.reader.text.trovaEnfasi
 import org.openusenet.reader.text.trovaFaccine
 
 // Palette a gradini per i livelli di citazione: tinte nettamente diverse.
@@ -87,100 +89,6 @@ private val URL_REGEX = Regex("""(?:https?://|www\.)[^\s<>()\[\]"']+""", RegexOp
 
 /** Righe consecutive con lo stesso ruolo (stesso livello di quote, o firma). */
 private data class BodyBlock(val depth: Int, val signature: Boolean, val lines: List<String>)
-
-/**
- * Riflusso (de-wrap) delle righe di UN blocco (stesso livello di citazione, mai
- * la firma). L'a-capo forzato mostrato su schermo stretto lascia righe con
- * una-due parole orfane: qui ricompongo i capoversi.
- *
- * Euristica ADATTIVA (v2): il problema della v1 era una soglia FISSA a 60 —
- * chi impagina più stretto (55, 50…) non veniva riconosciuto come "andato a
- * capo" e il riflusso non faceva nulla. Ora stimo la larghezza di impaginazione
- * di QUESTO blocco (W = riga più lunga, con un tetto) e considero una riga
- * "piena" (quindi andata a capo per il margine) quando la PRIMA PAROLA della
- * riga successiva non ci sarebbe stata: `lunghezza_prec + 1 + prima_parola > W`.
- * È il modello reale dell'a-capo automatico, e si adatta a ogni autore.
- *
- * Salvaguardie: se il blocco non ha righe abbastanza lunghe (W < [LARGHEZZA_MIN_IMPAGINATA])
- * NON è testo impaginato (elenchi, versi, messaggi brevi) → lascio intatto. Le
- * righe che iniziano con un marcatore di elenco non vengono mai unite. Le righe
- * vuote separano i capoversi. Il prefisso di citazione viene tolto e rimesso
- * uniforme, così il render (barre/chevron) funziona come prima.
- *
- * 1.2.3 (Bingo3331, Dave Royal): soglia abbassata 40 → 30. La v2 a 40 si
- * arrendeva sull'INTERO blocco quando l'autore impaginava stretto (~38-40 col):
- * la riga più lunga era ~39 < 40, quindi il riflusso non univa NIENTE — proprio
- * gli autori che ne hanno più bisogno restavano fuori ("continua a non
- * funzionare"). Scendere è sicuro perché è il test di unione stesso a proteggere
- * i versi: una riga corta per scelta non raggiunge il margine, quindi la prima
- * parola della successiva "ci sta" e le due NON vengono unite. Sotto ~30, invece,
- * distinguere prosa impaginata da testo-a-righe-corte diventa inaffidabile:
- * lì restiamo prudenti e lasciamo intatto.
- *
- * 1.2.4 (Bingo3331): il solo test "riga precedente piena" non bastava. Un testo
- * ri-impaginato lascia righe ORFANE di una-due parole IN MEZZO al capoverso (es.
- * "è", "sono", "nelle", "delle altre"): unita l'orfana, `prevLen` scendeva al suo
- * valore minuscolo e la riga dopo veniva letta come "interruzione voluta" → il
- * capoverso si spezzava e l'orfana ricompariva al render. Ora si UNISCE sempre,
- * tranne quando la riga precedente — oltre a non essere piena — finisce con
- * punteggiatura terminale (. , : ; ! ? …): questo protegge etichette ("Bar:"),
- * saluti ("Ciao,") e frasi brevi, che restano su riga propria, mentre le orfane
- * (che finiscono con una parola, senza punteggiatura) vengono ricomposte.
- * Limite noto: un congedo su riga propria SENZA riga vuota prima (es. "Saluti"
- * subito sotto un capoverso) può attaccarsi al capoverso. Caso minore e raro (i
- * congedi hanno di norma una riga vuota o la firma "-- "); reflow è comunque
- * opt-in e solo in lettura.
- */
-private const val WRAP_MAX_W = 90 // tetto: evita che un URL lunghissimo falsi la stima
-
-// 1.2.4: una fine riga è "voluta" (da NON unire) solo quando la riga precedente,
-// oltre a essere corta, termina con punteggiatura terminale. Serve a proteggere
-// etichette ("Bar:"), saluti ("Ciao,") e frasi brevi, senza però lasciare orfane
-// le righe di una-due parole in mezzo a un capoverso.
-// 1.6: la regola, l'elenco e la soglia minima sono SPOSTATI in text/WrapBody.kt,
-// perche' li usa anche «Riformatta» in scrittura.
-
-private fun reflowLines(lines: List<String>, depth: Int): List<String> {
-    val prefix = if (depth > 0) ">".repeat(depth) + " " else ""
-    val bare = lines.map { if (depth > 0) it.dropWhile { c -> c == '>' || c == ' ' } else it }
-    // larghezza di impaginazione stimata per questo blocco
-    val w = (bare.filter { it.isNotBlank() }.maxOfOrNull { it.trimEnd().length } ?: 0)
-        .coerceAtMost(WRAP_MAX_W)
-    if (w < LARGHEZZA_MIN_IMPAGINATA) return lines // niente wrapping reale: lascio intatto (elenchi, versi, messaggi brevi)
-
-    val out = ArrayList<String>()
-    val para = StringBuilder()
-    var precedente = ""
-    fun flush() {
-        if (para.isNotEmpty()) { out.add(prefix + para.toString()); para.setLength(0) }
-        precedente = ""
-    }
-    for ((i, content) in bare.withIndex()) {
-        if (content.isBlank()) {
-            flush()
-            out.add(lines[i]) // riga vuota: separa i capoversi, mantenuta com'è
-            continue
-        }
-        val trimmed = content.trim()
-        // 1.2.4: interruzione VOLUTA solo se la riga precedente NON era piena E
-        // finiva con punteggiatura terminale. Prima si spezzava su OGNI riga
-        // precedente non piena: bastava un'orfana cortissima ("è", "sono",
-        // "nelle") a spezzare il capoverso, così l'orfana ricompariva al render.
-        // Ora un'orfana (che non finisce con punteggiatura) viene unita; a
-        // restare su riga propria sono solo etichette/saluti/frasi brevi che
-        // chiudono con . , : ; ! ? …
-        val voluta = interruzioneVoluta(precedente, trimmed, w)
-        when {
-            para.isEmpty() -> para.append(trimmed)
-            MARCA_ELENCO.containsMatchIn(trimmed) -> { flush(); para.append(trimmed) } // elenco: mai unire
-            voluta -> { flush(); para.append(trimmed) }                                 // interruzione voluta
-            else -> para.append(' ').append(trimmed)                                    // continuazione del capoverso
-        }
-        precedente = content
-    }
-    flush()
-    return out
-}
 
 private fun splitBlocks(body: String, collapseBlank: Boolean): List<BodyBlock> {
     val out = ArrayList<BodyBlock>()
@@ -269,14 +177,14 @@ fun QuoteColoredBody(
     val blocks = remember(testo, flowed, AppSettings.collapseBlankLines, AppSettings.reflowText) {
         splitBlocks(testo, AppSettings.collapseBlankLines).map { b ->
             when {
-                // firma: si mostrano il delimitatore e al massimo 4 righe da 72 colonne
+                // firma: si mostrano il delimitatore e al massimo 4 righe, mai tagliate
                 b.signature && b.lines.size > 1 -> b.copy(
                     lines = listOf(b.lines.first()) +
                         org.openusenet.reader.ui.screens.trimSignatureLines(b.lines.drop(1)),
                 )
                 // riflusso: ricompone i capoversi (mai la firma). Solo in lettura.
                 !flowed && AppSettings.reflowText && !b.signature ->
-                    b.copy(lines = reflowLines(b.lines, b.depth))
+                    b.copy(lines = org.openusenet.reader.text.riflussoBlocco(b.lines, b.depth))
                 else -> b
             }
         }
@@ -285,6 +193,8 @@ fun QuoteColoredBody(
     // 1.5.9 / 177: faccine come emoji, solo a schermo (vedi appendConFaccine)
     val conFaccine = AppSettings.faccineEmoji
     val faccine = inlineFaccine(style, AppSettings.bodyMonospace)
+    // 1.6.1 / 187: *grassetto* /corsivo/ _sottolineato_, solo a schermo (vedi applicaEnfasi)
+    val enfasi = if (AppSettings.enfasiTesto) ModoEnfasi.SegniNascosti else ModoEnfasi.Spenta
 
     Column(modifier.fillMaxWidth()) {
         blocks.forEachIndexed { i, block ->
@@ -295,12 +205,15 @@ fun QuoteColoredBody(
             }
             if (block.depth == 0) {
                 Text(
-                    annotate(block.lines, color, linkColor, searchQuery, highlightBg, conFaccine),
+                    annotate(
+                        block.lines, color, linkColor, searchQuery, highlightBg, conFaccine,
+                        if (block.signature) ModoEnfasi.Spenta else enfasi,
+                    ),
                     style = style,
                     inlineContent = faccine,
                 )
             } else {
-                QuotedBlock(block, i, color, linkColor, style, searchQuery, highlightBg, conFaccine, faccine)
+                QuotedBlock(block, i, color, linkColor, style, searchQuery, highlightBg, conFaccine, faccine, enfasi)
             }
         }
     }
@@ -322,6 +235,7 @@ private fun QuotedBlock(
     highlightBg: Color = Color.Unspecified,
     conFaccine: Boolean = false,
     faccine: Map<String, InlineTextContent> = emptyMap(),
+    enfasi: ModoEnfasi = ModoEnfasi.Spenta,
 ) {
     var expanded by remember(index, block.lines.size) { mutableStateOf(false) }
     // beta19 (Roxy): soglia configurabile (prima fissa a 6 → la funzione
@@ -386,7 +300,7 @@ private fun QuotedBlock(
                 )
             } else {
                 Text(
-                    annotate(shown, color, linkColor, searchQuery, highlightBg, conFaccine),
+                    annotate(shown, color, linkColor, searchQuery, highlightBg, conFaccine, enfasi),
                     style = style,
                     inlineContent = faccine,
                 )
@@ -409,10 +323,11 @@ private fun annotate(
     searchQuery: String = "",
     highlightBg: Color = Color.Unspecified,
     conFaccine: Boolean = false,
+    enfasi: ModoEnfasi = ModoEnfasi.Spenta,
 ): AnnotatedString =
     buildAnnotatedString {
         lines.forEachIndexed { i, line ->
-            appendLineWithLinks(line, textColor, linkColor, searchQuery, highlightBg, conFaccine)
+            appendLineWithLinks(line, textColor, linkColor, searchQuery, highlightBg, conFaccine, enfasi)
             if (i < lines.size - 1) append('\n')
         }
     }
@@ -516,12 +431,52 @@ private fun AnnotatedString.Builder.appendConFaccine(
     if (i < fine) appendHighlighted(line.substring(i, fine), textColor, searchQuery, highlightBg)
 }
 
+/*
+ * 1.6.1 / 187 (Marco) — *GRASSETTO*, /CORSIVO/, _SOTTOLINEATO_ COME MESNEWS.
+ *
+ * Dove stanno i segni lo dice text/Enfasi.kt. Qui si applica lo stile DOPO aver
+ * scritto la riga, perche' `appendLineWithLinks` la riscrive carattere per
+ * carattere (le faccine restano come `alternateText`): le posizioni della riga
+ * sono quelle del testo.
+ *
+ * I segni NON si tolgono, come per le faccine: si disegnano a grandezza zero.
+ * «Copia» e «Cita» (CitaSelezione.kt) leggono il testo a schermo, e togliendoli
+ * il confronto con l'archivio di Citazione.kt non troverebbe piu' la riga.
+ *
+ * Vale anche col monospazio, che e' acceso di default: lasciare li' i segni
+ * visibili voleva dire non dare la funzione a quasi nessuno (prova di Marco, 5/11).
+ * Prezzo accettato: sulle sole righe con enfasi il testo dopo si sposta.
+ */
+private enum class ModoEnfasi { Spenta, SegniNascosti }
+
+private val SEGNO_NASCOSTO = SpanStyle(fontSize = 0.sp, color = Color.Transparent)
+
+private fun stileEnfasi(tipo: TipoEnfasi) = when (tipo) {
+    TipoEnfasi.GRASSETTO -> SpanStyle(fontWeight = FontWeight.Bold)
+    TipoEnfasi.CORSIVO -> SpanStyle(fontStyle = FontStyle.Italic)
+    TipoEnfasi.SOTTOLINEATO -> SpanStyle(textDecoration = TextDecoration.Underline)
+}
+
+/** [inizio] e' dove comincia [line] nel testo gia' scritto. */
+private fun AnnotatedString.Builder.applicaEnfasi(
+    line: String, inizio: Int, link: List<IntRange>, enfasi: ModoEnfasi,
+) {
+    if (enfasi == ModoEnfasi.Spenta) return
+    for (e in trovaEnfasi(line, link)) {
+        addStyle(stileEnfasi(e.tipo), inizio + e.apertura + 1, inizio + e.chiusura)
+        addStyle(SEGNO_NASCOSTO, inizio + e.apertura, inizio + e.apertura + 1)
+        addStyle(SEGNO_NASCOSTO, inizio + e.chiusura, inizio + e.chiusura + 1)
+    }
+}
+
 /** Aggiunge una riga, trasformando gli URL in link cliccabili (aprono il browser). */
 private fun AnnotatedString.Builder.appendLineWithLinks(
     line: String, textColor: Color, linkColor: Color,
     searchQuery: String = "", highlightBg: Color = Color.Unspecified,
     conFaccine: Boolean = false,
+    enfasi: ModoEnfasi = ModoEnfasi.Spenta,
 ) {
+    val inizioRiga = length
     val url = URL_REGEX.findAll(line).toList()
     val faccine = if (conFaccine) trovaFaccine(line, url.map { it.range }) else emptyList()
     var last = 0
@@ -546,4 +501,5 @@ private fun AnnotatedString.Builder.appendLineWithLinks(
     if (last < line.length) {
         appendConFaccine(line, last, line.length, faccine, textColor, searchQuery, highlightBg)
     }
+    applicaEnfasi(line, inizioRiga, url.map { it.range }, enfasi)
 }

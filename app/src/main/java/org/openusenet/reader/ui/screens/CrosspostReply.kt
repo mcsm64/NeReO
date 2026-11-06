@@ -53,6 +53,102 @@ const val CROSSPOST_MAX_GROUPS = 3
 // package org.openusenet.reader.ui.screens) — la riuso, non la ridefinisco.
 
 /**
+ * 1.6.1 / 187 (Dave Royal) — IL MESSAGGIO NON E' DI QUESTO GRUPPO?
+ *
+ * «Ricostruisci discussione» porta nel gruppo anche i padri pubblicati altrove:
+ * Dave, in alt.comp.software.thunderbird, ne aveva di alt.comp.windows-10, e
+ * rispondendo la risposta usciva in Thunderbird, dove l'autore non la vede.
+ * Vale per qualunque articolo la cui riga `Newsgroups:` non contenga il gruppo.
+ *
+ * Restituisce i gruppi del messaggio se [corrente] non e' fra quelli, altrimenti
+ * vuoto. Vuoto anche se uno dei due non si conosce ancora: `headersRaw` arriva
+ * col corpo e il nome del gruppo si legge dopo, e nel dubbio non si avvisa.
+ * Maiuscole e spazi non contano, come in `altriGruppiCrosspost`.
+ */
+fun gruppiAltrove(gruppi: List<String>, corrente: String): List<String> {
+    val c = corrente.trim()
+    val puliti = gruppi.map { it.trim() }.filter { it.isNotEmpty() }
+    if (c.isEmpty() || puliti.any { it.equals(c, ignoreCase = true) }) return emptyList()
+    return puliti
+}
+
+/**
+ * Il pulsante dei gruppi in scrittura si mostra? Oltre ai casi di sempre, anche
+ * quando l'originale sta altrove: li' i gruppi offerti sono uno solo, e l'avviso
+ * rimanderebbe a un pulsante che non c'e' (la QUARTA volta per questa forma, vedi
+ * il commento in ComposeScreen). Con un Followup-To a dei gruppi decide lui, come oggi.
+ */
+fun selettoreDisponibile(
+    destinazioneAutore: DestinazioneRisposta,
+    gruppiOriginale: List<String>,
+    corrente: String,
+): Boolean =
+    gruppiOffertiNelSelettore(destinazioneAutore, gruppiOriginale).size > 1 ||
+        (destinazioneAutore !is DestinazioneRisposta.Gruppi &&
+            gruppiAltrove(gruppiOriginale, corrente).isNotEmpty())
+
+/**
+ * I gruppi da segnalare scrivendo: quelli dell'originale che la risposta non
+ * raggiunge. Vuoto con un Followup-To a dei gruppi, che ha il suo avviso, e
+ * appena l'utente li ha aggiunti: l'avviso non deve smentire la riga dei gruppi.
+ */
+fun gruppiDaSegnalare(
+    gruppiOriginale: List<String>,
+    corrente: String,
+    destinazioneAutore: DestinazioneRisposta,
+    destinazioni: List<String>,
+): List<String> =
+    if (destinazioneAutore is DestinazioneRisposta.Gruppi) emptyList()
+    else gruppiAltrove(gruppiOriginale, corrente)
+        .filter { g -> destinazioni.none { it.equals(g, ignoreCase = true) } }
+
+/**
+ * La riga rossa sui gruppi di un messaggio, nelle tre viste di lettura (prima
+ * erano tre copie). «Pubblicato in» prende il posto del crosspost: due righe coi
+ * gruppi stessi direbbero la stessa cosa. [soloNomi]: la vista continua, dove
+ * Dave vuole i soli gruppi (1.2.5), non per «Pubblicato in», che da solo non si
+ * distinguerebbe da un crosspost.
+ */
+@Composable
+fun RigaGruppiMessaggio(
+    headersRaw: String?,
+    gruppoCorrente: String,
+    modifier: Modifier = Modifier,
+    soloNomi: Boolean = false,
+) {
+    val gruppi = remember(headersRaw) { crosspostGroups(headersRaw) }
+    val altrove = gruppiAltrove(gruppi, gruppoCorrente)
+    val testo = when {
+        altrove.isNotEmpty() -> stringResource(R.string.art_pubblicato_in, altrove.joinToString(", "))
+        gruppi.size < 2 -> return
+        soloNomi -> gruppi.joinToString(", ")
+        else -> stringResource(R.string.art_crossposted, gruppi.size, gruppi.joinToString(", "))
+    }
+    Text(
+        testo,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = modifier,
+    )
+}
+
+/** L'avviso in scrittura, nelle due viste. [gruppi]: vedi [gruppiDaSegnalare]. */
+@Composable
+fun AvvisoPubblicatoAltrove(gruppi: List<String>, destinazioni: List<String>) {
+    if (gruppi.isEmpty()) return
+    Text(
+        stringResource(
+            R.string.cmp_pubblicato_altrove,
+            gruppi.joinToString(", "),
+            destinazioni.joinToString(", "),
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(bottom = 4.dp),
+    )
+}
+
+/**
  * I gruppi su cui questo messaggio uscirà davvero: il gruppo corrente più gli
  * extra scelti, senza vuoti e senza ripetizioni, nell'ordine in cui compariranno
  * nell'intestazione `Newsgroups:`.
@@ -179,13 +275,18 @@ fun RigaIdentita(repo: NewsRepository, identita: Identity?, fromName: String, fr
  * [tuttiIGruppi] e' un parametro e non una lettura diretta di `AppSettings`
  * apposta: cosi' la funzione e' pura e sta in `CoreTests` come
  * [gruppiDestinazione].
+ *
+ * 1.6.1 / 187 (Dave Royal): se il gruppo corrente non e' fra quelli dell'originale
+ * non e' un crosspost, e niente si aggiunge da solo. Al telefono la risposta
+ * usciva anche nel gruppo d'origine senza che nessuno lo avesse scelto, nei
+ * pannelli no. Decide l'utente, dal selettore.
  */
 fun extraPredefinitiCrosspost(
     allGroups: List<String>,
     currentGroup: String,
     tuttiIGruppi: Boolean,
 ): List<String> =
-    if (!tuttiIGruppi) emptyList()
+    if (!tuttiIGruppi || gruppiAltrove(allGroups, currentGroup).isNotEmpty()) emptyList()
     else allGroups.filter { it != currentGroup && it.isNotBlank() }
         .take(CROSSPOST_MAX_GROUPS - 1)
 
@@ -346,6 +447,9 @@ fun CrosspostReplyDialog(
     onDismiss: () -> Unit,
 ) {
     val altri = remember(allGroups, currentGroup) { allGroups.filter { it != currentGroup } }
+    // 1.6.1 / 187 (Dave Royal): l'originale sta altrove. «Messaggio crosspostato»
+    // e «pubblicato in 1 gruppi» sarebbero falsi.
+    val altrove = remember(allGroups, currentGroup) { gruppiAltrove(allGroups, currentGroup) }
     /*
      * 1.2.7 (Dave #8): con "rispondi sempre a tutti i gruppi" attivo, la
      * selezione parte già con gli altri gruppi spuntati (fino al cap: corrente +
@@ -392,7 +496,7 @@ fun CrosspostReplyDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                if (gruppiAutore.isEmpty()) stringResource(R.string.xp_title)
+                if (gruppiAutore.isEmpty() && altrove.isEmpty()) stringResource(R.string.xp_title)
                 // «Messaggio crosspostato» sarebbe falso: il 9A sta su UN gruppo.
                 else stringResource(R.string.xp_title_followup),
             )
@@ -405,14 +509,18 @@ fun CrosspostReplyDialog(
                     .verticalScroll(rememberScrollState()),
             ) {
                 Text(
-                    if (gruppiAutore.isEmpty())
-                        stringResource(R.string.xp_note, allGroups.size, CROSSPOST_MAX_GROUPS)
-                    // allGroups e' l'UNIONE, non i gruppi dell'originale: dire
-                    // «pubblicato in N gruppi» conterebbe una cosa per un'altra.
-                    else stringResource(
-                        R.string.xp_note_followup,
-                        gruppiAutore.joinToString(", "), CROSSPOST_MAX_GROUPS,
-                    ),
+                    when {
+                        gruppiAutore.isNotEmpty() -> stringResource(
+                            // allGroups e' l'UNIONE, non i gruppi dell'originale: dire
+                            // «pubblicato in N gruppi» conterebbe una cosa per un'altra.
+                            R.string.xp_note_followup,
+                            gruppiAutore.joinToString(", "), CROSSPOST_MAX_GROUPS,
+                        )
+                        altrove.isNotEmpty() -> stringResource(
+                            R.string.xp_note_altrove, altrove.joinToString(", "), CROSSPOST_MAX_GROUPS,
+                        )
+                        else -> stringResource(R.string.xp_note, allGroups.size, CROSSPOST_MAX_GROUPS)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )

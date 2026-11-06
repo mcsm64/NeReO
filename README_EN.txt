@@ -1,8 +1,26 @@
 ======================================================================
- NeReO 1.6 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.1 - Ne(ws) Re(ader) O(pen-source)
  Text-only Usenet (NNTP) newsreader for Android
- NeReO 1.6 (versionCode 185) - By MCSM - 2026/11/04
+ NeReO 1.6.1 (versionCode 188) - By MCSM - 2026/11/05
 ======================================================================
+ ***  VERSION 1.6.1  ***
+
+ Reported by BIG Umberto, Dave Royal and Cercaparole, plus a request from Marco.
+
+  * LONG SIGNATURES ARE NO LONGER CUT. A signature line over 72 characters was sent truncated, even though it was saved whole in Identity. It now wraps by itself at the words, and your saved signature comes back whole with nothing to retype. Other people's long signatures are shown whole too.
+
+  * REFLOW TEXT RESPECTS HOW A MESSAGE WAS WRITTEN. A column of numbers stays a column, a link alone on its line stays alone, and a line break after a full stop followed by a capital letter is kept. Paragraphs wrapped at 72 columns are rejoined as before. The same rule applies to "Rewrap quotes".
+
+  * THE NEXT UNREAD BUTTON STAYS IN THE THREAD. It also looks above the current message and turns grey when nothing is left there; before, it moved on to the next thread without saying so. If you used it to read the whole group, use NEXT.
+
+  * MESSAGES FROM ANOTHER GROUP. A rebuilt thread can contain messages posted elsewhere: a red notice now says where, and when replying you get the button to add that group, otherwise the author would not see your reply. Groups never change by themselves. This applies to any message that does not belong to the group you are reading.
+
+  * BOLD, ITALICS AND UNDERLINE, AS IN MESNEWS. *word* reads in bold, /word/ in italics, _word_ underlined, and the marks disappear. On screen only: copying, quotes, replies, search and filters keep the marks. Never inside links and signatures. It can be switched off in Appearance.
+
+  * FOLLOWED THREADS AT THE TOP ONLY WITH UNREAD MESSAGES. A fully read followed thread goes back to its place in the chosen sort order, and comes back up when a reply arrives. This applies to the tree, grouped and split-pane views. If the list was at the top when you opened a message, it stays at the top when you come back. Thanks to Cercaparole.
+
+  * A SERVER THAT DOES NOT ANSWER NO LONGER STOPS THE OTHERS. When updating several servers, the one that does not answer is tried once instead of once per group, the others carry on, and at the end a message says which were left out and why. The result now also shows in the panes view.
+
  ***  VERSION 1.6  ***
 
  Requests from RPoggi, Bingo3331, Dave Royal and Marco, and the five items of the survey on the groups.

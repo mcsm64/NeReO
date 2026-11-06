@@ -371,7 +371,7 @@
     <string name="id_add_sig">Add the signature to outgoing messages</string>
     <string name="id_random_sig">Random signature: if you enter more than one, I pick one at random</string>
     <string name="id_sig_label">Signature (without the \"-- \" delimiter: I add it)</string>
-    <string name="id_sig_note">For several signatures separate them with a line containing %1$s. Each signature is limited to %2$d lines of text at %3$d columns (Usenet netiquette); blank lines in between do not count toward the limit. Placeholders: %%versione%% → version in use; %%nereo%% → NeReO + version.</string>
+    <string name="id_sig_note">For several signatures separate them with a line containing %1$s. Each signature is limited to %2$d lines of text (Usenet netiquette); a line longer than %3$d columns is not cut, it wraps by itself at the words. Blank lines in between do not count toward the limit. Placeholders: %%versione%% → version in use; %%nereo%% → NeReO + version.</string>
     <string name="id_sig_note2">Netiquette: maximum 4 lines, 72 characters per line. While composing, the signature stays editable as normal text.</string>
     <string name="id_privacy">Privacy</string>
     <string name="id_useragent">User-Agent declared in posts</string>
@@ -425,6 +425,8 @@
     <string name="msg_new_articles">%d new articles</string>
     <string name="msg_no_new">No new articles</string>
     <string name="msg_error">Error: %s</string>
+    <string name="msg_sync_not_updated">Not updated: %s</string>
+    <string name="msg_sync_no_answer">not answering</string>
     <string name="msg_bodies_downloaded">%d bodies downloaded</string>
     <string name="msg_redownloaded">%d articles re-downloaded</string>
     <string name="cmp_reply">Reply</string>
@@ -450,6 +452,7 @@
     <string name="cmp_groups">Groups: %s</string>
     <string name="cmp_followup_gruppi">The author asked for follow-ups to continue in %1$s, so NeReO will post there instead of %2$s. Open the groups selector if you want to decide yourself.</string>
     <string name="cmp_followup_poster">The author asked for replies by e-mail, not on the group (Followup-To: poster). NeReO does not send mail, so this reply will still go out on the group - now you know it, which is different from not knowing.</string>
+    <string name="cmp_pubblicato_altrove">⚠ The original was posted to %1$s: your reply will go to %2$s, and people there may not see it. You can add the group with the groups button.</string>
     <string name="cmp_followup_apri_posta">Open in mail app</string>
     <string name="tl_group_intro">Quote intro for this group</string>
     <string name="tl_group_intro_tip" formatted="false">Replaces the intro of your identity when replying in this group - it does not join the random draw. Typically used to write it in the language of the group. Leave it empty to use your identity\'s intro. The same placeholders work here: %autore% %data% %gruppo% and the rest.</string>
@@ -508,6 +511,7 @@
     <string name="xp_title">Crossposted message</string>
     <string name="xp_title_followup">Where the reply goes</string>
     <string name="xp_note_followup">The author asked for follow-ups in %1$s. You can add the original groups (max %2$d groups).</string>
+    <string name="xp_note_altrove">This message was posted to %1$s, not to this group. Your reply can go there too (max %2$d groups).</string>
     <string name="xp_group_autore">%s  (asked by the author)</string>
     <string name="xp_reply_only_in">Reply only to %s</string>
     <string name="xp_note">This message is posted to %1$d groups. Choose where your reply should go (max %2$d groups).</string>
@@ -567,7 +571,7 @@
     <string name="art_plonk_menu">Plonk author…</string>
     <string name="art_prev_msg">Previous message (in this thread)</string>
     <string name="art_next_msg">Next message (in this thread)</string>
-    <string name="art_next_unread">Next unread</string>
+    <string name="art_next_unread">Next unread in thread</string>
     <string name="art_avanti">Next (unread, then next group)</string>
     <string name="art_avanti_gruppo">Next group: %1$s</string>
     <string name="art_avanti_fine">Nothing left to read, in any group.</string>
@@ -577,6 +581,7 @@
     <string name="art_top">Start of message</string>
     <string name="art_bottom">End of message</string>
     <string name="art_crossposted">⚠ Crossposted to %1$d groups: %2$s</string>
+    <string name="art_pubblicato_in">⚠ Originally posted to: %1$s</string>
     <string name="art_face_cd">Author\'s Face</string>
     <string name="art_xface_cd">Author\'s X-Face</string>
     <string name="art_date_today">today %1$s</string>
@@ -1048,6 +1053,8 @@
     <string name="app_reflow_text_note">Rejoins lines split by the classic 72-column wrap so paragraphs fill the screen; intentional short lines (lists, verse) are left alone. Reading only.</string>
     <string name="app_faccine">Show text smileys as emoji</string>
     <string name="app_faccine_note">On screen only, as in MesNews: :-) 8-o and similar become emoji when they stand on their own (never inside links or words). Copy, quoting, search and filters keep the original characters.</string>
+    <string name="app_enfasi">Show bold, italic and underline</string>
+    <string name="app_enfasi_note">On screen only, as in MesNews: *word* in bold, /word/ in italics, _word_ underlined. The marks disappear, but copying, quotes, search and filters keep them. Never inside links and signatures.</string>
     <!-- 1.2.2: riflusso testo -->
     <string name="rn_v122_l5">New «Reflow text» option (Appearance): rejoins paragraphs broken by the classic 72-column wrap, so posts read tidily on narrow screens instead of showing one- or two-word orphan lines. Off by default.</string>
     <!-- 1.2.2: fix vista a pannelli (Dave Royal) -->
@@ -1080,6 +1087,14 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">X-Faces are shown. The classic black-and-white Usenet face (the X-Face header, sent by MesNews and many traditional newsreaders) now appears next to the author\'s name, where until now only the colour Face did. Tap it to enlarge it: it stays sharp, square by square. Order: Face first, then X-Face, then the coloured initials. NeReO shows X-Faces but does not send them.</string>
     <string name="rn_v155_l8">New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the \"newest first\" orders it also notices a reply inside the thread that is already at the top. With the \"oldest first\" orders, where new messages are at the bottom, you stay where you were. In the panel view too.</string>
+    <string name="rn_v161_title">New in 1.6.1</string>
+    <string name="rn_v161_l1">Updating several servers: one that does not answer no longer stops the others. It is tried once instead of once per group, and at the end a message names the servers left out. The result of an update now also shows in the panes view. Reported by BIG Umberto.</string>
+    <string name="rn_v161_l2">Long signatures are no longer cut. A signature line over 72 characters was sent truncated, even though it was saved whole in Identity: it now wraps by itself at the words, and your saved signature comes back whole with nothing to retype. Other people\'s long signatures are shown whole too. Reported by BIG Umberto.</string>
+    <string name="rn_v161_l3">Reflow text respects better how a message was written. A column of numbers stays a column, a link alone on its line stays alone, and a line break after a full stop followed by a capital letter is kept; paragraphs wrapped at 72 columns are rejoined as before. The same rule applies to «Rewrap quotes». Reported by BIG Umberto.</string>
+    <string name="rn_v161_l4">The next unread button now stays in the thread you are reading, including messages above the current one, and turns grey when nothing is left there: before, it moved on to the next thread without saying so. If you used it to read the whole group, use Next: it is in the bar or in the menu, and you can move it from Appearance. Reported by BIG Umberto.</string>
+    <string name="rn_v161_l5">Messages from another group. A rebuilt thread can contain messages posted elsewhere: a red notice now says where, and when replying you get the button to add that group, otherwise the author would not see your reply. Groups never change by themselves. This applies to any message that does not belong to the group you are reading. Reported by Dave Royal.</string>
+    <string name="rn_v161_l6">Bold, italics and underline, as in MesNews: *word* reads in bold, /word/ in italics, _word_ underlined, and the marks disappear. On screen only: copying, quotes, replies, search and filters keep the marks. Never inside links and signatures. It can be switched off in Appearance.</string>
+    <string name="rn_v161_l7">Followed threads stay at the top only while they have unread messages. A fully read followed thread goes back to its place in the chosen sort order, and comes back up when a reply arrives. This applies to the tree, grouped and split-pane views. Thanks to Cercaparole.</string>
     <string name="rn_v16_title">New in 1.6</string>
     <string name="rn_v16_l4">Rewrap quotes: while writing, the Trim quote window has a new command that puts quoted lines back in order at 72 columns, keeping the &gt; marks and the levels. It leaves alone your own text, signatures, blank lines between paragraphs and long links. From the survey on the groups.</string>
     <string name="rn_v16_l5">Sending from the panes view now wraps lines at 72 columns and follows the Format=Flowed setting, as the phone view always did. Before, a long paragraph left as a single line and some servers could refuse it.</string>

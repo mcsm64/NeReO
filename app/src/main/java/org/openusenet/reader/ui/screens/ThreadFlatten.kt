@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Costruzione della lista messaggi secondo la vista scelta:
- *  - tree       : albero indentato (JWZ), watched-first
+ *  - tree       : albero indentato (JWZ), seguite con non letti in cima
  *  - sequential : tutti i messaggi in ordine di data, senza rientro
  *  - roots      : una riga per discussione, richiudibile con +/- (beta7),
  *                 con contatore dei messaggi da leggere
@@ -195,9 +195,14 @@ fun righeNonLette(item: ThreadItem, article: Article): Boolean =
  * Sta qui, e non nei quattro punti che mostrano quel messaggio, per la regola
  * di sempre: prima di scrivere la quarta copia di una logica, estrarla.
  */
-fun testoEsitoSync(ctx: android.content.Context, inseriti: Int, filtrati: Int): String {
+fun testoEsitoSync(
+    ctx: android.content.Context,
+    inseriti: Int,
+    filtrati: Int,
+    nonAggiornati: List<org.openusenet.reader.data.ServerNonAggiornato> = emptyList(),
+): String {
     val visibili = (inseriti - filtrati).coerceAtLeast(0)
-    return when {
+    val esito = when {
         filtrati <= 0 && visibili <= 0 -> ctx.getString(org.openusenet.reader.R.string.msg_no_new)
         filtrati <= 0 -> ctx.getString(org.openusenet.reader.R.string.msg_new_articles, visibili)
         visibili <= 0 -> ctx.getString(org.openusenet.reader.R.string.msg_no_new_filtered, filtrati)
@@ -205,6 +210,13 @@ fun testoEsitoSync(ctx: android.content.Context, inseriti: Int, filtrati: Int): 
             org.openusenet.reader.R.string.msg_new_articles_filtered, visibili, filtrati
         )
     }
+    if (nonAggiornati.isEmpty()) return esito
+    // 1.6.1: «Nessun nuovo articolo. Non aggiornato: robertocorrado (non risponde)»
+    val elenco = org.openusenet.reader.data.elencoNonAggiornati(
+        nonAggiornati, ctx.getString(org.openusenet.reader.R.string.msg_sync_no_answer),
+    )
+    return esito.trimEnd('.') + ". " +
+        ctx.getString(org.openusenet.reader.R.string.msg_sync_not_updated, elenco)
 }
 
 fun formatThreadDate(epochSeconds: Long): String {
@@ -464,8 +476,20 @@ fun allRootKeys(articles: List<Article>, unreadOnly: Boolean): Set<String> =
         .mapNotNull { it.flatten().firstOrNull()?.second?.messageId }
         .toSet()
 
-/** Radici ordinate (watched-first, filtro non-letti a livello di thread) + indice per messageId. */
-private fun orderedRoots(
+/**
+ * Radici ordinate (filtro non-letti a livello di thread) + indice per messageId.
+ *
+ * 1.6.1 / 187 (Cercaparole, Michele e Roxy su Usenet, 5/11): in cima stanno le
+ * discussioni seguite CON almeno un non letto. Prima ci stavano tutte, e una
+ * seguita vecchia e gia' letta restava sopra le discussioni nuove. Una seguita
+ * tutta letta torna al suo posto secondo l'ordinamento scelto, e risale se
+ * arriva una risposta. Nessun interruttore.
+ *
+ * ⚠️ Una seguita letta ora SCENDE sotto gli occhi di chi legge: per questo
+ * [novitaInCima] guarda anche l'id piu' alto, [ThreadScrollMemory] ricorda se si
+ * era in cima, e lo swipe usa [idNonLettoNelGruppo].
+ */
+internal fun orderedRoots(
     articles: List<Article>,
     unreadOnly: Boolean,
     sort: String,
@@ -509,7 +533,10 @@ private fun orderedRoots(
 
     val watchedIds = articles.asSequence().filter { it.watched }.map { it.messageId }.toSet()
     val (w, n) = if (watchedIds.isEmpty()) roots to emptyList()
-                 else roots.partition { root -> piatto(root).any { (_, ta) -> ta.messageId in watchedIds } }
+                 else roots.partition { root ->
+                     piatto(root).any { (_, ta) -> ta.messageId in watchedIds } &&
+                         piatto(root).any { (_, ta) -> byMsgId[ta.messageId]?.read == false }
+                 }
     return (w + n) to byMsgId
 }
 

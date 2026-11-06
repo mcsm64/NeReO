@@ -85,7 +85,7 @@ import org.openusenet.reader.ui.screens.ThreadItem
 import org.openusenet.reader.ui.screens.discussioneDi
 import org.openusenet.reader.ui.screens.rigaUltimoLetto
 import org.openusenet.reader.ui.screens.confiniDiscussione
-import org.openusenet.reader.ui.screens.esistonoNonLettiDopo
+import org.openusenet.reader.ui.screens.idNonLettoNellaDiscussione
 import org.openusenet.reader.ui.screens.idDiscussionePrecedente
 import org.openusenet.reader.ui.screens.idDiscussioneSuccessiva
 import org.openusenet.reader.ui.screens.idMessaggioPrecedente
@@ -1725,7 +1725,7 @@ class NavigazioneLetturaTest {
         assertNull(idMessaggioSuccessivo(lista, -1))
         assertNull(idMessaggioPrecedente(lista, -1))
         assertNull(idPrimoNonLettoDopo(lista, -1))
-        assertFalse(esistonoNonLettiDopo(lista, -1))
+        assertNull(idNonLettoNellaDiscussione(lista, 999L))
         assertNull(idDiscussioneSuccessiva(lista, 999L))
         assertNull(idDiscussionePrecedente(lista, 999L))
         assertNull(idDiscussioneSuccessiva(lista, null))
@@ -1739,9 +1739,24 @@ class NavigazioneLetturaTest {
         )
         assertEquals(3L, idPrimoNonLettoDopo(misto, 0))
         assertEquals(4L, idPrimoNonLettoDopo(misto, 2))
-        assertTrue(esistonoNonLettiDopo(misto, 0))
         assertNull(idPrimoNonLettoDopo(misto, 3))     // dopo l'ultimo, niente
-        assertFalse(esistonoNonLettiDopo(misto, 3))
+    }
+
+    /** 1.6.1 (BIG Umberto): il fumetto non esce dalla discussione. */
+    @Test
+    fun `il fumetto resta nella discussione e si spegne quando e' finita`() {
+        val discussione = listOf(voce(1, inizio = true), voce(2), voce(3, letto = false))
+        assertEquals(3L, idNonLettoNellaDiscussione(discussione, 1L))
+        // il messaggio corrente non conta, anche se risultasse non letto
+        assertNull(idNonLettoNellaDiscussione(discussione, 3L))
+        assertNull(idNonLettoNellaDiscussione(listOf(voce(1), voce(2)), 1L))
+    }
+
+    @Test
+    fun `il fumetto torna sui non letti rimasti sopra`() {
+        val discussione = listOf(voce(1, inizio = true, letto = false), voce(2), voce(3, letto = false), voce(4))
+        assertEquals(3L, idNonLettoNellaDiscussione(discussione, 2L))
+        assertEquals(1L, idNonLettoNellaDiscussione(discussione, 4L))   // da in fondo, risale
     }
 
     @Test

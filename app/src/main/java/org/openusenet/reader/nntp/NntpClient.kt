@@ -24,6 +24,9 @@ import javax.net.ssl.TrustManager
 
 class NntpException(val code: Int, message: String) : IOException("$code $message")
 
+/** 1.6.1: quanto si aspetta la risposta al QUIT, chiudendo. Vedi [NntpClient.close]. */
+private const val ATTESA_QUIT_MS = 1_000
+
 /**
  * 1.3.3 (segnalazione di Bingo3331) — che COSA è andato storto nell'handshake.
  *
@@ -465,6 +468,11 @@ class NntpClient(
                     NntpLog.diag("handshake TLS fallito verso $host [$causa]: ${e.message}")
                     runCatching { close() }
                     throw IOException(spiegazioneErroreTls(host, e))
+                } catch (e: IOException) {
+                    // 1.6.1: un timeout durante l'handshake non e' una SSLException:
+                    // `socket` non e' ancora assegnato, e close() non lo vedrebbe.
+                    runCatching { close() }
+                    throw e
                 }
             }
         } else {
@@ -964,7 +972,16 @@ class NntpClient(
     }
 
     override fun close() {
-        try { quit() } finally {
+        try {
+            // 1.6.1 (BIG Umberto): connessione mai aperta, QUIT non ha senso e
+            // command() lancerebbe. Connessione aperta: il saluto al server non
+            // vale l'attesa di lettura intera, che su un server muto si sommava al
+            // timeout appena scaduto, a mutex del sync occupato.
+            if (output != null) {
+                runCatching { socket?.soTimeout = ATTESA_QUIT_MS }
+                quit()
+            }
+        } finally {
             // Piè di sessione (punto 3, HAL/Bingo3331): solo se una sessione è
             // davvero partita (sessionStartNs > 0) — connect() potrebbe non
             // essere mai stato chiamato con successo (es. errore prima del

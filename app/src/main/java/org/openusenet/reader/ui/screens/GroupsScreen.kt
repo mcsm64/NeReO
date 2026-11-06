@@ -169,16 +169,8 @@ fun GroupsScreen(repo: NewsRepository, nav: NavHostController) {
     // all'apertura, tira-giù, icona in alto — ora anche nei due nuovi livelli
     // selettivi). Stesso comportamento di sempre: indicatore, ding sulle
     // risposte ai miei post, snackbar di esito.
-    suspend fun eseguiSync(azione: suspend () -> Int) {
-        syncing = true
-        runCatching { azione() }
-            .onSuccess { n ->
-                if (AppSettings.dingOnReply && repo.lastSyncNewToMe > 0) playDing(ctx)
-                snackbar.showSnackbar(if (n > 0) ctx.getString(R.string.msg_new_articles, n) else ctx.getString(R.string.msg_no_new))
-            }
-            .onFailure { snackbar.showSnackbar(ctx.getString(R.string.msg_error, it.message ?: "")) }
-        syncing = false
-    }
+    suspend fun eseguiSync(azione: suspend () -> Int) =
+        aggiornaConEsito(repo, ctx, snackbar, { syncing = it }, azione)
 
     Scaffold(
         topBar = {
@@ -598,9 +590,9 @@ fun GroupsScreen(repo: NewsRepository, nav: NavHostController) {
     }
 
     // 1.3 (C): "scegli quali server aggiornare" (livello globale). Selezione
-    // multipla di server; l'esecuzione somma i risultati di syncServer per
-    // ognuno — niente "dedup" fra server che condividono un gruppo (scelta
-    // deliberata, vedi NeReO_feature_refresh_selettivo.md).
+    // multipla di server, un giro solo (1.6.1) — niente "dedup" fra server che
+    // condividono un gruppo (scelta deliberata, vedi
+    // NeReO_feature_refresh_selettivo.md).
     if (pickServersDialog) {
         AlertDialog(
             onDismissRequest = { pickServersDialog = false },
@@ -634,7 +626,7 @@ fun GroupsScreen(repo: NewsRepository, nav: NavHostController) {
                     onClick = {
                         pickServersDialog = false
                         val ids = selectedServerIds
-                        scope.launch { eseguiSync { ids.sumOf { id -> repo.syncServer(id) } } }
+                        scope.launch { eseguiSync { repo.syncServers(ids) } }
                     },
                 ) { Text(stringResource(R.string.common_ok)) }
             },

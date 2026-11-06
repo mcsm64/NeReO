@@ -16,8 +16,9 @@
  * corta rimasta al suo posto e' solo meno bella. Quindi fanno da barriera, e
  * restano identiche: riga vuota, cambio di livello, attribuzione, segno di
  * taglio, firma (anche citata), rientro, elenco, riga con una parola che non
- * sta nella larghezza (un URL lungo). La fine di capoverso si riconosce con le
- * regole della lettura ([interruzioneVoluta]): una sola euristica in tutta l'app.
+ * sta nella larghezza (un URL lungo) e, dalla 1.6.1, riga di solo URL. La fine
+ * di capoverso si riconosce con le regole della lettura
+ * ([siUnisceAllaPrecedente]): una sola euristica in tutta l'app.
  *
  * Le righe NON citate e la firma dell'utente non si guardano nemmeno.
  *
@@ -35,7 +36,8 @@ package org.openusenet.reader.ui
 import org.openusenet.reader.text.BODY_MAX_COLS
 import org.openusenet.reader.text.LARGHEZZA_MIN_IMPAGINATA
 import org.openusenet.reader.text.MARCA_ELENCO
-import org.openusenet.reader.text.interruzioneVoluta
+import org.openusenet.reader.text.rigaSoloUrl
+import org.openusenet.reader.text.siUnisceAllaPrecedente
 import org.openusenet.reader.text.wrapBody
 
 /** Quante volte al massimo si ripassa il testo: vedi [riformattaCitazioni]. */
@@ -63,6 +65,7 @@ private fun eBarriera(r: RigaCitata, larghezza: Int, seguePiuProfonda: Boolean):
     val t = r.testo
     if (t.startsWith(" ") || t.startsWith("\t")) return true           // rientro voluto
     if (MARCA_ELENCO.containsMatchIn(t)) return true
+    if (rigaSoloUrl(t)) return true                                    // link da solo: resta da solo
     if (sembraTaglio(t)) return true                                   // comprende `>:-)`, senza lettere
     // sembraAttribuzione guarda anche i marcatori dentro la riga («said»): da
     // soli non bastano, altrimenti una frase qualunque fermerebbe il capoverso.
@@ -112,6 +115,7 @@ private fun unaPassata(testo: String, cols: Int): String {
         val stima = blocco.filterIndexed { k, _ -> !barriere[k] }
             .maxOfOrNull { it.testo.trimEnd().length } ?: 0
         val w = stima.coerceAtMost(larghezza)
+        val testi = blocco.map { it.testo }
 
         val capoverso = ArrayList<RigaCitata>()
         fun chiudi() {
@@ -132,7 +136,7 @@ private fun unaPassata(testo: String, cols: Int): String {
                     chiudi()
                     out.add(c.grezza)
                 }
-                capoverso.isNotEmpty() && interruzioneVoluta(capoverso.last().testo, c.testo, w) -> {
+                capoverso.isNotEmpty() && !siUnisceAllaPrecedente(testi, k, w) -> {
                     chiudi()
                     capoverso.add(c)
                 }

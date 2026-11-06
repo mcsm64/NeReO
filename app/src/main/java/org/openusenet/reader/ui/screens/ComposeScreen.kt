@@ -581,8 +581,10 @@ fun ComposeScreen(
                         //
                         // Senza Followup-To la condizione e' identica a prima:
                         // gruppiOffertiNelSelettore e' l'identita' su quel caso.
-                        if (gruppiOffertiNelSelettore(
-                                destinazioneAutore, crosspostGroups(parent?.headersRaw)).size > 1) {
+                        // 1.6.1 / 187 (Dave Royal): e la quarta, il messaggio che
+                        // sta in un altro gruppo. Vedi selettoreDisponibile.
+                        if (selettoreDisponibile(
+                                destinazioneAutore, crosspostGroups(parent?.headersRaw), groupName)) {
                             IconButton(onClick = { showCrosspost = true }) {
                                 Icon(Icons.Default.Groups, contentDescription = stringResource(R.string.cmp_crosspost_reply_cd))
                             }
@@ -785,6 +787,12 @@ fun ComposeScreen(
                 indirizzoAutore = indirizzoAutore,
                 onCopiaIndirizzo = { appunti.copia(it) },
                 onApriPosta = { apriAppDiPosta(ctx, it) },
+            )
+            AvvisoPubblicatoAltrove(
+                gruppiDaSegnalare(
+                    crosspostGroups(parent?.headersRaw), groupName, destinazioneAutore, destinazioni,
+                ),
+                destinazioni,
             )
 
             // dettagli ripiegabili: lasciano tutto lo spazio all'editor del messaggio

@@ -6,9 +6,9 @@ Scritto da zero in Kotlin + Jetpack Compose. Nasce dal MOD 17 di *Newsreader* di
 
 Il package interno resta `org.openusenet.reader` — invariato di proposito, per non rompere gli aggiornamenti già installati.
 
-**Versione 1.6** (versionCode 185) — 4 novembre 2026
+**Versione 1.6.1** (versionCode 188) — 5 novembre 2026
 
-## Funzioni (1.6)
+## Funzioni (1.6.1)
 
 - Multi-server NNTP con SSL/TLS implicito **o STARTTLS** (RFC 3977 + RFC 4643 + RFC 4642) e autenticazione, con **verifica del nome host sul certificato** (RFC 6125) e fallback automatico IPv6/IPv4; CAPABILITIES letto e loggato alla connessione; riuso della connessione durante la lettura di un thread; **allarme se un server che offriva STARTTLS smette di annunciarlo** (RFC 4642 §5)
 - Ricerca e sottoscrizione gruppi, sync incrementale delle headline con `OVER` e ripiego automatico su `XOVER` per i server che non riconoscono `OVER` (es. Astraweb)
@@ -22,6 +22,19 @@ Il package interno resta `org.openusenet.reader` — invariato di proposito, per
 - Backup e ripristino della configurazione, con cifratura opzionale
 - Material 3, tema chiaro/scuro/di sistema, dynamic color, tinte e dimensioni del testo, layout a pannelli per schermi larghi
 - Interfaccia in italiano e inglese, con **interruttore lingua dentro l'app** (Aspetto → Lingua) oltre alla voce di sistema su Android 13+
+
+## Novità della 1.6.1
+
+> Segnalazioni di BIG Umberto, Dave Royal e Cercaparole, e una richiesta di Marco.
+
+- **La firma lunga non viene più tagliata** *(BIG Umberto, 5/11)*. `trimSignatureLines` faceva `take(72)`: una frase di tre righe scritta su una riga sola partiva mozzata, e al lettore veniva tagliata la firma altrui. Nel database la firma era intera, quindi torna tutta senza migrazioni. Ora `signatureBlock` passa da `spezzaRigheFirma` (che riusa `wrapBody`: alle parole, URL interi). Il limite delle 4 righe vale sulle righe scritte, non su quelle spezzate
+- **Riflusso: colonne, link e a capo voluti** *(BIG Umberto, 5/11)*. La decisione sta in `text/Riflusso.kt` (`siUnisceAllaPrecedente`), condivisa da lettura e «Riformatta» al posto di `interruzioneVoluta`; `reflowLines` esce da `ArticleBody` e ora ha i test. Si unisce una riga piena; non si unisce con URL da solo, due righe corte di fila, riga corta dopo punteggiatura, fine frase seguita da maiuscola. Le orfane del pettine si ricuciono se la riga dopo è in minuscolo. Limite noto: un pettine con due righe corte di fila resta spezzato. Provato sul post vero
+- **Il tasto del prossimo non letto resta nella discussione** *(BIG Umberto, 5/11)*. `idNonLettoNellaDiscussione` lavora sulla sola discussione, con giro interno, e accende il pulsante. Avanti, volume e swipe non cambiano. Nei pannelli usa `threadItems` invece di `flat`: con «solo non letti» il tasto si spegneva dopo ogni lettura
+- **Messaggi di un altro gruppo** *(Dave Royal)*. `gruppiAltrove` confronta il gruppo in lettura con `Newsgroups:` (maiuscole e spazi non contano). Lettura: «Pubblicato in» in `RigaGruppiMessaggio`, che sostituisce tre copie della riga crosspost. Scrittura: avviso, e il pulsante dei gruppi compare anche con un gruppo solo (`selettoreDisponibile`). «Tutti i gruppi» non aggiunge niente da solo su questi messaggi. Followup-To decide come prima. `headersRaw` arriva col corpo, come il +N. Niente sync, niente database
+- **Grassetto, corsivo e sottolineato come MesNews** *(Marco, 5/11)*. `text/Enfasi.kt` dice dove sono le coppie di segni; `applicaEnfasi` in `ArticleBody.kt` applica lo stile a riga scritta. I segni restano nel testo a grandezza zero, come le faccine, così «Copia» e «Cita» li conservano. Fuori da link e firme, anche col monospazio. `-testo-` e `\testo\` restano testo, come in MesNews. Interruttore `enfasiTesto` in Aspetto, acceso
+- **Seguite in cima solo con non letti** *(Cercaparole, Michele e Roxy su Usenet, 5/11)*. La partizione di `orderedRoots`, unica, ora chiede anche un non letto. Una seguita può quindi scendere mentre la si legge: `novitaInCima` non prende più per un arrivo il primo cambiato senza id nuovo, `indiceDiRipristino` tiene in cima chi era in cima, e lo swipe del prossimo non letto riparte dall'inizio. Nessun interruttore
+
+- **Un server che non risponde non ferma gli altri.** Nell'aggiornamento di più server, chi non apre la sessione esce al primo tentativo invece che a ogni gruppo, gli altri proseguono e alla fine un messaggio dice quali sono rimasti fuori e perché. L'esito si vede ora anche nella vista a pannelli
 
 ## Novità della 1.6
 

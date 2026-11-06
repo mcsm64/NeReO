@@ -331,10 +331,12 @@ fun ThreadListScreen(
             )
             if (!ciSonoNovita) {
                 // nessun articolo nuovo in cima → riprendi da dove eri
-                val idx = items.indexOfFirst { it.article.id == ancora.articleId }
                 // se il messaggio non c'è più (cancellato, filtrato, scaduto) si
-                // resta in cima: meglio un punto noto che uno arbitrario
-                if (idx >= 0) listState.scrollToItem(idx, ancora.offset)
+                // resta in cima: meglio un punto noto che uno arbitrario. Idem
+                // se era la prima riga ed è sceso (1.6.1: seguita appena letta).
+                indiceDiRipristino(ancora, items.map { it.article.id })?.let {
+                    listState.scrollToItem(it, ancora.offset)
+                }
             }
             // se ci sono novità non faccio nulla: la lista è già in cima (0,0),
             // dove i nuovi articoli sono visibili
@@ -443,7 +445,7 @@ fun ThreadListScreen(
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
             .collect { (idx, off) ->
                 items.getOrNull(idx)?.article?.id?.let { id ->
-                    ThreadScrollMemory.put(groupId, id, off, improntaSalvata)
+                    ThreadScrollMemory.put(groupId, id, off, improntaSalvata, inCima = idx == 0)
                 }
             }
     }

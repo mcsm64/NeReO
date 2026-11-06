@@ -50,30 +50,13 @@ fun corpoDaInviare(testo: String, flowed: Boolean): String =
     if (flowed) avvolgiFlowed(testo) else wrapBody(testo)
 
 /**
- * Le tre regole per riconoscere un capoverso andato a capo, in comune fra la
- * lettura (`reflowLines` in ArticleBody.kt) e «Riformatta» in scrittura.
- *
- * Righe che iniziano cosi' sono elenchi o enumerazioni: mai unirle alla precedente.
+ * Righe che iniziano cosi' sono elenchi o enumerazioni: mai unirle alla
+ * precedente. La regola dei capoversi sta in Riflusso.kt.
  */
 val MARCA_ELENCO = Regex("""^([-*•·>]|\d{1,3}[.)])\s""")
 
 /** Sotto questa larghezza non e' testo andato a capo: sono righe corte per scelta. */
 const val LARGHEZZA_MIN_IMPAGINATA = 30
-
-private val PUNTEGGIATURA_TERMINALE = setOf('.', ',', ':', ';', '!', '?', '…')
-
-/**
- * La fine di [precedente] e' voluta da chi ha scritto? Si', se la riga finisce
- * con punteggiatura E non era piena: la prima parola di [seguente] ci sarebbe
- * stata dentro [larghezza]. Protegge etichette, saluti e frasi brevi; le orfane
- * di una-due parole, che finiscono senza punteggiatura, si riuniscono.
- */
-fun interruzioneVoluta(precedente: String, seguente: String, larghezza: Int): Boolean {
-    val prec = precedente.trimEnd()
-    val ultimo = prec.lastOrNull() ?: return false
-    val primaParola = seguente.trim().substringBefore(' ').length
-    return ultimo in PUNTEGGIATURA_TERMINALE && prec.length + 1 + primaParola <= larghezza
-}
 
 /**
  * Manda a capo il corpo del messaggio rispettando le convenzioni Usenet.
@@ -145,6 +128,16 @@ fun wrapBody(text: String, cols: Int = BODY_MAX_COLS): String {
     }
     return out.joinToString("\n")
 }
+
+/**
+ * 1.6.1 (BIG Umberto) — le righe della firma, ognuna al massimo [cols] colonne.
+ *
+ * [wrapBody] non guarda la firma nel corpo, quindi le righe vanno spezzate
+ * QUI, prima di entrare nel corpo. Stesse regole del corpo: alle parole, e una
+ * parola piu' lunga del limite (un indirizzo web) resta intera.
+ */
+fun spezzaRigheFirma(righe: List<String>, cols: Int = BODY_MAX_COLS): List<String> =
+    righe.flatMap { wrapBody(it, cols).lines() }
 
 /**
  * 1.4.8 (par. B6b) — GENERARE Format=Flowed (RFC 3676).

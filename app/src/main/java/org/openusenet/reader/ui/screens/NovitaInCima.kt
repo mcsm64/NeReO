@@ -29,6 +29,10 @@ package org.openusenet.reader.ui.screens
  *    NUOVA, non una risposta a una vecchia → conta il primo della lista,
  *    come nella 1.5.4.
  *
+ * 1.6.1 / 187: in quest'ultimo caso deve salire ANCHE l'id piu' alto. Il primo
+ * cambia pure senza messaggi nuovi: una seguita appena letta scende, una riga
+ * letta sparisce con «solo non letti». Quello non e' un arrivo.
+ *
  * Kotlin puro, nessun import: si prova da solo con kotlinc.
  */
 data class ImprontaLista(val primoId: Long, val ultimoId: Long)
@@ -48,5 +52,5 @@ fun novitaInCima(
 ): Boolean = when {
     ordinamento.endsWith("_asc") -> false
     vistaSequenziale || ordinamento == "activity_desc" -> ora.ultimoId > prima.ultimoId
-    else -> ora.primoId != prima.primoId
+    else -> ora.primoId != prima.primoId && ora.ultimoId > prima.ultimoId
 }

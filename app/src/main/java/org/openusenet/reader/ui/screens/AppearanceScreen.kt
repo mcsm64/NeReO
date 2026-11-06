@@ -289,6 +289,20 @@ fun AppearanceScreen(nav: NavHostController) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 12.dp, top = 2.dp),
             )
+            // 1.6.1 / 187 (Marco): *grassetto* /corsivo/ _sottolineato_. Acceso di default.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                Switch(
+                    checked = AppSettings.enfasiTesto,
+                    onCheckedChange = { AppSettings.enfasiTesto = it; AppSettings.save() },
+                )
+                Text(stringResource(R.string.app_enfasi), modifier = Modifier.padding(start = 12.dp))
+            }
+            Text(
+                stringResource(R.string.app_enfasi_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp, top = 2.dp),
+            )
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                 Switch(
                     checked = AppSettings.shortenQuotes,

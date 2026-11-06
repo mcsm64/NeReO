@@ -365,6 +365,10 @@ class NewsRepository(
      */
     var lastSyncFiltrati: Int = 0
 
+    /** 1.6.1: i server che l'ultimo aggiornamento di piu' gruppi non ha raggiunto. */
+    var lastSyncNonAggiornati: List<ServerNonAggiornato> = emptyList()
+        private set
+
     /** Appoggio fra [elaboraLottoOverview] e il ciclo dei lotti in syncGroup. */
     private var ultimoLottoFiltrati: Int = 0
         private set
@@ -2240,6 +2244,14 @@ class NewsRepository(
     }
 
     /**
+     * 1.6.1 (BIG Umberto): i server scelti nel dialogo, in UN giro solo. Prima era
+     * un syncServer per volta dentro un `sumOf`: il primo errore fermava gli altri.
+     */
+    suspend fun syncServers(serverIds: Collection<Long>, segnalaAuthNonCifrata: Boolean = true): Int = withContext(Dispatchers.IO) {
+        syncGroupList(serverIds.flatMap { db.groupDao().subscribedOnceForServer(it) }, segnalaAuthNonCifrata)
+    }
+
+    /**
      * 1.3 (C): aggiorna un sottoinsieme di gruppi scelto dall'utente (checkbox
      * nella UI di selezione), a prescindere dal server di appartenenza —
      * [syncGroupList] li raggruppa comunque per server, una connessione per
@@ -2263,75 +2275,49 @@ class NewsRepository(
         // syncGroups, incluso il timer automatico in MainActivity).
         var scaricati = 0
         var newToMe = 0
+        var filtrati = 0
+        lastSyncNonAggiornati = emptyList()
         val engine = buildEngine() // costruito UNA volta e riusato per tutti i gruppi
         // "A" (richiesta Marco): UNA connessione per SERVER, non una per gruppo.
         // Prima ogni gruppo apriva socket + handshake TLS + AUTHINFO e chiudeva:
         // con 28 gruppi su 3 server = 28 login (la lentezza segnalata dal log).
         // Ora raggruppo per server e riuso lo stesso client per tutti i suoi
         // gruppi. È anche più gentile col server (una sessione, non 28).
-        // 1.2.6 (Marco): raccolgo gli errori per server. Prima il runCatching
-        // inghiottiva l'eccezione in silenzio (robustezza: un server/gruppo
-        // ostile non deve abortire l'intero giro), ma buttava via anche il
-        // SEGNALE: con l'auth rifiutata su connessione non cifrata (NntpException
-        // 483) ogni gruppo falliva, veniva saltato, scaricati restava 0 e la UI
-        // mostrava "nessun nuovo messaggio" invece dell'errore. Il singolo gruppo
-        // (syncGroup) invece l'errore lo mostrava, perché non ha il runCatching.
-        // Il fallimento è a livello di CONNESSIONE, non di gruppo: tengo un errore
-        // per server (l'ultimo), poi — se non ho scaricato NULLA e c'è stato
-        // almeno un errore — lo rilancio così la UI lo mostra.
-        val erroriPerServer = LinkedHashMap<Long, Throwable>()
-        val perServer = gruppi.groupBy { it.serverId }
-        for ((serverId, gruppiServer) in perServer) {
+        //
+        // 1.6.1 (BIG Umberto): la regola del giro sta in giroDelServer (GiroServer.kt):
+        // un server che non apre la sessione esce al primo tentativo e gli altri
+        // proseguono. Non si rilancia piu' nulla: chi avvia l'aggiornamento legge
+        // lastSyncNonAggiornati. Il 483 resta a parte: va al dialog dedicato, che
+        // offre "passa a SSL" / "consenti", e `segnalaAuthNonCifrata` e' false per
+        // il sync periodico, che non deve aprire un dialog mentre l'utente legge.
+        val fuori = ArrayList<ServerNonAggiornato>()
+        var serverCon483: Long? = null
+        for ((serverId, gruppiServer) in gruppi.groupBy { it.serverId }) {
             val server = db.serverDao().byId(serverId) ?: continue
-            // Se la connessione condivisa cade a metà, si riapre per i gruppi
-            // ancora da fare. Guardia anti-loop: se un tentativo non fa progressi
-            // (il gruppo corrente fa fallire subito la connessione), quel gruppo
-            // si salta invece di ritentarlo all'infinito.
-            var idx = 0
-            while (idx < gruppiServer.size) {
-                val partenza = idx
-                runCatching {
-                    openClient(server) { client ->
-                        while (idx < gruppiServer.size) {
-                            val n = syncGruppoConClient(client, gruppiServer[idx], engine, AppSettings.maxHeadersSync)
-                            scaricati += n
-                            newToMe += lastSyncNewToMe
-                            idx++ // avanza SOLO a gruppo riuscito
-                        }
-                    }
-                }.onFailure { erroriPerServer[serverId] = it }
-                if (idx == partenza) idx++ // nessun progresso: salta il gruppo ostile
+            val esito = giroDelServer<NntpClient, Group>(
+                gruppiServer,
+                sessione = { blocco -> openClient(server) { client -> blocco(client) } },
+                sincronizza = { client, gruppo ->
+                    val n = syncGruppoConClient(client, gruppo, engine, AppSettings.maxHeadersSync)
+                    newToMe += lastSyncNewToMe
+                    filtrati += lastSyncFiltrati
+                    n
+                },
+            )
+            scaricati += esito.scaricati
+            val errore = esito.errore
+            if (errore is NntpException && errore.code == 483) {
+                if (serverCon483 == null) serverCon483 = serverId
+            } else if (errore != null && esito.daSegnalare) {
+                fuori.add(serverNonAggiornato(server.name.ifBlank { server.host }, errore))
             }
         }
-        // lastSyncNewToMe riflette l'ultimo gruppo; lo riallineo al totale
-        // cumulativo così il ding in GroupsScreen vede il conteggio giusto.
+        // syncGruppoConClient riparte da zero a ogni gruppo: qui i totali del giro.
         lastSyncNewToMe = newToMe
-        // Fallimento totale = errore visibile. Con un solo server rilancio
-        // l'eccezione originale (preserva il messaggio 483 esatto); con più
-        // server, un'eccezione col riassunto dei messaggi distinti. Se invece
-        // qualcosa è stato scaricato, resto in silenzio (limite noto della via A:
-        // un fallimento parziale su un altro server non emerge).
-        // 1.2.7 (Marco, feature A): separo il caso "connessione non cifrata" (483)
-        // dagli altri errori. Il 483 va al dialog dedicato (che offre "passa a
-        // SSL" / "consenti"), non al messaggio secco. `segnalaAuthNonCifrata` è
-        // false per il sync automatico periodico: un avviso modale a intervalli,
-        // mentre l'utente legge, sarebbe invadente — lo mostriamo solo sui sync
-        // avviati dall'utente.
-        val e483 = erroriPerServer.filterValues { it is NntpException && it.code == 483 }
-        val altriErrori = erroriPerServer.filterValues { !(it is NntpException && it.code == 483) }
-        if (segnalaAuthNonCifrata && e483.isNotEmpty()) {
-            AvvisoConnessioneNonSicura.serverId.value = e483.keys.first()
-        }
-        if (scaricati == 0 && altriErrori.isNotEmpty()) {
-            if (altriErrori.size == 1) {
-                throw altriErrori.values.first()
-            }
-            val messaggi = altriErrori.values.mapNotNull { it.message }.distinct()
-                .joinToString("; ")
-            // 1.3.5: in inglese come i messaggi di NntpClient — anche Repository
-            // e' senza Context e non puo' leggere le risorse. Vedi la nota
-            // su spiegazioneErroreTls in NntpClient.kt.
-            throw Exception(messaggi.ifEmpty { "synchronisation failed" })
+        lastSyncFiltrati = filtrati
+        lastSyncNonAggiornati = fuori
+        if (segnalaAuthNonCifrata && serverCon483 != null) {
+            AvvisoConnessioneNonSicura.serverId.value = serverCon483
         }
         return scaricati
     }

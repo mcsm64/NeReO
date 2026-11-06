@@ -116,9 +116,23 @@ fun idGruppoConNonLetti(
     return giro.firstOrNull { it.nonLetti > 0 && it.id !in scartati }?.id
 }
 
-/** true se dopo [posizione] c'e' almeno un messaggio da leggere. */
-fun esistonoNonLettiDopo(flat: List<ThreadItem>, posizione: Int): Boolean =
-    posizione >= 0 && flat.drop(posizione + 1).any { !it.article.read }
+/**
+ * 1.6.1 (BIG Umberto) — il tasto «fumetto»: il prossimo messaggio da leggere
+ * DENTRO la discussione, prima quelli dopo [correnteId] e poi quelli sopra.
+ * `null` = pulsante grigio. Prima usava [idPrimoNonLettoDopo], che attraversa il
+ * gruppo: «non ti accorgi» di aver cambiato discussione. Per passare alla
+ * successiva c'e' Avanti.
+ *
+ * [discussione] e' la sola discussione corrente, comunque ordinata. Non si
+ * ricava dalla lista dell'elenco: nella vista sequenziale non ha inizi di
+ * discussione, e nei pannelli e' filtrata da «solo non letti».
+ */
+fun idNonLettoNellaDiscussione(discussione: List<ThreadItem>, correnteId: Long?): Long? {
+    val i = discussione.indexOfFirst { it.article.id == correnteId }
+    if (i < 0) return null
+    return (discussione.drop(i + 1) + discussione.take(i))
+        .firstOrNull { !it.article.read }?.article?.id
+}
 
 /**
  * L'inizio della discussione SEGUENTE. `null` se l'articolo non e' nella lista

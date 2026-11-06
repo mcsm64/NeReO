@@ -52,17 +52,41 @@ object ThreadScrollMemory {
      * @property offset scostamento in pixel;
      * @property impronta la lista all'uscita (primo articolo e id piu' alto),
      *   per capire al rientro se sono arrivate novita' in cima. Fino alla
-     *   1.5.4 era solo l'id del primo: vedi [novitaInCima] per il perche'.
+     *   1.5.4 era solo l'id del primo: vedi [novitaInCima] per il perche';
+     * @property inCima 1.6.1 / 187: quel messaggio era la prima riga della lista.
      */
-    data class Ancora(val articleId: Long, val offset: Int, val impronta: ImprontaLista)
+    data class Ancora(
+        val articleId: Long,
+        val offset: Int,
+        val impronta: ImprontaLista,
+        val inCima: Boolean = false,
+    )
 
     private val ancore = HashMap<Long, Ancora>()
 
     fun get(groupId: Long): Ancora? = ancore[groupId]
 
-    fun put(groupId: Long, articleId: Long, offset: Int, impronta: ImprontaLista) {
-        ancore[groupId] = Ancora(articleId, offset, impronta)
+    fun put(groupId: Long, articleId: Long, offset: Int, impronta: ImprontaLista, inCima: Boolean = false) {
+        ancore[groupId] = Ancora(articleId, offset, impronta, inCima)
     }
 
     fun clear(groupId: Long) { ancore.remove(groupId) }
+}
+
+/**
+ * 1.6.1 / 187 — DOVE TORNARE, in un posto solo e provato nei test. `null` = si
+ * resta in cima.
+ *
+ * Una discussione seguita appena letta puo' essere scesa. Se era la prima riga e
+ * l'ancora la inseguisse, la lista finirebbe a meta' con le discussioni nuove
+ * sopra il bordo dello schermo: chi era in cima, in cima resta. Da un punto
+ * qualunque della lista invece si segue la riga, come sempre.
+ */
+fun indiceDiRipristino(ancora: ThreadScrollMemory.Ancora, ids: List<Long>): Int? {
+    val indice = ids.indexOf(ancora.articleId)
+    return when {
+        indice < 0 -> null
+        ancora.inCima && indice > 0 -> null
+        else -> indice
+    }
 }

@@ -251,16 +251,8 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
     // dentro AzioneAggiorna, insieme al menu che lo usa.
     var pickServersDialogPannello by remember { mutableStateOf(false) }
     var selectedServerIdsPannello by remember { mutableStateOf<Set<Long>>(emptySet()) }
-    suspend fun eseguiSyncPannello(azione: suspend () -> Int) {
-        syncing = true
-        runCatching { azione() }
-            .onSuccess { n ->
-                if (AppSettings.dingOnReply && repo.lastSyncNewToMe > 0) playDing(ctx)
-                snackbar.showSnackbar(testoEsitoSync(ctx, n, repo.lastSyncFiltrati))
-            }
-            .onFailure { }
-        syncing = false
-    }
+    suspend fun eseguiSyncPannello(azione: suspend () -> Int) =
+        aggiornaConEsito(repo, ctx, snackbar, { syncing = it }, azione)
     // beta14 (Bingo3331): sync automatico all'apertura, se attivo. Stessa
     // guardia di sessione di GroupsScreen: una volta sola per avvio.
     LaunchedEffect(Unit) {
@@ -534,7 +526,7 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                                     onClick = {
                                         pickServersDialogPannello = false
                                         val ids = selectedServerIdsPannello
-                                        scope.launch { eseguiSyncPannello { ids.sumOf { id -> repo.syncServer(id) } } }
+                                        scope.launch { eseguiSyncPannello { repo.syncServers(ids) } }
                                     },
                                 ) { Text(stringResource(R.string.common_ok)) }
                             },
@@ -554,21 +546,7 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                     PullToRefreshBox(
                         isRefreshing = syncing,
                         onRefresh = {
-                            scope.launch {
-                                syncing = true
-                                runCatching { repo.syncAllSubscribed() }
-                                    .onSuccess { n ->
-                                        if (AppSettings.dingOnReply && repo.lastSyncNewToMe > 0) playDing(ctx)
-                                        // 2.2 (parità con GroupsScreen): dopo l'aggiorna
-                                        // mostra il conteggio dei nuovi articoli, che nel
-                                        // layout a pannelli mancava.
-                                        snackbar.showSnackbar(
-                                            testoEsitoSync(ctx, n, repo.lastSyncFiltrati)
-                                        )
-                                    }
-                                    .onFailure { }
-                                syncing = false
-                            }
+                            scope.launch { eseguiSyncPannello { repo.syncAllSubscribed() } }
                         },
                     ) {
                     LazyColumn {
@@ -1214,6 +1192,10 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                         // prodotto §B4. Il COSA cercare sta in NavigazioneLettura,
                         // provato in CoreTests; qui c'e' solo il cosa farne.
                         val posLettura = flat.indexOfFirst { it.article.id == selectedArticleId }
+                        // 1.6.1 (BIG Umberto): da threadItems, che ha tutta la
+                        // discussione. `flat` e' filtrata da «solo non letti»:
+                        // il messaggio appena letto ne esce e il tasto si spegneva.
+                        val nonLettoDiscussione = idNonLettoNellaDiscussione(threadItems, selectedArticleId)
                         val navigazione = NavigazioneMessaggi(
                             vaiPrecedente = {
                                 idMessaggioPrecedente(flat, posLettura)?.let { selectedArticleId = it }
@@ -1222,7 +1204,12 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                                 idMessaggioSuccessivo(flat, posLettura)?.let { selectedArticleId = it }
                             },
                             vaiPrimoNonLetto = {
-                                idPrimoNonLettoDopo(flat, posLettura)?.let { selectedArticleId = it }
+                                nonLettoDiscussione?.let { id ->
+                                    selectedArticleId = id
+                                    // nella vista raggruppata la discussione va aperta
+                                    threadItems.firstOrNull { it.article.id == id }
+                                        ?.let { expandedRoots = expandedRoots + radiceDi(it) }
+                                }
                             },
                             vaiDiscussionePrecedente = {
                                 idDiscussionePrecedente(flat, selectedArticleId)?.let { selectedArticleId = it }
@@ -1273,7 +1260,7 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                             // lo dice sembra funzionante, ed e' il difetto peggiore.
                             puoPrecedente = idMessaggioPrecedente(flat, posLettura) != null,
                             puoSuccessivo = idMessaggioSuccessivo(flat, posLettura) != null,
-                            esistonoNonLetti = esistonoNonLettiDopo(flat, posLettura),
+                            esistonoNonLetti = nonLettoDiscussione != null,
                             puoDiscussionePrecedente = idDiscussionePrecedente(flat, selectedArticleId) != null,
                             puoDiscussioneSuccessiva = idDiscussioneSuccessiva(flat, selectedArticleId) != null,
                         )
@@ -2310,15 +2297,9 @@ private fun PostContinuo(
         // ogni post — prima li vedevi solo nella vista a singolo articolo. Per
         // preferenza di Dave niente dicitura "⚠ Cross-posted to N groups:": bastano
         // i gruppi in rosso. I nomi dei gruppi sono dati, non testo traducibile.
-        val crossgroupsView = remember(headersRaw) { crosspostGroups(headersRaw) }
-        if (crossgroupsView.size > 1) {
-            Text(
-                crossgroupsView.joinToString(", "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 2.dp, bottom = 2.dp),
-            )
-        }
+        RigaGruppiMessaggio(
+            headersRaw, currentGroupName, Modifier.padding(top = 2.dp, bottom = 2.dp), soloNomi = true,
+        )
         when {
             error != null -> Text(stringResource(R.string.msg_error, error.orEmpty()), color = MaterialTheme.colorScheme.error)
             body == null -> LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -2638,14 +2619,7 @@ private fun ArticlePaneSingolo(
             )
             if (showPlonk) PlonkDialog(repo, a.id, a.fromField) { showPlonk = false }
             val crossgroups = remember(a.headersRaw) { crosspostGroups(a.headersRaw) }
-            if (crossgroups.size > 1) {
-                Text(
-                    stringResource(R.string.art_crossposted, crossgroups.size, crossgroups.joinToString(", ")),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 4.dp),
-                )
-            }
+            RigaGruppiMessaggio(a.headersRaw, currentGroupName, Modifier.padding(bottom = 4.dp))
             // 1.5.5 (G1 + G3): la stessa intestazione della lettura a schermo
             // intero — qui prima mancava la Face.
             IntestazioneAutore(a.fromField, a.dateEpoch, a.faceB64, a.headersRaw, readFg)
@@ -3018,7 +2992,7 @@ private fun ComposePane(
                 // tenere conto anche dei gruppi chiesti dall'autore, altrimenti
                 // su un messaggio non crospostato il selettore non compare e
                 // l'avviso rimanda a un pulsante che non esiste.
-                if (gruppiOffertiNelSelettore(destinazioneAutore, gruppiOriginale).size > 1) {
+                if (selettoreDisponibile(destinazioneAutore, gruppiOriginale, groupName)) {
                     IconButton(onClick = { showCrosspostPane = true }) {
                         Icon(
                             Icons.Default.Groups,
@@ -3151,6 +3125,9 @@ private fun ComposePane(
             indirizzoAutore = indirizzoAutore,
             onCopiaIndirizzo = { appunti.copia(it) },
             onApriPosta = { apriAppDiPosta(ctx, it) },
+        )
+        AvvisoPubblicatoAltrove(
+            gruppiDaSegnalare(gruppiOriginale, groupName, destinazioneAutore, destinazioni), destinazioni,
         )
         OutlinedTextField(
             value = fromName, onValueChange = { fromName = it },

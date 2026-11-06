@@ -26,7 +26,7 @@ object ReleaseNotes {
      * corretto. Ad ogni bump di versione in build.gradle.kts, aggiornare
      * SEMPRE anche questa riga e le [sections] sotto.
      */
-    const val VERSION = "1.6"
+    const val VERSION = "1.6.1"
 
     /**
      * Novità della versione corrente, in blocchi titolo → righe.
@@ -39,7 +39,25 @@ object ReleaseNotes {
      * strings.xml (tutte e tre le cartelle).
      */
     val sections: List<Pair<Int, List<Int>>> = listOf(
-        // 1.6 (treno in corso; versionCode 180 dal 2 novembre 2026). Chiavi
+        // 1.6.1 (treno aperto il 4 novembre 2026, versionCode 186). Chiavi rn_v161_*
+        // verificate libere nelle tre cartelle.
+        //  - l1  un server che non risponde non ferma gli altri (BIG Umberto)
+        //  - l2  la firma lunga non si tronca piu' a 72 caratteri (BIG Umberto)
+        //  - l3  riflusso: colonne, link da soli, a capo voluti (BIG Umberto)
+        //  - l4  il tasto del prossimo non letto resta nella discussione (BIG Umberto)
+        //  - l5  (versionCode 187) messaggi di un altro gruppo: l'avviso (Dave Royal)
+        //  - l6  (versionCode 187) grassetto, corsivo e sottolineato come MesNews (Marco)
+        //  - l7  (versionCode 187) seguite in cima solo con non letti (Cercaparole)
+        R.string.rn_v161_title to listOf(
+            R.string.rn_v161_l2,
+            R.string.rn_v161_l3,
+            R.string.rn_v161_l4,
+            R.string.rn_v161_l5,
+            R.string.rn_v161_l6,
+            R.string.rn_v161_l7,
+            R.string.rn_v161_l1,
+        ),
+        // 1.6 (versionCode 185, pubblicata il 4 novembre 2026). Chiavi
         // rn_v16_* verificate libere nelle tre cartelle prima di usarle.
         //  - l1  il nome del gruppo nella barra di lettura (RPoggi), con +N
         //  - l2  il proprio post non sparisce piu' dopo l'invio (Bingo3331)

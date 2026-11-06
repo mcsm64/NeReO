@@ -1,8 +1,26 @@
 ======================================================================
- NeReO 1.6 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.1 - Ne(ws) Re(ader) O(pen-source)
  Newsreader Usenet (NNTP) solo testo per Android
- NeReO 1.6 (versionCode 185) - By MCSM - 2026/11/04
+ NeReO 1.6.1 (versionCode 188) - By MCSM - 2026/11/05
 ======================================================================
+ ***  VERSIONE 1.6.1  ***
+
+ Segnalazioni di BIG Umberto, Dave Royal e Cercaparole, e una richiesta di Marco.
+
+  * LA FIRMA LUNGA NON VIENE PIU' TAGLIATA. Una riga di firma oltre i 72 caratteri partiva troncata, anche se in Identita' era salvata intera. Ora va a capo da sola alle parole, e la firma salvata torna tutta senza riscriverla. Anche le firme lunghe degli altri si leggono intere.
+
+  * RIFLUSSO TESTO PIU' RISPETTOSO. Una colonna di numeri resta una colonna, un link da solo su una riga resta da solo, e dopo un punto un a capo seguito da una maiuscola viene conservato. I capoversi andati a capo a 72 colonne si ricompongono come prima. La stessa regola vale per "Riformatta la citazione".
+
+  * IL TASTO DEL PROSSIMO NON LETTO RESTA NELLA DISCUSSIONE. Cerca anche sopra il messaggio corrente e diventa grigio quando li' non c'e' altro; prima passava alla discussione dopo senza dirlo. Se lo usavi per leggere tutto il gruppo, usa AVANTI.
+
+  * MESSAGGI DI UN ALTRO GRUPPO. Una discussione ricostruita puo' contenere messaggi pubblicati altrove: ora un avviso rosso dice dove, e rispondendo trovi il pulsante per aggiungere quel gruppo, altrimenti l'autore non vedrebbe la risposta. I gruppi non cambiano da soli. Vale per ogni messaggio che non appartiene al gruppo che stai leggendo.
+
+  * GRASSETTO, CORSIVO E SOTTOLINEATO, COME IN MESNEWS. *parola* si legge in grassetto, /parola/ in corsivo, _parola_ sottolineata, e i segni spariscono. Solo a schermo: copia, citazioni, risposte, ricerca e filtri conservano i segni. Mai dentro link e firme. Si spegne in Aspetto.
+
+  * LE DISCUSSIONI SEGUITE IN CIMA SOLO CON MESSAGGI NON LETTI. Una seguita tutta letta torna al suo posto secondo l'ordinamento scelto, e risale quando arriva una risposta. Vale per l'albero, le discussioni raggruppate e i pannelli. Se tornando dalla lettura la lista era in cima, resta in cima. Grazie a Cercaparole.
+
+  * UN SERVER CHE NON RISPONDE NON FERMA GLI ALTRI. Aggiornando piu' server, quello che non risponde si prova una volta sola invece che per ogni gruppo, gli altri proseguono e alla fine un messaggio dice quali sono rimasti fuori e perche'. L'esito si vede ora anche nella vista a pannelli.
+
  ***  VERSIONE 1.6  ***
 
  Richieste di RPoggi, Bingo3331, Dave Royal e Marco, e le cinque voci del sondaggio sui gruppi.
