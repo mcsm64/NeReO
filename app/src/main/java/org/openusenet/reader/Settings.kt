@@ -116,6 +116,19 @@ object AppSettings {
     var enfasiTesto by mutableStateOf(true)
 
     /**
+     * 1.6.2 / 189 (BillH, Dave Royal, Kerr-Mudd John, Sn!pe su Usenet): data e
+     * ora. Nomi di [org.openusenet.reader.text.OrdineData], [Orologio] e
+     * [FusoOrario]; predefiniti identici a prima. Vedi text/DataOra.kt.
+     */
+    var formatoData by mutableStateOf("GMA")
+    var formatoOra by mutableStateOf("H24")
+    var fusoOrario by mutableStateOf("TELEFONO")
+
+    /** Le tre scelte insieme, per text/DataOra. Leggerle in composizione ridisegna al cambio. */
+    fun preferenzeDataOra(): org.openusenet.reader.text.PreferenzeDataOra =
+        org.openusenet.reader.text.PreferenzeDataOra.da(formatoData, formatoOra, fusoOrario)
+
+    /**
      * 1.4.8 (par. B6b) — IMPAGINARE IN Format=Flowed CIO' CHE SI SPEDISCE.
      *
      * Acceso, i capoversi lunghi escono con la rottura debole della RFC 3676
@@ -971,6 +984,9 @@ object AppSettings {
         reflowText = prefs.getBoolean("reflow_text", false)
         faccineEmoji = prefs.getBoolean("faccine_emoji", true)
         enfasiTesto = prefs.getBoolean("enfasi_testo", true)
+        formatoData = prefs.getString("formato_data", "GMA") ?: "GMA"
+        formatoOra = prefs.getString("formato_ora", "H24") ?: "H24"
+        fusoOrario = prefs.getString("fuso_orario", "TELEFONO") ?: "TELEFONO"
         // 1.4.8 (par. B6b): spento di default, vedi la nota sulla proprieta'
         formatFlowedInUscita = prefs.getBoolean("format_flowed_out", false)
         soloIconaAggiornaPannelli = prefs.getBoolean("solo_icona_aggiorna_pannelli", true)
@@ -1118,6 +1134,9 @@ object AppSettings {
             .putBoolean("reflow_text", reflowText)
             .putBoolean("faccine_emoji", faccineEmoji)
             .putBoolean("enfasi_testo", enfasiTesto)
+            .putString("formato_data", formatoData)
+            .putString("formato_ora", formatoOra)
+            .putString("fuso_orario", fusoOrario)
             .putBoolean("format_flowed_out", formatFlowedInUscita)
             .putBoolean("solo_icona_aggiorna_pannelli", soloIconaAggiornaPannelli)
             .putBoolean("shorten_quotes", shortenQuotes)

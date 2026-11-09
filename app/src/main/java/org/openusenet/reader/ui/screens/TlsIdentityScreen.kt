@@ -66,15 +66,15 @@ import org.openusenet.reader.data.TlsPinStato
 import org.openusenet.reader.nntp.IdentitaTls
 import org.openusenet.reader.ui.indietroSicuro
 import org.openusenet.reader.ui.rememberAppunti
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /** Soglia dell'avviso "il certificato scade fra N giorni". */
 const val TLS_GIORNI_AVVISO = 30
 
-private fun dataBreve(ms: Long): String =
-    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(ms))
+/** 1.6.2 / 189: la data completa di text/DataOra, con le scelte di Aspetto. */
+private fun dataBreve(ms: Long): String {
+    val p = org.openusenet.reader.AppSettings.preferenzeDataOra()
+    return org.openusenet.reader.text.DataOra.dataCompleta(org.openusenet.reader.text.DataOra.inZona(ms / 1000, p), p)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

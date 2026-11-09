@@ -6,9 +6,9 @@ Scritto da zero in Kotlin + Jetpack Compose. Nasce dal MOD 17 di *Newsreader* di
 
 Il package interno resta `org.openusenet.reader` — invariato di proposito, per non rompere gli aggiornamenti già installati.
 
-**Versione 1.6.1** (versionCode 188) — 5 novembre 2026
+**Versione 1.6.2** (versionCode 189) — 9 novembre 2026
 
-## Funzioni (1.6.1)
+## Funzioni (1.6.2)
 
 - Multi-server NNTP con SSL/TLS implicito **o STARTTLS** (RFC 3977 + RFC 4643 + RFC 4642) e autenticazione, con **verifica del nome host sul certificato** (RFC 6125) e fallback automatico IPv6/IPv4; CAPABILITIES letto e loggato alla connessione; riuso della connessione durante la lettura di un thread; **allarme se un server che offriva STARTTLS smette di annunciarlo** (RFC 4642 §5)
 - Ricerca e sottoscrizione gruppi, sync incrementale delle headline con `OVER` e ripiego automatico su `XOVER` per i server che non riconoscono `OVER` (es. Astraweb)
@@ -22,6 +22,13 @@ Il package interno resta `org.openusenet.reader` — invariato di proposito, per
 - Backup e ripristino della configurazione, con cifratura opzionale
 - Material 3, tema chiaro/scuro/di sistema, dynamic color, tinte e dimensioni del testo, layout a pannelli per schermi larghi
 - Interfaccia in italiano e inglese, con **interruttore lingua dentro l'app** (Aspetto → Lingua) oltre alla voce di sistema su Android 13+
+
+## Novità della 1.6.2
+
+> Proposta di HAL; data e ora dalla discussione su Usenet di BillH, Dave Royal, Kerr-Mudd John e Sn!pe.
+
+- **Data e ora a scelta** *(BillH, Dave Royal, Kerr-Mudd John, Sn!pe; piano C di Marco, 9/11)*. Giorno/mese e 24 ore erano scritti a mano in sei funzioni; ora le forme stanno in `text/DataOra.kt` e le sei la chiamano. Aspetto → «Data e ora»: GG/MM/AA, MM/GG/AA o AAAA-MM-GG (ISO completa anche nell'elenco), 24 o 12 ore (AM/PM in `Locale.US`), fuso del telefono o UTC (con «UTC» nell'intestazione di lettura e in «Ultimo controllo», non nella colonna dell'elenco). «Oggi» si calcola nel fuso mostrato. Predefiniti identici a prima; le tre chiavi stanno in `settings`, quindi entrano nel backup da sole. Nell'introduzione la scelta sta nel modello, per identità e per gruppo: `%dataautore%` `%oraautore%` `%fusoautore%` (dallo scarto della riga `Date:` in `headersRaw`, con ripiego sull'ora locale), `%datautc%` `%orautc%`, `%fuso%`, `%dataoriginale%`, più gli alias inglesi. `parseDate` poggia su `DataOra.leggiDataUsenet`, che tiene lo scarto. Restano fuori i nomi dei file, i tempi dei log e il kill-file. 14 test nuovi
+- **Ultimo errore operativo** *(HAL, 9/11)*. Un invio fallito su Astraweb, col log acceso, era già uscito dal buffer NNTP (400 righe, solo RAM) quando il log è stato esportato. `UltimoErrore.kt` conserva in `last_error.txt` l'ultimo errore non fatale di `postArticle`, `syncGroup` e del giro dei server (`syncGroupList`): quando, operazione, server, gruppo, eccezione e messaggio, più le ultime 40 righe del log NNTP copiate in quel momento. Annullamento e 483 non si registrano. Riquadro in Manutenzione accanto a «Ultimo arresto anomalo»; i pulsanti Copia/Esporta/Cancella dei tre riquadri sono ora un componente solo (`PulsantiDiagnostica`). Il buffer passa a 1500 righe, e `post()` scrive la sua riga «nessuna risposta» quando il server tace dopo il punto finale. 5 test nuovi
 
 ## Novità della 1.6.1
 

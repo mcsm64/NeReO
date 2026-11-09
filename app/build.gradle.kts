@@ -2112,8 +2112,18 @@ android {
         // ha mostrato i segni di *grassetto* ancora visibili: col monospazio,
         // acceso di default, restavano per scelta. Ora si nascondono sempre.
         // Entra anche «seguite in cima solo con non letti» (Cercaparole).
-        versionCode = 188
-        versionName = "1.6.1"
+        // versionCode 189 (9 novembre 2026) - versionName 1.6.2, indicato da Marco
+        // il 6/11: la 1.6.1 / 188 e' pubblica. Apre il treno della 1.6.2. HAL: un
+        // invio fallito su Astraweb era gia' uscito dal log NNTP (400 righe) quando
+        // e' stato esportato. Ora l'ultimo errore operativo resta in un file, con le
+        // ultime 40 righe del log copiate in quel momento (UltimoErrore.kt); il
+        // buffer passa a 1500 righe; il POST senza risposta lascia la sua riga.
+        // 9 novembre, stesso numero (la 189 non e' mai stata firmata): DATA E ORA
+        // (BillH, Dave Royal, Kerr-Mudd John, Sn!pe su Usenet; piano C di Marco).
+        // Le forme in text/DataOra.kt, tre scelte in Aspetto, segnaposto nuovi
+        // nell'introduzione; predefiniti identici a prima.
+        versionCode = 189
+        versionName = "1.6.2"
     }
 
     buildTypes {

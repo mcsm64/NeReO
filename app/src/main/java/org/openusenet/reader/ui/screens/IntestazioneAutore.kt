@@ -46,10 +46,9 @@ import org.openusenet.reader.ui.chiaveColoreAutore
 import org.openusenet.reader.ui.indiceColoreAutore
 import org.openusenet.reader.ui.inizialiAutore
 import org.openusenet.reader.ui.tipoData
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import org.openusenet.reader.AppSettings
+import org.openusenet.reader.text.DataOra
 
 /**
  * 1.5.5 (G1 + G3) — L'INTESTAZIONE DELL'AUTORE, UN POSTO SOLO.
@@ -183,16 +182,20 @@ fun AvatarAutore(fromField: String, faceB64: String?, headersRaw: String?, lato:
  */
 @Composable
 fun testoDataMessaggio(dateEpoch: Long, piena: Boolean): String {
-    val zona = ZoneId.systemDefault()
-    val quando = Instant.ofEpochSecond(dateEpoch).atZone(zona)
-    val ora = DateTimeFormatter.ofPattern("HH:mm").format(quando)
-    val completa = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").format(quando)
+    // 1.6.2 / 189: forme e fuso da text/DataOra (Aspetto → Data e ora). Qui
+    // l'ora porta « UTC» quando si mostra in UTC: non e' una colonna stretta, e
+    // un'ora nuda in UTC sarebbe un equivoco. «Oggi» nello stesso fuso.
+    val p = AppSettings.preferenzeDataOra()
+    val quando = DataOra.inZona(dateEpoch, p)
+    val utc = DataOra.suffissoUtc(p)
+    val ora = DataOra.ora(quando, p) + utc
+    val completa = DataOra.dataOraCompleta(quando, p)
     if (piena) return completa
     val locale = LocalConfiguration.current.locales[0]
-    return when (tipoData(quando.toLocalDate().toEpochDay(), LocalDate.now(zona).toEpochDay())) {
+    return when (tipoData(quando.toLocalDate().toEpochDay(), LocalDate.now(quando.zone).toEpochDay())) {
         TipoData.OGGI -> stringResource(R.string.art_date_today, ora)
         TipoData.IERI -> stringResource(R.string.art_date_yesterday, ora)
-        TipoData.SETTIMANA -> DateTimeFormatter.ofPattern("EEEE HH:mm", locale).format(quando)
+        TipoData.SETTIMANA -> DataOra.giornoSettimanaOra(quando, p, locale) + utc
         TipoData.DATA -> completa
     }
 }

@@ -385,7 +385,7 @@
     <string name="id_noarchive">X-No-Archive: chiedi agli archivi di non conservare i tuoi post</string>
     <string name="id_intro">Introduzione alla citazione</string>
     <string name="id_intro_tpl">Modello (vuoto = \"%s\")</string>
-    <string name="id_intro_note">Segnaposto: %%autore%% %%email%% %%data%% %%ora%% %%gruppo%% %%oggetto%% %%messageid%%. Per più varianti separale con %s: ne verrà scelta una a caso.</string>
+    <string name="id_intro_note">Segnaposto: %%autore%% %%email%% %%data%% %%ora%% %%gruppo%% %%oggetto%% %%messageid%%. Ora: %%data%% e %%ora%% seguono Aspetto → Data e ora; %%dataautore%% %%oraautore%% %%fusoautore%% sono l\'ora dell\'autore; %%datautc%% %%orautc%% la forma internazionale (2026-11-07 14:45 UTC); %%fuso%% è lo scarto di %%ora%% (+0100); %%dataoriginale%% è la riga Date: del messaggio così com\'è. Per più varianti separale con %s: ne verrà scelta una a caso.</string>
     <string name="id_custom_headers">Intestazioni personalizzate</string>
     <string name="id_custom_headers_lbl">Una per riga: Nome: valore</string>
     <string name="id_custom_headers_note">Es.: Reply-To: tu@example.org · Organization: … Aggiunte a ogni messaggio (modificabili in composizione). Gli header vitali (From, Subject…) e quelli di controllo (Followup-To, Control, Sender, Expires…) non sono sovrascrivibili: se li scrivi qui NeReO te lo dice e li scarta.</string>
@@ -773,7 +773,7 @@
     <!-- Diagnostica NNTP (scatola nera) -->
     <string name="mnt_diag_section">Diagnostica</string>
     <string name="mnt_diag_switch">Registra dialogo NNTP</string>
-    <string name="mnt_diag_note">Per diagnosticare un server. Da acceso, l\'app tiene in memoria le ultime ~400 righe del dialogo NNTP client/server, più righe di riepilogo calcolate (marcate \"D:\") come quante righe di overview sono davvero arrivate e quali numeri mancano, e un\'intestazione/piè di sessione coi tempi. Password e nome utente sono mascherati; nulla viene scritto su disco finché non esporti. Attivalo, fai una sola sincronizzazione, poi copia o esporta il log — e rispegnilo.</string>
+    <string name="mnt_diag_note">Per diagnosticare un server. Da acceso, l\'app tiene in memoria le ultime ~1500 righe del dialogo NNTP client/server, più righe di riepilogo calcolate (marcate \"D:\") come quante righe di overview sono davvero arrivate e quali numeri mancano, e un\'intestazione/piè di sessione coi tempi. Password e nome utente sono mascherati; su disco vanno solo le righe tenute con l\'ultimo errore operativo (vedi sotto), il resto solo se esporti. Attivalo, fai una sola sincronizzazione, poi copia o esporta il log — e rispegnilo.</string>
     <string name="mnt_diag_copy">Copia log</string>
     <string name="mnt_diag_export">Esporta log</string>
     <string name="mnt_diag_copied">Log NNTP copiato negli appunti</string>
@@ -807,6 +807,12 @@
     <string name="mnt_crash_saved">Log crash salvato</string>
     <string name="mnt_crash_cleared">Log crash cancellato</string>
     <string name="mnt_crash_empty">Nessun arresto anomalo registrato — buon segno.</string>
+    <string name="mnt_lasterr_section">Ultimo errore operativo</string>
+    <string name="mnt_lasterr_note">Sempre attivo: se un invio o un aggiornamento fallisce, qui resta l\'ultimo errore (quando, server, gruppo e messaggio) e, se la diagnostica NNTP è accesa, le ultime 40 righe del log di quel momento, che il resto del log non può più sovrascrivere. Nulla viene inviato da nessuna parte automaticamente.</string>
+    <string name="mnt_lasterr_copied">Ultimo errore copiato negli appunti</string>
+    <string name="mnt_lasterr_saved">Ultimo errore salvato</string>
+    <string name="mnt_lasterr_cleared">Ultimo errore cancellato</string>
+    <string name="mnt_lasterr_empty">Nessun errore registrato.</string>
     <!-- Azioni long-press sul gruppo sottoscritto -->
     <string name="groups_download_bodies">Scarica corpi (ultimi 300)</string>
     <string name="groups_unsub_action">Annulla sottoscrizione\u2026</string>
@@ -1061,6 +1067,18 @@
     <string name="app_faccine_note">Solo a schermo, come in MesNews: :-) 8-o e simili diventano emoji quando sono isolate (mai dentro link o parole). Copia, citazioni, ricerca e filtri usano i caratteri originali.</string>
     <string name="app_enfasi">Mostra grassetto, corsivo e sottolineato</string>
     <string name="app_enfasi_note">Solo a schermo, come in MesNews: *parola* in grassetto, /parola/ in corsivo, _parola_ sottolineata. I segni spariscono, ma copia, citazioni, ricerca e filtri li conservano. Mai dentro link e firme.</string>
+    <string name="app_dataora_section">Data e ora</string>
+    <string name="app_dataora_formato">Formato della data</string>
+    <string name="app_dataora_gma">GG/MM/AA (07/11/26)</string>
+    <string name="app_dataora_mga">MM/GG/AA (11/07/26)</string>
+    <string name="app_dataora_iso">AAAA-MM-GG (2026-11-07)</string>
+    <string name="app_dataora_orologio">Formato dell\'ora</string>
+    <string name="app_dataora_24">24 ore (14:45)</string>
+    <string name="app_dataora_12">12 ore (2:45 PM)</string>
+    <string name="app_dataora_fuso">Fuso orario</string>
+    <string name="app_dataora_telefono">Del telefono</string>
+    <string name="app_dataora_utc">UTC</string>
+    <string name="app_dataora_note">Valgono per elenco, lettura, citazione e date dei certificati. Nell\'elenco le date di quest\'anno restano senza anno e quelle di oggi mostrano solo l\'ora. In UTC l\'ora nell\'intestazione del messaggio porta la scritta UTC. Non cambiano i nomi dei file di backup né le intestazioni dei messaggi che invii.</string>
     <!-- 1.2.2: riflusso testo -->
     <string name="rn_v122_l5">Nuova opzione «Riflusso testo» (Aspetto): ricompone i capoversi spezzati dall\u2019a-capo classico a 72 colonne, così i post si leggono ordinati su schermo stretto invece di mostrare righe orfane di una-due parole. Spenta di default.</string>
     <!-- 1.2.2: fix vista a pannelli (Dave Royal) -->
@@ -1093,6 +1111,9 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">Le X-Face si vedono. La classica faccina in bianco e nero di Usenet (l\'intestazione X-Face, mandata da MesNews e da molti lettori tradizionali) compare ora accanto al nome dell\'autore, dove finora compariva solo la Face a colori. Toccala per ingrandirla: resta nitida, a quadretti. L\'ordine è: prima la Face, poi la X-Face, poi le iniziali colorate. NeReO mostra le X-Face ma non le invia.</string>
     <string name="rn_v155_l8">I messaggi nuovi restano davvero in vista. La correzione della 1.5.4 funzionava solo quando NeReO ti aveva appena riportato dove eri rimasto: al primo ingresso nel gruppo dopo aver aperto l\'app, o quando la lista era già in cima, i messaggi che arrivavano con la sincronizzazione potevano ancora finire sopra il bordo dello schermo. Ora, ogni volta che apri un gruppo, se arrivano messaggi nuovi e non hai ancora spostato la lista col dito, sale in cima a mostrarli. Con gli ordinamenti \"dai più recenti\" si accorge anche di una risposta dentro la discussione che è già in cima. Con gli ordinamenti \"dai più vecchi\", dove i nuovi stanno in fondo, resti dove sei. Anche nella vista a pannelli.</string>
+    <string name="rn_v162_title">Novità della 1.6.2</string>
+    <string name="rn_v162_l1">In Manutenzione c\'è il riquadro «Ultimo errore operativo». Quando un invio o un aggiornamento fallisce, l\'errore resta lì con le ultime 40 righe del log NNTP di quel momento, e quello che succede dopo non le spinge più fuori. Il log NNTP ora tiene 1500 righe invece di 400. Grazie a HAL.</string>
+    <string name="rn_v162_l2" formatted="false">Data e ora a scelta, in Aspetto: giorno/mese, mese/giorno o AAAA-MM-GG, 24 o 12 ore, fuso del telefono o UTC. Valgono per elenco, lettura, pannelli e certificati; i predefiniti sono quelli di prima. Nell\'introduzione della citazione ci sono segnaposto nuovi per l\'ora dell\'autore (%oraautore%), la forma internazionale (%orautc%), lo scarto (%fuso%) e la riga Date: originale (%dataoriginale%). Grazie a BillH, Dave Royal, Kerr-Mudd John e Sn!pe.</string>
     <string name="rn_v161_title">Novità della 1.6.1</string>
     <string name="rn_v161_l1">Aggiornamento di più server: uno che non risponde non ferma più gli altri. Si prova una volta sola invece che per ogni gruppo, e alla fine un messaggio dice quali sono rimasti fuori. L\'esito si vede ora anche nella vista a pannelli. Segnalato da BIG Umberto.</string>
     <string name="rn_v161_l2">La firma lunga non viene più tagliata. Una riga di firma oltre i 72 caratteri partiva troncata, anche se in Identità era salvata intera: ora va a capo da sola alle parole, e la firma salvata torna tutta da sola, senza riscriverla. Anche le firme lunghe degli altri si leggono intere. Segnalato da BIG Umberto.</string>

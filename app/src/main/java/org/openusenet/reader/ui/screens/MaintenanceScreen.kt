@@ -67,6 +67,7 @@ import org.openusenet.reader.BuildConfig
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.CrashLog
 import org.openusenet.reader.R
+import org.openusenet.reader.UltimoErrore
 import org.openusenet.reader.backup.BackupCrypto
 import org.openusenet.reader.backup.BackupLocale
 import org.openusenet.reader.backup.BackupManager
@@ -223,31 +224,8 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
             }.onFailure { snackbar.showSnackbar(ctx.getString(R.string.mnt_export_err, it.message ?: "")) }
         }
     }
-    // Diagnostica: salva il dialogo NNTP registrato come file di testo.
-    val exportLogLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("text/plain"),
-    ) { uri ->
-        if (uri != null) scope.launch {
-            runCatching {
-                ctx.contentResolver.openOutputStream(uri)?.use { it.write(NntpLog.snapshot().toByteArray()) }
-            }.onSuccess {
-                snackbar.showSnackbar(ctx.getString(R.string.mnt_diag_saved))
-            }.onFailure { snackbar.showSnackbar(ctx.getString(R.string.mnt_export_err, it.message ?: "")) }
-        }
-    }
-    // 1.2.9.b (Piano C.1): salva l'ultimo arresto anomalo registrato, stesso
-    // schema copia/esporta della diagnostica NNTP qui sopra.
-    val exportCrashLogLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("text/plain"),
-    ) { uri ->
-        if (uri != null) scope.launch {
-            runCatching {
-                ctx.contentResolver.openOutputStream(uri)?.use { it.write(CrashLog.snapshot(ctx).toByteArray()) }
-            }.onSuccess {
-                snackbar.showSnackbar(ctx.getString(R.string.mnt_crash_saved))
-            }.onFailure { snackbar.showSnackbar(ctx.getString(R.string.mnt_export_err, it.message ?: "")) }
-        }
-    }
+    // 1.6.2 / 189: i due esportatori dei log (NNTP, arresto anomalo) sono ora
+    // dentro PulsantiDiagnostica, uno per riquadro.
     /*
      * 1.5.6 / 174: cosa fare col testo di un backup appena letto, un posto solo
      * per le due strade (selettore di sistema, o elenco della cartella
@@ -839,26 +817,18 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalButton(onClick = {
-                    val log = NntpLog.snapshot()
-                    if (log.isBlank()) {
-                        scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_diag_empty)) }
-                    } else {
-                        appunti.copia(log)
-                        scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_diag_copied)) }
-                    }
-                }) { Text(stringResource(R.string.mnt_diag_copy)) }
-                OutlinedButton(onClick = {
-                    if (NntpLog.snapshot().isBlank()) {
-                        scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_diag_empty)) }
-                    } else {
-                        if (!exportLogLauncher.apriSeEsiste("${Branding.APP_NAME}-NNTP-log.txt")) {
-                            scope.launch { snackbar.showSnackbar(ctx.getString(R.string.common_no_picker)) }
-                        }
-                    }
-                }) { Text(stringResource(R.string.mnt_diag_export)) }
-            }
+            PulsantiDiagnostica(
+                leggi = { NntpLog.snapshot() },
+                nomeFile = "${Branding.APP_NAME}-NNTP-log.txt",
+                testi = TestiDiagnostica(
+                    copia = R.string.mnt_diag_copy,
+                    esporta = R.string.mnt_diag_export,
+                    copiato = R.string.mnt_diag_copied,
+                    salvato = R.string.mnt_diag_saved,
+                    vuoto = R.string.mnt_diag_empty,
+                ),
+                snackbar = snackbar,
+            )
 
             // Fase 2 (HAL/Bingo3331): diagnostica LISTGROUP manuale, MAI usata
             // nella sync normale. Chiede al server l'elenco vero degli articoli
@@ -962,34 +932,52 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalButton(onClick = {
-                    val log = CrashLog.snapshot(ctx)
-                    if (log.isBlank()) {
-                        scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_crash_empty)) }
-                    } else {
-                        appunti.copia(log)
-                        scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_crash_copied)) }
-                    }
-                }) { Text(stringResource(R.string.mnt_crash_copy)) }
-                OutlinedButton(onClick = {
-                    if (CrashLog.snapshot(ctx).isBlank()) {
-                        scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_crash_empty)) }
-                    } else {
-                        if (!exportCrashLogLauncher.apriSeEsiste("${Branding.APP_NAME}-crash-log.txt")) {
-                            scope.launch { snackbar.showSnackbar(ctx.getString(R.string.common_no_picker)) }
-                        }
-                    }
-                }) { Text(stringResource(R.string.mnt_crash_export)) }
-                TextButton(onClick = {
-                    if (CrashLog.snapshot(ctx).isBlank()) {
-                        scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_crash_empty)) }
-                    } else {
-                        CrashLog.clear(ctx)
-                        scope.launch { snackbar.showSnackbar(ctx.getString(R.string.mnt_crash_cleared)) }
-                    }
-                }) { Text(stringResource(R.string.mnt_crash_clear)) }
-            }
+            PulsantiDiagnostica(
+                leggi = { CrashLog.snapshot(ctx) },
+                nomeFile = "${Branding.APP_NAME}-crash-log.txt",
+                testi = TestiDiagnostica(
+                    copia = R.string.mnt_crash_copy,
+                    esporta = R.string.mnt_crash_export,
+                    copiato = R.string.mnt_crash_copied,
+                    salvato = R.string.mnt_crash_saved,
+                    vuoto = R.string.mnt_crash_empty,
+                    cancella = R.string.mnt_crash_clear,
+                    cancellato = R.string.mnt_crash_cleared,
+                ),
+                snackbar = snackbar,
+                svuota = { CrashLog.clear(ctx) },
+            )
+
+            // 1.6.2 / 189 (proposta di HAL, caso Astraweb): l'ultimo errore NON
+            // fatale di un invio o di un aggiornamento, con le ultime righe del
+            // log NNTP copiate nel momento dell'errore. Sempre attivo come il
+            // crash log: l'errore non avvisa prima di arrivare.
+            Text(
+                stringResource(R.string.mnt_lasterr_section),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 24.dp),
+            )
+            Text(
+                stringResource(R.string.mnt_lasterr_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+            )
+            PulsantiDiagnostica(
+                leggi = { UltimoErrore.snapshot() },
+                nomeFile = "${Branding.APP_NAME}-last-error.txt",
+                testi = TestiDiagnostica(
+                    copia = R.string.mnt_crash_copy,
+                    esporta = R.string.mnt_crash_export,
+                    copiato = R.string.mnt_lasterr_copied,
+                    salvato = R.string.mnt_lasterr_saved,
+                    vuoto = R.string.mnt_lasterr_empty,
+                    cancella = R.string.mnt_crash_clear,
+                    cancellato = R.string.mnt_lasterr_cleared,
+                ),
+                snackbar = snackbar,
+                svuota = { UltimoErrore.clear() },
+            )
 
             Spacer(Modifier.height(24.dp))
         }
@@ -1413,6 +1401,83 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
     }
 }
 
+/** 1.6.2 / 189: le etichette di un riquadro diagnostico. Senza [cancella], niente pulsante Cancella. */
+private class TestiDiagnostica(
+    val copia: Int,
+    val esporta: Int,
+    val copiato: Int,
+    val salvato: Int,
+    val vuoto: Int,
+    val cancella: Int? = null,
+    val cancellato: Int? = null,
+)
+
+/**
+ * 1.6.2 / 189 — Copia / Esporta / (Cancella) di un testo diagnostico.
+ *
+ * Erano due copie quasi identiche (log NNTP, arresto anomalo), ciascuna col suo
+ * esportatore in cima alla schermata. L'ultimo errore operativo ne avrebbe fatta
+ * una terza: regola 9 del progetto, prima si estrae. Ogni riquadro ha il suo
+ * esportatore, cosi' il file salvato e' sempre quello del riquadro premuto.
+ * [leggi] si richiama a ogni pressione: il testo puo' cambiare mentre la
+ * schermata e' aperta.
+ */
+@Composable
+private fun PulsantiDiagnostica(
+    leggi: () -> String,
+    nomeFile: String,
+    testi: TestiDiagnostica,
+    snackbar: SnackbarHostState,
+    svuota: (() -> Unit)? = null,
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val appunti = rememberAppunti()
+    val esportatore = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain"),
+    ) { uri ->
+        if (uri != null) scope.launch {
+            runCatching {
+                ctx.contentResolver.openOutputStream(uri)?.use { it.write(leggi().toByteArray()) }
+            }.onSuccess {
+                snackbar.showSnackbar(ctx.getString(testi.salvato))
+            }.onFailure { snackbar.showSnackbar(ctx.getString(R.string.mnt_export_err, it.message ?: "")) }
+        }
+    }
+    fun avvisa(id: Int) {
+        scope.launch { snackbar.showSnackbar(ctx.getString(id)) }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        FilledTonalButton(onClick = {
+            val testo = leggi()
+            if (testo.isBlank()) {
+                avvisa(testi.vuoto)
+            } else {
+                appunti.copia(testo)
+                avvisa(testi.copiato)
+            }
+        }) { Text(stringResource(testi.copia)) }
+        OutlinedButton(onClick = {
+            if (leggi().isBlank()) {
+                avvisa(testi.vuoto)
+            } else if (!esportatore.apriSeEsiste(nomeFile)) {
+                avvisa(R.string.common_no_picker)
+            }
+        }) { Text(stringResource(testi.esporta)) }
+        val etichettaCancella = testi.cancella
+        if (svuota != null && etichettaCancella != null) {
+            TextButton(onClick = {
+                if (leggi().isBlank()) {
+                    avvisa(testi.vuoto)
+                } else {
+                    svuota()
+                    testi.cancellato?.let { avvisa(it) }
+                }
+            }) { Text(stringResource(etichettaCancella)) }
+        }
+    }
+}
+
 /**
  * 1.2.8 (Bingo3331 + HAL): testo "Ultimo controllo: …" sotto il selettore di
  * modalità — così il meccanismo si vede funzionare anche quando non c'è
@@ -1422,15 +1487,17 @@ fun MaintenanceScreen(repo: NewsRepository, nav: NavHostController) {
 private fun testoUltimoControllo(): String {
     val ms = AppSettings.lastUpdateCheckMs
     if (ms <= 0L) return stringResource(R.string.upd_last_check_never)
-    val istante = java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneId.systemDefault())
-    val oraFmt = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
-    val quando = if (istante.toLocalDate() == java.time.LocalDate.now()) {
-        stringResource(R.string.upd_last_check_today_at, istante.format(oraFmt))
+    // 1.6.2 / 189: forme e fuso da text/DataOra; «oggi» nello stesso fuso dell'ora.
+    val p = AppSettings.preferenzeDataOra()
+    val istante = org.openusenet.reader.text.DataOra.inZona(ms / 1000, p)
+    val ora = org.openusenet.reader.text.DataOra.ora(istante, p) + org.openusenet.reader.text.DataOra.suffissoUtc(p)
+    val quando = if (istante.toLocalDate() == java.time.LocalDate.now(istante.zone)) {
+        stringResource(R.string.upd_last_check_today_at, ora)
     } else {
         stringResource(
             R.string.upd_last_check_date_at,
-            istante.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM")),
-            istante.format(oraFmt),
+            org.openusenet.reader.text.DataOra.giornoMese(istante, p),
+            ora,
         )
     }
     val trovato = AppSettings.lastUpdateCheckFound

@@ -338,27 +338,15 @@ fun AppearanceScreen(nav: NavHostController) {
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 2.dp),
             )
-            Column(Modifier.padding(start = 12.dp)) {
+            SceltaUnica(
                 listOf(
                     "bars" to stringResource(R.string.app_quote_bars),
                     "chevron" to stringResource(R.string.app_quote_marks),
                     "both" to stringResource(R.string.app_quote_both),
-                ).forEach { (valore, etichetta) ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { AppSettings.quoteStyle = valore; AppSettings.save() }
-                            .padding(vertical = 2.dp),
-                    ) {
-                        RadioButton(
-                            selected = AppSettings.quoteStyle == valore,
-                            onClick = { AppSettings.quoteStyle = valore; AppSettings.save() },
-                        )
-                        Text(etichetta, modifier = Modifier.padding(start = 8.dp))
-                    }
-                }
-            }
+                ),
+                scelto = AppSettings.quoteStyle,
+                onScegli = { AppSettings.quoteStyle = it; AppSettings.save() },
+            )
             // 1.2.9 (Marco): oltre una certa profondità i ">" ripetuti
             // diventano illeggibili, soprattutto su telefono in verticale.
             // Visibile solo con "chevron"/"both" — in "bars" i ">" non si
@@ -429,6 +417,61 @@ fun AppearanceScreen(nav: NavHostController) {
                 )
                 Text(stringResource(R.string.app_mark_read_exit), modifier = Modifier.padding(start = 12.dp))
             }
+            // 1.6.2 / 189 (BillH, Dave Royal, Kerr-Mudd John, Sn!pe su Usenet):
+            // DATA E ORA. Tre scelte, predefinite identiche a prima. Le forme
+            // stanno in text/DataOra; qui solo le scelte.
+            Text(
+                stringResource(R.string.app_dataora_section),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 24.dp, bottom = 4.dp),
+            )
+            Text(
+                stringResource(R.string.app_dataora_formato),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 2.dp),
+            )
+            SceltaUnica(
+                listOf(
+                    "GMA" to stringResource(R.string.app_dataora_gma),
+                    "MGA" to stringResource(R.string.app_dataora_mga),
+                    "ISO" to stringResource(R.string.app_dataora_iso),
+                ),
+                scelto = AppSettings.formatoData,
+                onScegli = { AppSettings.formatoData = it; AppSettings.save() },
+            )
+            Text(
+                stringResource(R.string.app_dataora_orologio),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 2.dp),
+            )
+            SceltaUnica(
+                listOf(
+                    "H24" to stringResource(R.string.app_dataora_24),
+                    "H12" to stringResource(R.string.app_dataora_12),
+                ),
+                scelto = AppSettings.formatoOra,
+                onScegli = { AppSettings.formatoOra = it; AppSettings.save() },
+            )
+            Text(
+                stringResource(R.string.app_dataora_fuso),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 2.dp),
+            )
+            SceltaUnica(
+                listOf(
+                    "TELEFONO" to stringResource(R.string.app_dataora_telefono),
+                    "UTC" to stringResource(R.string.app_dataora_utc),
+                ),
+                scelto = AppSettings.fusoOrario,
+                onScegli = { AppSettings.fusoOrario = it; AppSettings.save() },
+            )
+            Text(
+                stringResource(R.string.app_dataora_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp, top = 2.dp),
+            )
+
             // 1.3 (B — barre personalizzabili): l'interruttore diretto "Albero
             // anche in basso" (beta18) è sostituito dall'editor dedicato, che fa
             // la stessa cosa (mostra/nascondi "tree_bottom") più il riordino di
@@ -742,6 +785,32 @@ fun AppearanceScreen(nav: NavHostController) {
                 },
                 modifier = Modifier.padding(top = 4.dp),
             ) { Text(stringResource(R.string.app_reset_ratios)) }
+        }
+    }
+}
+
+/**
+ * 1.6.2 / 189: un gruppo di scelte a pallino, riga intera toccabile. Era scritto a
+ * mano per lo stile delle citazioni; Data e ora ne avrebbe fatte altre tre copie.
+ */
+@Composable
+private fun SceltaUnica(
+    opzioni: List<Pair<String, String>>,
+    scelto: String,
+    onScegli: (String) -> Unit,
+) {
+    Column(Modifier.padding(start = 12.dp)) {
+        opzioni.forEach { (valore, etichetta) ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onScegli(valore) }
+                    .padding(vertical = 2.dp),
+            ) {
+                RadioButton(selected = scelto == valore, onClick = { onScegli(valore) })
+                Text(etichetta, modifier = Modifier.padding(start = 8.dp))
+            }
         }
     }
 }

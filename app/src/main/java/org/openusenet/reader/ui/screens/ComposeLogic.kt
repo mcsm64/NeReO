@@ -17,9 +17,9 @@ import org.openusenet.reader.text.spezzaRigheFirma
 import org.openusenet.reader.thread.Threader
 import org.openusenet.reader.ui.righeCitate
 import org.openusenet.reader.ui.sembraAttribuzione
-import java.time.Instant
+import org.openusenet.reader.text.DataOra
+import org.openusenet.reader.text.PreferenzeDataOra
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 val REPLY_MODES = linkedMapOf(
     "below" to "Scrivi sotto la citazione (netiquette)",
@@ -178,7 +178,9 @@ fun signatureBlock(identity: Identity): String {
 /**
  * Riga di introduzione alla citazione, da modello personalizzabile.
  * Segnaposto: %autore%/%author% %email% %data%/%date% %ora%/%time%
- * %gruppo%/%group% %oggetto%/%subject% %messageid%
+ * %gruppo%/%group% %oggetto%/%subject% %messageid%; dalla 1.6.2 anche
+ * %dataautore% %oraautore% %fusoautore% %datautc% %orautc% %fuso%
+ * %dataoriginale% (con gli alias inglesi: vedi il corpo).
  * Se sono definiti più modelli (separati da "%%") ne viene scelto uno a sorte.
  *
  * RC01: [defaultIntro] permette a chi chiama di passare l'introduzione
@@ -208,16 +210,53 @@ fun introLine(
      * `purgeKeepThreads`: non si inventa una convenzione nuova.
      */
     introGruppo: String? = null,
+    /** 1.6.2: le scelte di Aspetto → Data e ora; parametri per i test. */
+    prefs: PreferenzeDataOra = org.openusenet.reader.AppSettings.preferenzeDataOra(),
+    zonaTelefono: ZoneId = ZoneId.systemDefault(),
 ): String {
     val sorgente = introGruppo?.takeIf { it.isNotBlank() } ?: identity.replyIntro
     val templates = splitMulti(sorgente).ifEmpty { listOf(defaultIntro) }
     val template = if (templates.size > 1) templates.random() else templates.first()
-    val zoned = Instant.ofEpochSecond(article.dateEpoch).atZone(ZoneId.systemDefault())
     val email = Regex("<([^>]+)>").find(article.fromField)?.groupValues?.get(1) ?: article.fromField
     val name = article.fromField.substringBefore('<').trim().ifEmpty { email }
-    val data = DateTimeFormatter.ofPattern("dd/MM/yyyy").format(zoned)
-    val ora = DateTimeFormatter.ofPattern("HH:mm").format(zoned)
+    // 1.6.2 / 189 (BillH, Dave Royal, Kerr-Mudd John, Sn!pe; piano C di Marco):
+    // la scelta dell'ora sta NEL MODELLO, non in un'impostazione. I modelli
+    // esistono gia' per identita' e per gruppo, quindi la scelta li segue da
+    // sola, varianti a sorteggio comprese, senza migrazioni.
+    //  - %data% %ora%: come prima, nel fuso e nei formati di Aspetto (in UTC
+    //    l'ora porta « UTC»: un'ora nuda in un messaggio sarebbe un equivoco);
+    //  - %dataautore% %oraautore% %fusoautore%: l'ora dell'autore, dallo scarto
+    //    della sua riga Date:. Senza riga leggibile, l'ora di %data%/%ora% e il
+    //    suo scarto: un ripiego vero, non un'ora inventata;
+    //  - %datautc% %orautc%: la forma internazionale, 2026-11-07 14:45 UTC;
+    //  - %fuso%: lo scarto RFC 5322 di %ora% (+0100);
+    //  - %dataoriginale%: la riga Date: cosi' com'e'; senza, la forma
+    //    internazionale dello stesso istante.
+    val mia = DataOra.inZona(article.dateEpoch, prefs, zonaTelefono)
+    val data = DataOra.dataCompleta(mia, prefs)
+    val ora = DataOra.ora(mia, prefs) + DataOra.suffissoUtc(prefs)
+    val rigaDate = DataOra.rigaDate(article.headersRaw)
+    val autore = rigaDate?.let { DataOra.leggiDataUsenet(it) } ?: mia
+    val dataAutore = DataOra.dataCompleta(autore, prefs)
+    val oraAutore = DataOra.ora(autore, prefs)
+    val dataUtc = DataOra.dataUtc(article.dateEpoch)
+    val oraUtc = DataOra.oraUtc(article.dateEpoch)
+    val dataOriginale = rigaDate ?: "$dataUtc $oraUtc"
     return template
+        .replace("%dataautore%", dataAutore)
+        .replace("%authordate%", dataAutore)
+        .replace("%oraautore%", oraAutore)
+        .replace("%authortime%", oraAutore)
+        .replace("%fusoautore%", DataOra.scarto(autore))
+        .replace("%authorzone%", DataOra.scarto(autore))
+        .replace("%datautc%", dataUtc)
+        .replace("%utcdate%", dataUtc)
+        .replace("%orautc%", oraUtc)
+        .replace("%utctime%", oraUtc)
+        .replace("%dataoriginale%", dataOriginale)
+        .replace("%origdate%", dataOriginale)
+        .replace("%fuso%", DataOra.scarto(mia))
+        .replace("%zone%", DataOra.scarto(mia))
         .replace("%autore%", name)
         // Gli alias inglesi convivono con quelli italiani per non rompere firme già salvate.
         .replace("%author%", name)

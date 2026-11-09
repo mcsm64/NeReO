@@ -963,7 +963,16 @@ class NntpClient(
         }
         out.write(DOT_CRLF)
         out.flush()
-        val res = readResponse()
+        // 1.6.2 / 189 (caso Astraweb di HAL): questa attesa non passa da
+        // command(), quindi se il server taceva il log restava a "S: 340" e poi
+        // il vuoto. Ora la caduta lascia la sua riga, come per ogni comando.
+        val inizioNs = System.nanoTime()
+        val res = try {
+            readResponse(inizioNs)
+        } catch (e: IOException) {
+            NntpLog.diag("nessuna risposta dopo il punto finale dell'articolo (POST): ${e.message}")
+            throw e
+        }
         if (res.code != 240) throw NntpException(res.code, res.text)
     }
 

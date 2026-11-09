@@ -1,8 +1,16 @@
 ======================================================================
- NeReO 1.6.1 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.2 - Ne(ws) Re(ader) O(pen-source)
  Newsreader Usenet (NNTP) solo testo per Android
- NeReO 1.6.1 (versionCode 188) - By MCSM - 2026/11/05
+ NeReO 1.6.2 (versionCode 189) - By MCSM - 2026/11/09
 ======================================================================
+ ***  VERSIONE 1.6.2  ***
+
+ Proposta di HAL; data e ora dalla discussione su Usenet di BillH, Dave Royal, Kerr-Mudd John e Sn!pe.
+
+  * DATA E ORA A SCELTA. In Aspetto: data GG/MM/AA, MM/GG/AA o AAAA-MM-GG, ora a 24 o 12 ore, fuso del telefono o UTC. Valgono per elenco, lettura, pannelli, citazioni e certificati; i predefiniti sono quelli di prima. Nell'introduzione della citazione ci sono segnaposto nuovi: l'ora dell'autore (%oraautore%), la forma internazionale (%orautc%), lo scarto (%fuso%) e la riga Date: originale (%dataoriginale%).
+
+  * ULTIMO ERRORE OPERATIVO. In Manutenzione, accanto all'ultimo arresto anomalo, c'e' l'ultimo errore di un invio o di un aggiornamento: quando, server, gruppo e messaggio, piu' le ultime 40 righe del log NNTP di quel momento, che quello che succede dopo non spinge piu' fuori. Sempre attivo; le righe del log ci sono se la diagnostica NNTP e' accesa. Il log NNTP ora tiene 1500 righe invece di 400.
+
  ***  VERSIONE 1.6.1  ***
 
  Segnalazioni di BIG Umberto, Dave Royal e Cercaparole, e una richiesta di Marco.

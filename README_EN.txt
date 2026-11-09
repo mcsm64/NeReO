@@ -1,8 +1,16 @@
 ======================================================================
- NeReO 1.6.1 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.2 - Ne(ws) Re(ader) O(pen-source)
  Text-only Usenet (NNTP) newsreader for Android
- NeReO 1.6.1 (versionCode 188) - By MCSM - 2026/11/05
+ NeReO 1.6.2 (versionCode 189) - By MCSM - 2026/11/09
 ======================================================================
+ ***  VERSION 1.6.2  ***
+
+ Proposed by HAL; date and time from the Usenet discussion with BillH, Dave Royal, Kerr-Mudd John and Sn!pe.
+
+  * DATE AND TIME YOUR WAY. In Appearance: date as DD/MM/YY, MM/DD/YY or YYYY-MM-DD, 24 or 12-hour time, the phone's time zone or UTC. They apply to the thread list, reading, the panes, quotes and certificates; the defaults are the ones you had. The quote introduction gets new placeholders: the author's own time (%authortime%), the international form (%utctime%), the offset (%zone%) and the original Date: line (%origdate%).
+
+  * LAST OPERATIONAL ERROR. In Maintenance, next to the last crash, there is now the last error of a send or an update: when, server, group and message, plus the last 40 lines of the NNTP log from that moment, which what comes after can no longer push out. Always on; the log lines are there if NNTP diagnostics are on. The NNTP log now keeps 1500 lines instead of 400.
+
  ***  VERSION 1.6.1  ***
 
  Reported by BIG Umberto, Dave Royal and Cercaparole, plus a request from Marco.

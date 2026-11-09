@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.openusenet.reader.AppSettings
 import org.openusenet.reader.Branding
+import org.openusenet.reader.UltimoErrore
 import org.openusenet.reader.filter.richiedeIntestazioni
 import org.openusenet.reader.filter.FilterEngine
 import org.openusenet.reader.filter.FilterField
@@ -1372,7 +1373,15 @@ class NewsRepository(
                 if (e.code == 483) {
                     AvvisoConnessioneNonSicura.serverId.value = server.id
                     0
-                } else throw e
+                } else {
+                    registraErrore("aggiornamento del gruppo", server, group.name, e)
+                    throw e
+                }
+            } catch (e: Throwable) {
+                // 1.6.2 / 189: la NntpException rilanciata sopra non passa di qui
+                // (un catch non prende cio' che lancia il catch accanto).
+                registraErrore("aggiornamento del gruppo", server, group.name, e)
+                throw e
             }
         }
     }
@@ -2296,9 +2305,27 @@ class NewsRepository(
             val server = db.serverDao().byId(serverId) ?: continue
             val esito = giroDelServer<NntpClient, Group>(
                 gruppiServer,
-                sessione = { blocco -> openClient(server) { client -> blocco(client) } },
+                // 1.6.2 / 189 (HAL): giroDelServer inghiotte gli errori per non
+                // fermare gli altri server, quindi si registrano qui. Un gruppo che
+                // fallisce si registra col suo nome e risale con `aperta` vera, cosi'
+                // la sessione non lo registra una seconda volta; una sessione che
+                // non si apre si registra senza gruppo.
+                sessione = { blocco ->
+                    var aperta = false
+                    try {
+                        openClient(server) { client -> aperta = true; blocco(client) }
+                    } catch (e: Throwable) {
+                        if (!aperta) registraErrore("aggiornamento (connessione)", server, null, e)
+                        throw e
+                    }
+                },
                 sincronizza = { client, gruppo ->
-                    val n = syncGruppoConClient(client, gruppo, engine, AppSettings.maxHeadersSync)
+                    val n = try {
+                        syncGruppoConClient(client, gruppo, engine, AppSettings.maxHeadersSync)
+                    } catch (e: Throwable) {
+                        registraErrore("aggiornamento del gruppo", server, gruppo.name, e)
+                        throw e
+                    }
                     newToMe += lastSyncNewToMe
                     filtrati += lastSyncFiltrati
                     n
@@ -3016,6 +3043,10 @@ class NewsRepository(
             }
         }
 
+        // 1.6.2 / 189 (HAL): un invio fallito finisce in UltimoErrore. Il blocco
+        // qui sotto NON e' stato rientrato di proposito: la differenza resta di
+        // poche righe invece di centotrenta.
+        try {
         nuovoClient(server).use { client ->
             try {
                 client.connect()
@@ -3155,6 +3186,22 @@ class NewsRepository(
             }
             client.post(headers + "" + body.lines())
         }
+        } catch (e: Throwable) {
+            registraErrore("POST", server, group.name, e)
+            throw e
+        }
+    }
+
+    /**
+     * 1.6.2 / 189 (proposta di HAL) — un errore di invio o di aggiornamento va in
+     * [UltimoErrore], con le ultime righe del log NNTP copiate in quel momento.
+     * L'annullamento non e' un errore: uscire da una schermata a sync in corso
+     * cancellerebbe quello vero. Il 483 neanche: ha il suo dialogo.
+     */
+    private fun registraErrore(operazione: String, server: Server, gruppo: String?, e: Throwable) {
+        if (e is CancellationException) return
+        if (e is NntpException && e.code == 483) return
+        UltimoErrore.registra(operazione, "${server.host}:${server.port}", gruppo, e)
     }
 
     /**
@@ -3961,20 +4008,13 @@ class NewsRepository(
          */
         private const val PASSO_OVERVIEW = 10_000L
 
-        private val RFC1123 = DateTimeFormatter.RFC_1123_DATE_TIME
-        // Alcuni server omettono il giorno della settimana o usano 2 cifre d'anno
-        private val NO_DOW = DateTimeFormatter.ofPattern("d MMM yyyy HH:mm:ss Z", java.util.Locale.US)
-
-        /** Parse tollerante delle date Usenet (RFC 5322 è un far west). */
-        fun parseDate(raw: String): Long {
-            val cleaned = raw.trim().substringBefore(" (").trim()
-            runCatching { return ZonedDateTime.parse(cleaned, RFC1123).toEpochSecond() }
-            runCatching { return ZonedDateTime.parse(cleaned, NO_DOW).toEpochSecond() }
-            // ultima spiaggia: butto via il giorno della settimana e riprovo
-            val noDow = cleaned.substringAfter(", ")
-            runCatching { return ZonedDateTime.parse(noDow, NO_DOW).toEpochSecond() }
-            return 0L
-        }
+        /**
+         * Parse tollerante delle date Usenet (RFC 5322 è un far west).
+         * 1.6.2 / 189: la regola sta in DataOra.leggiDataUsenet, che tiene anche
+         * lo scarto dell'autore (serve a %oraautore%). Qui solo i secondi, come prima.
+         */
+        fun parseDate(raw: String): Long =
+            org.openusenet.reader.text.DataOra.leggiDataUsenet(raw)?.toEpochSecond() ?: 0L
     }
 }
 

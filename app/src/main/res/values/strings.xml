@@ -392,7 +392,7 @@
     <string name="id_noarchive">X-No-Archive: ask archives not to keep your posts</string>
     <string name="id_intro">Quote introduction</string>
     <string name="id_intro_tpl">Template (empty = \"%s\")</string>
-    <string name="id_intro_note">Placeholders: %%author%% %%email%% %%date%% %%time%% %%group%% %%subject%% %%messageid%% (the Italian names %%autore%% %%data%% %%ora%% %%gruppo%% %%oggetto%% still work). For several variants separate them with %s: one will be picked at random.</string>
+    <string name="id_intro_note">Placeholders: %%author%% %%email%% %%date%% %%time%% %%group%% %%subject%% %%messageid%% (the Italian names %%autore%% %%data%% %%ora%% %%gruppo%% %%oggetto%% still work). Time: %%date%% and %%time%% follow Appearance → Date and time; %%authordate%% %%authortime%% %%authorzone%% are the author\'s own time; %%utcdate%% %%utctime%% the international form (2026-11-07 14:45 UTC); %%zone%% is the offset of %%time%% (+0100); %%origdate%% is the Date: line of the message as it is. For several variants separate them with %s: one will be picked at random.</string>
     <string name="id_custom_headers">Custom headers</string>
     <string name="id_custom_headers_lbl">One per line: Name: value</string>
     <string name="id_custom_headers_note">E.g.: Reply-To: you@example.org · Organization: … Added to every message (editable while composing). Vital headers (From, Subject…) and control headers (Followup-To, Control, Sender, Expires…) cannot be overridden: if you write one here NeReO tells you and drops it.</string>
@@ -780,7 +780,7 @@
     <!-- Diagnostica NNTP (scatola nera) -->
     <string name="mnt_diag_section">Diagnostics</string>
     <string name="mnt_diag_switch">Record NNTP dialogue</string>
-    <string name="mnt_diag_note">For troubleshooting a server. When on, the app keeps the last ~400 lines of the NNTP client/server dialogue in memory, plus computed summary lines (marked \"D:\") such as how many overview rows actually arrived and which article numbers are missing, and a session header/footer with timing. Passwords and usernames are masked; nothing is written to disk until you export. Turn it on, run one sync, then copy or export the log — and turn it back off.</string>
+    <string name="mnt_diag_note">For troubleshooting a server. When on, the app keeps the last ~1500 lines of the NNTP client/server dialogue in memory, plus computed summary lines (marked \"D:\") such as how many overview rows actually arrived and which article numbers are missing, and a session header/footer with timing. Passwords and usernames are masked; only the lines kept with the last operational error (see below) are written to disk, the rest only if you export. Turn it on, run one sync, then copy or export the log — and turn it back off.</string>
     <string name="mnt_diag_copy">Copy log</string>
     <string name="mnt_diag_export">Export log</string>
     <string name="mnt_diag_copied">NNTP log copied to clipboard</string>
@@ -814,6 +814,12 @@
     <string name="mnt_crash_saved">Crash log saved</string>
     <string name="mnt_crash_cleared">Crash log cleared</string>
     <string name="mnt_crash_empty">No crash recorded — good news.</string>
+    <string name="mnt_lasterr_section">Last operational error</string>
+    <string name="mnt_lasterr_note">Always on: if a send or an update fails, the last error is kept here (when, server, group and message) and, if NNTP diagnostics are on, the last 40 log lines from that moment, which the rest of the log can no longer overwrite. Nothing is sent anywhere on its own.</string>
+    <string name="mnt_lasterr_copied">Last error copied to clipboard</string>
+    <string name="mnt_lasterr_saved">Last error saved</string>
+    <string name="mnt_lasterr_cleared">Last error cleared</string>
+    <string name="mnt_lasterr_empty">No error recorded.</string>
     <!-- Azioni long-press sul gruppo sottoscritto -->
     <string name="groups_download_bodies">Download bodies (last 300)</string>
     <string name="groups_unsub_action">Unsubscribe\u2026</string>
@@ -1068,6 +1074,18 @@
     <string name="app_faccine_note">On screen only, as in MesNews: :-) 8-o and similar become emoji when they stand on their own (never inside links or words). Copy, quoting, search and filters keep the original characters.</string>
     <string name="app_enfasi">Show bold, italic and underline</string>
     <string name="app_enfasi_note">On screen only, as in MesNews: *word* in bold, /word/ in italics, _word_ underlined. The marks disappear, but copying, quotes, search and filters keep them. Never inside links and signatures.</string>
+    <string name="app_dataora_section">Date and time</string>
+    <string name="app_dataora_formato">Date format</string>
+    <string name="app_dataora_gma">DD/MM/YY (07/11/26)</string>
+    <string name="app_dataora_mga">MM/DD/YY (11/07/26)</string>
+    <string name="app_dataora_iso">YYYY-MM-DD (2026-11-07)</string>
+    <string name="app_dataora_orologio">Time format</string>
+    <string name="app_dataora_24">24-hour (14:45)</string>
+    <string name="app_dataora_12">12-hour (2:45 PM)</string>
+    <string name="app_dataora_fuso">Time zone</string>
+    <string name="app_dataora_telefono">The phone\'s</string>
+    <string name="app_dataora_utc">UTC</string>
+    <string name="app_dataora_note">They apply to the thread list, reading, quotes and certificate dates. In the list, dates from this year have no year and today\'s show only the time. In UTC the time in the message header says UTC. Backup file names and the headers of the messages you send do not change.</string>
     <!-- 1.2.2: riflusso testo -->
     <string name="rn_v122_l5">New «Reflow text» option (Appearance): rejoins paragraphs broken by the classic 72-column wrap, so posts read tidily on narrow screens instead of showing one- or two-word orphan lines. Off by default.</string>
     <!-- 1.2.2: fix vista a pannelli (Dave Royal) -->
@@ -1100,6 +1118,9 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">X-Faces are shown. The classic black-and-white Usenet face (the X-Face header, sent by MesNews and many traditional newsreaders) now appears next to the author\'s name, where until now only the colour Face did. Tap it to enlarge it: it stays sharp, square by square. Order: Face first, then X-Face, then the coloured initials. NeReO shows X-Faces but does not send them.</string>
     <string name="rn_v155_l8">New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the \"newest first\" orders it also notices a reply inside the thread that is already at the top. With the \"oldest first\" orders, where new messages are at the bottom, you stay where you were. In the panel view too.</string>
+    <string name="rn_v162_title">New in 1.6.2</string>
+    <string name="rn_v162_l1">Maintenance has a new «Last operational error» box. When a send or an update fails, the error is kept there with the last 40 lines of the NNTP log from that moment, so what comes after can no longer push them out. The NNTP log now keeps 1500 lines instead of 400. Thanks to HAL.</string>
+    <string name="rn_v162_l2" formatted="false">Date and time your way, in Appearance: day/month, month/day or YYYY-MM-DD, 24 or 12 hours, the phone\'s time zone or UTC. They apply to the thread list, reading, the panes and certificates; the defaults are the ones you had. The quote introduction gets new placeholders for the author\'s own time (%authortime%), the international form (%utctime%), the offset (%zone%) and the original Date: line (%origdate%). Thanks to BillH, Dave Royal, Kerr-Mudd John and Sn!pe.</string>
     <string name="rn_v161_title">New in 1.6.1</string>
     <string name="rn_v161_l1">Updating several servers: one that does not answer no longer stops the others. It is tried once instead of once per group, and at the end a message names the servers left out. The result of an update now also shows in the panes view. Reported by BIG Umberto.</string>
     <string name="rn_v161_l2">Long signatures are no longer cut. A signature line over 72 characters was sent truncated, even though it was saved whole in Identity: it now wraps by itself at the words, and your saved signature comes back whole with nothing to retype. Other people\'s long signatures are shown whole too. Reported by BIG Umberto.</string>

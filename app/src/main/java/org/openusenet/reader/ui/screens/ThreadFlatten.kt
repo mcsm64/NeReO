@@ -99,12 +99,13 @@ object SyncGuard {
 }
 
 fun formatThreadDateTime(epochSeconds: Long): String {
-    val zone = java.time.ZoneId.systemDefault()
-    val dt = java.time.Instant.ofEpochSecond(epochSeconds).atZone(zone)
     // beta14 (Marco): anno SEMPRE visibile a 2 cifre nell'elenco discussioni,
     // anche per l'anno corrente (prima veniva omesso), così ogni riga ha la
     // data completa e compatta.
-    return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yy HH:mm").format(dt)
+    // 1.6.2 / 189: le forme stanno in text/DataOra, con le scelte di Aspetto.
+    val p = org.openusenet.reader.AppSettings.preferenzeDataOra()
+    val dt = org.openusenet.reader.text.DataOra.inZona(epochSeconds, p)
+    return org.openusenet.reader.text.DataOra.dataOraBreve(dt, p)
 }
 
 /** Nome dell'autore senza l'indirizzo e-mail (es. "Mario Rossi <m@x.it>" → "Mario Rossi"). */
@@ -219,17 +220,9 @@ fun testoEsitoSync(
         ctx.getString(org.openusenet.reader.R.string.msg_sync_not_updated, elenco)
 }
 
-fun formatThreadDate(epochSeconds: Long): String {
-    val zone = java.time.ZoneId.systemDefault()
-    val dt = java.time.Instant.ofEpochSecond(epochSeconds).atZone(zone)
-    val today = java.time.LocalDate.now(zone)
-    val pattern = when {
-        dt.toLocalDate() == today -> "HH:mm"
-        dt.year == today.year -> "dd/MM"
-        else -> "dd/MM/yy"
-    }
-    return java.time.format.DateTimeFormatter.ofPattern(pattern).format(dt)
-}
+/** Oggi solo l'ora, quest'anno senza anno, prima la data breve. 1.6.2: vedi text/DataOra.elenco. */
+fun formatThreadDate(epochSeconds: Long): String =
+    org.openusenet.reader.text.DataOra.elenco(epochSeconds, org.openusenet.reader.AppSettings.preferenzeDataOra())
 
 /**
  * Wishlist beta12 (Dave Royal, tablet 10" in verticale — colonna gruppi

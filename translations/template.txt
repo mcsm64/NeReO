@@ -1017,7 +1017,7 @@ id_intro =
 # en: Template (empty = "%s")
 id_intro_tpl =
 
-# en: Placeholders: %%author%% %%email%% %%date%% %%time%% %%group%% %%subject%% %%messageid%% (the Italian names %%autore%% %%data%% %%ora%% %%gruppo%% %%oggetto%% still work). For several variants separate them with %s: one will be picked at random.
+# en: Placeholders: %%author%% %%email%% %%date%% %%time%% %%group%% %%subject%% %%messageid%% (the Italian names %%autore%% %%data%% %%ora%% %%gruppo%% %%oggetto%% still work). Time: %%date%% and %%time%% follow Appearance → Date and time; %%authordate%% %%authortime%% %%authorzone%% are the author's own time; %%utcdate%% %%utctime%% the international form (2026-11-07 14:45 UTC); %%zone%% is the offset of %%time%% (+0100); %%origdate%% is the Date: line of the message as it is. For several variants separate them with %s: one will be picked at random.
 id_intro_note =
 
 # en: Custom headers
@@ -2079,7 +2079,7 @@ mnt_diag_section =
 # en: Record NNTP dialogue
 mnt_diag_switch =
 
-# en: For troubleshooting a server. When on, the app keeps the last ~400 lines of the NNTP client/server dialogue in memory, plus computed summary lines (marked "D:") such as how many overview rows actually arrived and which article numbers are missing, and a session header/footer with timing. Passwords and usernames are masked; nothing is written to disk until you export. Turn it on, run one sync, then copy or export the log — and turn it back off.
+# en: For troubleshooting a server. When on, the app keeps the last ~1500 lines of the NNTP client/server dialogue in memory, plus computed summary lines (marked "D:") such as how many overview rows actually arrived and which article numbers are missing, and a session header/footer with timing. Passwords and usernames are masked; only the lines kept with the last operational error (see below) are written to disk, the rest only if you export. Turn it on, run one sync, then copy or export the log — and turn it back off.
 mnt_diag_note =
 
 # en: Copy log
@@ -2177,6 +2177,24 @@ mnt_crash_cleared =
 
 # en: No crash recorded — good news.
 mnt_crash_empty =
+
+# en: Last operational error
+mnt_lasterr_section =
+
+# en: Always on: if a send or an update fails, the last error is kept here (when, server, group and message) and, if NNTP diagnostics are on, the last 40 log lines from that moment, which the rest of the log can no longer overwrite. Nothing is sent anywhere on its own.
+mnt_lasterr_note =
+
+# en: Last error copied to clipboard
+mnt_lasterr_copied =
+
+# en: Last error saved
+mnt_lasterr_saved =
+
+# en: Last error cleared
+mnt_lasterr_cleared =
+
+# en: No error recorded.
+mnt_lasterr_empty =
 
 # en: Download bodies (last 300)
 groups_download_bodies =
@@ -2276,6 +2294,42 @@ app_enfasi =
 
 # en: On screen only, as in MesNews: *word* in bold, /word/ in italics, _word_ underlined. The marks disappear, but copying, quotes, search and filters keep them. Never inside links and signatures.
 app_enfasi_note =
+
+# en: Date and time
+app_dataora_section =
+
+# en: Date format
+app_dataora_formato =
+
+# en: DD/MM/YY (07/11/26)
+app_dataora_gma =
+
+# en: MM/DD/YY (11/07/26)
+app_dataora_mga =
+
+# en: YYYY-MM-DD (2026-11-07)
+app_dataora_iso =
+
+# en: Time format
+app_dataora_orologio =
+
+# en: 24-hour (14:45)
+app_dataora_24 =
+
+# en: 12-hour (2:45 PM)
+app_dataora_12 =
+
+# en: Time zone
+app_dataora_fuso =
+
+# en: The phone's
+app_dataora_telefono =
+
+# en: UTC
+app_dataora_utc =
+
+# en: They apply to the thread list, reading, quotes and certificate dates. In the list, dates from this year have no year and today's show only the time. In UTC the time in the message header says UTC. Backup file names and the headers of the messages you send do not change.
+app_dataora_note =
 
 # en: Refresh only with the icon (disable swipe) in the panel view
 app_pane_refresh_icon_only =
@@ -2995,6 +3049,15 @@ rn_v155_l7 =
 
 # en: New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the "newest first" orders it also notices a reply inside the thread that is already at the top. With the "oldest first" orders, where new messages are at the bottom, you stay where you were. In the panel view too.
 rn_v155_l8 =
+
+# en: New in 1.6.2
+rn_v162_title =
+
+# en: Maintenance has a new «Last operational error» box. When a send or an update fails, the error is kept there with the last 40 lines of the NNTP log from that moment, so what comes after can no longer push them out. The NNTP log now keeps 1500 lines instead of 400. Thanks to HAL.
+rn_v162_l1 =
+
+# en: Date and time your way, in Appearance: day/month, month/day or YYYY-MM-DD, 24 or 12 hours, the phone's time zone or UTC. They apply to the thread list, reading, the panes and certificates; the defaults are the ones you had. The quote introduction gets new placeholders for the author's own time (%authortime%), the international form (%utctime%), the offset (%zone%) and the original Date: line (%origdate%). Thanks to BillH, Dave Royal, Kerr-Mudd John and Sn!pe.
+rn_v162_l2 =
 
 # en: New in 1.6.1
 rn_v161_title =

@@ -48,6 +48,13 @@ class App : Application() {
         // qui, non dentro NntpLog/NntpClient, che restano volutamente senza
         // dipendenze Android per essere testabili da riga di comando.
         NntpLog.appVersion = BuildConfig.VERSION_NAME
+        // 1.6.2 / 189 (HAL): ultimo errore operativo, stesso schema di NntpLog —
+        // il lato Android lo imposta qui, l'oggetto resta provabile nei test.
+        UltimoErrore.file = java.io.File(filesDir, "last_error.txt")
+        UltimoErrore.intestazione =
+            "Versione: ${BuildConfig.VERSION_NAME} (versionCode ${BuildConfig.VERSION_CODE})\n" +
+            "Dispositivo: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}, " +
+            "Android ${android.os.Build.VERSION.RELEASE} (SDK ${android.os.Build.VERSION.SDK_INT})"
         // 1.2.9 (multi-identità): al primo avvio dopo l'update, migra le
         // identità legacy (SharedPreferences "identity" → tabella `identities`)
         // e SOLO DOPO ricarica myEmail/myEmails dal DB — l'ordine è

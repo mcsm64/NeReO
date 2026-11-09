@@ -49,7 +49,13 @@ object NntpLog {
     @Volatile
     var appVersion: String = ""
 
-    private const val MAX_LINES = 400
+    // 1.6.2 / 189 (HAL): da 400 a 1500. Con 400 righe, un invio fallito notato
+    // qualche minuto dopo era gia' uscito dal buffer al momento di esportare.
+    // Non e' la soluzione (alzare il tetto sposta il problema): la soluzione e'
+    // UltimoErrore, che copia le ultime righe nel momento dell'errore. Questo
+    // e' il margine per chi esporta il log intero. Stima, non misura: qualche
+    // centinaio di KB di RAM al massimo.
+    private const val MAX_LINES = 1500
     private val buffer = ArrayDeque<String>(MAX_LINES)
 
     /** Registra un comando inviato dal client (credenziali oscurate). */
@@ -146,6 +152,10 @@ object NntpLog {
     /** Il dialogo registrato finora, una riga per elemento. */
     @Synchronized
     fun snapshot(): String = buffer.joinToString("\n")
+
+    /** 1.6.2: le ultime [n] righe, dalla piu' vecchia alla piu' recente (per UltimoErrore). */
+    @Synchronized
+    fun ultimeRighe(n: Int): List<String> = buffer.toList().takeLast(n)
 
     /** Numero di righe attualmente in buffer (per l'interfaccia). */
     @Synchronized
