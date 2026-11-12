@@ -262,7 +262,47 @@ data class ThreadItem(
      * ricalcolato qui: unica fonte di verità.
      */
     val repliesToMe: Int = 0,
+    /**
+     * 1.6.3 / 190 (BIG Umberto): data del messaggio piu' recente della
+     * discussione. Solo sulle righe radice della vista raggruppata, 0 altrove.
+     */
+    val ultimaData: Long = 0L,
 )
+
+/**
+ * 1.6.3 / 190 (BIG Umberto, 12/11) — QUALE DATA MOSTRA LA RIGA.
+ *
+ * Ordinando per messaggio piu' recente, la riga di una discussione intera
+ * mostrava la data del PRIMO messaggio: «Riscaldamento 10/11 21:14» sopra
+ * «Inaugurazione 11/11 21:05» sembrava un errore d'ordine. Ora, in quel caso,
+ * la riga mostra la data che decide l'ordine, e lo dice («ultimo»), perche'
+ * l'autore resta quello che ha aperto la discussione.
+ *
+ * Solo sulle righe che rappresentano l'intera discussione (vista raggruppata,
+ * `total > 1`); nell'albero ogni riga e' un messaggio e la sua data e' la sua.
+ * Per apertura la data che decide e' gia' quella mostrata. Restituisce la data
+ * e se e' quella dell'ultimo messaggio.
+ */
+fun dataDellaRiga(item: ThreadItem, sort: String): Pair<Long, Boolean> =
+    if (item.isRoot && item.total > 1 && !sort.startsWith("opened") && item.ultimaData > item.article.dateEpoch) {
+        item.ultimaData to true
+    } else {
+        item.article.dateEpoch to false
+    }
+
+/**
+ * 1.6.3 / 190: «autore · score · data» della riga, UNA volta per telefono e
+ * pannelli (prima due copie identiche in ThreadListScreen e ThreePaneHome).
+ */
+@androidx.compose.runtime.Composable
+fun testoAutoreData(item: ThreadItem, article: Article): String {
+    val (quando, ultimo) = dataDellaRiga(item, AppSettings.threadSort)
+    val data = formatThreadDateTime(quando)
+    return authorDisplayName(article.fromField) +
+        (if (article.score != 0) "  ·  score ${article.score}" else "") +
+        "  ·  " +
+        (if (ultimo) androidx.compose.ui.res.stringResource(org.openusenet.reader.R.string.tl_ultimo, data) else data)
+}
 
 /**
  * 1.3.2: le tre funzioni qui sotto sono l'UNICA implementazione di
@@ -481,11 +521,18 @@ fun allRootKeys(articles: List<Article>, unreadOnly: Boolean): Set<String> =
  * ⚠️ Una seguita letta ora SCENDE sotto gli occhi di chi legge: per questo
  * [novitaInCima] guarda anche l'id piu' alto, [ThreadScrollMemory] ricorda se si
  * era in cima, e lo swipe usa [idNonLettoNelGruppo].
+ *
+ * 1.6.3 / 190 (BIG Umberto, 12/11): chi segue molte discussioni le vuole SEMPRE
+ * in cima, come fino alla 1.6.1 / 186, e le due richieste si escludono. Diventa
+ * una scelta in Aspetto: [seguiteSoloConNonLetti] false = sempre in cima
+ * (predefinito), true = il modo di Cercaparole. Le tre guardie qui sopra
+ * restano giuste in tutti e due i modi e non dipendono dalla scelta.
  */
 internal fun orderedRoots(
     articles: List<Article>,
     unreadOnly: Boolean,
     sort: String,
+    seguiteSoloConNonLetti: Boolean = AppSettings.seguiteSoloConNonLetti(),
 ): Pair<List<ThreadNode>, Map<String, Article>> {
     val byMsgId = articles.associateBy { it.messageId }
     var roots = Threader.thread(
@@ -528,7 +575,8 @@ internal fun orderedRoots(
     val (w, n) = if (watchedIds.isEmpty()) roots to emptyList()
                  else roots.partition { root ->
                      piatto(root).any { (_, ta) -> ta.messageId in watchedIds } &&
-                         piatto(root).any { (_, ta) -> byMsgId[ta.messageId]?.read == false }
+                         (!seguiteSoloConNonLetti ||
+                             piatto(root).any { (_, ta) -> byMsgId[ta.messageId]?.read == false })
                  }
     return (w + n) to byMsgId
 }
@@ -635,6 +683,8 @@ private fun rootsList(
                 hasMyPost = members.any { m -> AppSettings.eMioPost(m.second.fromField) },
                 // beta18 (Bingo3331): quante risposte dirette ai miei post.
                 repliesToMe = nRisposteAMe,
+                // 1.6.3 / 190 (BIG Umberto): vedi dataDellaRiga.
+                ultimaData = members.maxOf { it.second.dateEpoch },
             )
         )
         if (isOpen) {

@@ -1,8 +1,18 @@
 ======================================================================
- NeReO 1.6.2 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.3 - Ne(ws) Re(ader) O(pen-source)
  Text-only Usenet (NNTP) newsreader for Android
- NeReO 1.6.2 (versionCode 189) - By MCSM - 2026/11/09
+ NeReO 1.6.3 (versionCode 190) - By MCSM - 2026/11/12
 ======================================================================
+ ***  VERSION 1.6.3  ***
+
+ Reports and request by Dave Royal; followed threads by BIG Umberto.
+
+  * FOLLOWED THREADS ARE BACK AT THE TOP, ALWAYS, as up to 1.6.1. If you prefer the 1.6.2 way (at the top only with unread messages), choose it in Appearance. When sorting by most recent message, the thread row in the grouped view shows the date of the last message ("last ..."), the one that decides the order. Thanks to BIG Umberto and Cercaparole.
+
+  * MARK ALL READ WHEN LEAVING THE GROUP, ALSO IN PANES VIEW. Tapping another group in the groups column, or using the Next button, marks the group you leave as read if the option is on. Before, this did not happen in panes view: with the option on, you may now see groups marked read where they were not. When leaving a group, also on the phone and with Next, a notice says how many messages were marked read and lets you undo, even when you are already in the new group.
+
+  * MARK ALL GROUPS READ. In the three-dot menu of the groups column in panes view, where Reorder groups now lives too, and in the main menu on the phone. With more than one server you choose which; right after, you can undo.
+
  ***  VERSION 1.6.2  ***
 
  Proposed by HAL; date and time from the Usenet discussion with BillH, Dave Royal, Kerr-Mudd John and Sn!pe.

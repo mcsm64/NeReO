@@ -634,6 +634,11 @@
     <string name="common_marked_read">%1$d messaggi segnati come letti</string>
     <string name="common_undo_upper">ANNULLA</string>
     <string name="common_mark_all_read">Segna tutto letto</string>
+    <string name="mark_all_groups_read">Segna letti tutti i gruppi…</string>
+    <string name="mark_all_groups_title">Segna letti tutti i gruppi</string>
+    <string name="mark_all_groups_one">Tutti i messaggi di tutti i gruppi diventano letti. Subito dopo potrai annullare.</string>
+    <string name="mark_all_groups_servers">Tutti i messaggi dei gruppi dei server scelti diventano letti. Subito dopo potrai annullare.</string>
+    <string name="mark_all_groups_confirm">Segna letti</string>
     <string name="tl_sync">Sincronizza</string>
     <string name="tl_search_group">Cerca in questo gruppo…</string>
     <string name="common_watched_threads_only">Solo discussioni seguite</string>
@@ -1067,6 +1072,10 @@
     <string name="app_faccine_note">Solo a schermo, come in MesNews: :-) 8-o e simili diventano emoji quando sono isolate (mai dentro link o parole). Copia, citazioni, ricerca e filtri usano i caratteri originali.</string>
     <string name="app_enfasi">Mostra grassetto, corsivo e sottolineato</string>
     <string name="app_enfasi_note">Solo a schermo, come in MesNews: *parola* in grassetto, /parola/ in corsivo, _parola_ sottolineata. I segni spariscono, ma copia, citazioni, ricerca e filtri li conservano. Mai dentro link e firme.</string>
+    <string name="app_seguite_titolo">Discussioni seguite</string>
+    <string name="app_seguite_sempre">Sempre in cima</string>
+    <string name="app_seguite_non_letti">In cima solo con messaggi non letti</string>
+    <string name="tl_ultimo">ultimo %s</string>
     <string name="app_dataora_section">Data e ora</string>
     <string name="app_dataora_formato">Formato della data</string>
     <string name="app_dataora_gma">GG/MM/AA (07/11/26)</string>
@@ -1111,6 +1120,10 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">Le X-Face si vedono. La classica faccina in bianco e nero di Usenet (l\'intestazione X-Face, mandata da MesNews e da molti lettori tradizionali) compare ora accanto al nome dell\'autore, dove finora compariva solo la Face a colori. Toccala per ingrandirla: resta nitida, a quadretti. L\'ordine è: prima la Face, poi la X-Face, poi le iniziali colorate. NeReO mostra le X-Face ma non le invia.</string>
     <string name="rn_v155_l8">I messaggi nuovi restano davvero in vista. La correzione della 1.5.4 funzionava solo quando NeReO ti aveva appena riportato dove eri rimasto: al primo ingresso nel gruppo dopo aver aperto l\'app, o quando la lista era già in cima, i messaggi che arrivavano con la sincronizzazione potevano ancora finire sopra il bordo dello schermo. Ora, ogni volta che apri un gruppo, se arrivano messaggi nuovi e non hai ancora spostato la lista col dito, sale in cima a mostrarli. Con gli ordinamenti \"dai più recenti\" si accorge anche di una risposta dentro la discussione che è già in cima. Con gli ordinamenti \"dai più vecchi\", dove i nuovi stanno in fondo, resti dove sei. Anche nella vista a pannelli.</string>
+    <string name="rn_v163_title">Novità della 1.6.3</string>
+    <string name="rn_v163_l1">Segna tutto letto uscendo dal gruppo: nella vista a pannelli ora funziona davvero. Se l\'opzione è accesa, passando a un altro gruppo quello che lasci viene segnato letto; prima nei pannelli non succedeva, quindi ora potresti vedere gruppi segnati letti dove prima non lo erano. Uscendo da un gruppo, anche col tasto Avanti, un avviso dice quanti messaggi sono stati segnati letti e permette di annullare, anche dal gruppo nuovo. Segnalato da Dave Royal.</string>
+    <string name="rn_v163_l2">Segna letti tutti i gruppi: nel menu della colonna dei gruppi nella vista a pannelli, dove ora sta anche Riordina i gruppi, e nel menu principale al telefono. Con più server scegli quali; subito dopo puoi annullare. Chiesto da Dave Royal.</string>
+    <string name="rn_v163_l3">Le discussioni seguite tornano sempre in cima, come prima della 1.6.2. Chi preferisce il modo della 1.6.2 (in cima solo con messaggi non letti) lo sceglie in Aspetto. Ordinando per messaggio più recente, la riga della discussione nella vista raggruppata mostra ora la data dell\'ultimo messaggio («ultimo …»), quella che decide l\'ordine. Grazie a BIG Umberto e Cercaparole.</string>
     <string name="rn_v162_title">Novità della 1.6.2</string>
     <string name="rn_v162_l1">In Manutenzione c\'è il riquadro «Ultimo errore operativo». Quando un invio o un aggiornamento fallisce, l\'errore resta lì con le ultime 40 righe del log NNTP di quel momento, e quello che succede dopo non le spinge più fuori. Il log NNTP ora tiene 1500 righe invece di 400. Grazie a HAL.</string>
     <string name="rn_v162_l2" formatted="false">Data e ora a scelta, in Aspetto: giorno/mese, mese/giorno o AAAA-MM-GG, 24 o 12 ore, fuso del telefono o UTC. Valgono per elenco, lettura, pannelli e certificati; i predefiniti sono quelli di prima. Nell\'introduzione della citazione ci sono segnaposto nuovi per l\'ora dell\'autore (%oraautore%), la forma internazionale (%orautc%), lo scarto (%fuso%) e la riga Date: originale (%dataoriginale%). Grazie a BillH, Dave Royal, Kerr-Mudd John e Sn!pe.</string>

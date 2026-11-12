@@ -296,7 +296,7 @@ fun ThreadListScreen(
         }
     }
 
-    val items = remember(articoliVisibili, unreadOnly, view, AppSettings.threadSort, expandedRoots) {
+    val items = remember(articoliVisibili, unreadOnly, view, AppSettings.threadSort, AppSettings.seguiteInCima, expandedRoots) {
         buildThreadList(articoliVisibili, unreadOnly, view, expandedRoots = expandedRoots)
     }
     // 1.5.5 / 173: primo della lista e id piu' alto, per riconoscere le novita'.
@@ -499,6 +499,9 @@ fun ThreadListScreen(
         }.distinct()
     }
 
+    // 1.6.3: un doppio Indietro rapido non applica l'uscita due volte.
+    var uscitaInCorso by remember { mutableStateOf(false) }
+    val avvisi = LocalAvvisi.current
     // uscita dal gruppo: se l'opzione è attiva, segna tutto letto PRIMA di uscire
     fun leaveGroup() {
         // I messaggi contrassegnati per la cancellazione vengono eliminati ORA:
@@ -508,8 +511,12 @@ fun ThreadListScreen(
         // 1.5.9 / 177: uscendo dal gruppo si riparte tutto chiuso.
         DiscussioniAperte.clear(chiaveVoce)
         if (AppSettings.markReadOnExit || PendingDeletions.of(groupId).isNotEmpty()) {
+            if (uscitaInCorso) return
+            uscitaInCorso = true
             scope.launch {
-                applicaUscitaGruppo(repo, groupId)
+                // 1.6.3: l'avviso parte nello scope dell'app, prima di uscire, e
+                // si vede nell'elenco dei gruppi.
+                offriAnnullaLetti(repo, ctx, avvisi, mapOf(groupId to applicaUscitaGruppo(repo, groupId)))
                 nav.indietroSicuro()
             }
         } else {
@@ -709,8 +716,6 @@ fun ThreadListScreen(
                     AzioneSegnaTuttoLetto(
                         repo = repo,
                         groupId = groupId,
-                        scope = scope,
-                        snackbar = snackbar,
                     )
                     // 1.4.4 (Dave Royal): il Box E' L'ANCORA. Senza, DropdownMenu si
                     // aggancia al nodo GENITORE (Popup usa parentLayoutCoordinates),
@@ -849,7 +854,7 @@ fun ThreadListScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { SnackbarConAvvisi(snackbar) },
         floatingActionButton = {
             // beta16 (Roxy): FAB dentro l'area sicura in landscape (vedi
             // ServersScreen per la causa edge-to-edge).
@@ -1634,9 +1639,9 @@ private fun ThreadRow(
                 // beta13 (Marco, Piano B — coerenza con ThreePaneHome): nome
                 // autore senza <email> + data e ora insieme al posto della sola
                 // data compatta. Stessa scelta applicata a entrambe le viste.
-                "${authorDisplayName(article.fromField)}" +
-                    (if (article.score != 0) "  ·  score ${article.score}" else "") +
-                    "  ·  ${formatThreadDateTime(article.dateEpoch)}",
+                // 1.6.3 / 190 (BIG Umberto): in una funzione sola coi pannelli,
+                // con la data dell'ultimo quando e' quella che decide l'ordine.
+                testoAutoreData(item, article),
                 style = MaterialTheme.typography.bodySmall,
                 textDecoration = if (marcato) TextDecoration.LineThrough else null,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

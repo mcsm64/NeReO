@@ -2122,8 +2122,15 @@ android {
         // (BillH, Dave Royal, Kerr-Mudd John, Sn!pe su Usenet; piano C di Marco).
         // Le forme in text/DataOra.kt, tre scelte in Aspetto, segnaposto nuovi
         // nell'introduzione; predefiniti identici a prima.
-        versionCode = 189
-        versionName = "1.6.2"
+        // versionCode 190 (11 novembre 2026) - versionName 1.6.3, deciso da Marco: la
+        // 1.6.2 e' pubblica. Dave Royal: segna letto all'uscita anche nei pannelli,
+        // avviso con ANNULLA che resta cambiando schermata, segna letti tutti i gruppi.
+        // 12 novembre, stesso numero (la 190 non e' ancora firmata): BIG Umberto, la
+        // regressione della 1.6.2. Le seguite tornano sempre in cima (scelta in
+        // Aspetto, «solo con non letti» per chi preferisce il modo di Cercaparole);
+        // la riga raggruppata, ordinando per attivita', mostra la data dell'ultimo.
+        versionCode = 190
+        versionName = "1.6.3"
     }
 
     buildTypes {

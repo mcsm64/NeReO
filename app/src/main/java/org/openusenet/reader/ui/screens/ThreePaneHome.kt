@@ -199,6 +199,21 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
     val ctx = LocalContext.current
 
     var selectedGroupId by remember { mutableStateOf<Long?>(null) }
+    // 1.6.3 (Dave Royal): nei pannelli «Segna tutto letto uscendo dal gruppo» non
+    // era mai stato collegato. L'uscita sono i due gesti voluti, il tocco su un
+    // altro gruppo e Avanti: passano tutti e due di qui, e nient'altro. La
+    // rotazione, il ritorno da un'altra schermata o la disiscrizione cambiano il
+    // gruppo selezionato senza passare di qui, e non segnano niente.
+    val avvisi = LocalAvvisi.current
+    fun lasciaGruppoPannelli(nuovo: Long) {
+        val prima = selectedGroupId
+        selectedGroupId = nuovo
+        if (prima != null && eUscitaDalGruppo(prima, nuovo)) {
+            avvisi.scope.launch {
+                offriAnnullaLetti(repo, ctx, avvisi, mapOf(prima to applicaUscitaGruppo(repo, prima)))
+            }
+        }
+    }
     // 1.4.1 (105/C): stesso difetto di ArticleScreen — vedi la nota li'.
     var selectedArticleId by rememberSaveable { mutableStateOf<Long?>(null) }
     var compose by remember { mutableStateOf<ComposeTarget?>(null) }
@@ -229,6 +244,9 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
     // il riordino era solo in phone mode). Attivabile per non affollare la colonna
     // stretta: quando ON, ogni gruppo mostra frecce su/giù al posto del badge.
     var riordinaGruppi by remember { mutableStateOf(false) }
+    // 1.6.3 (Dave Royal): menu della colonna dei gruppi e «Segna letti tutti i gruppi».
+    var menuGruppi by remember { mutableStateOf(false) }
+    var dialogoTuttiLetti by remember { mutableStateOf(false) }
     // 1.3 (D — lettura a tutto schermo nei pannelli, richiesta di PiaoHong/
     // Dave). Nasconde temporaneamente le colonne gruppi e discussioni,
     // lasciando solo la lettura a piena larghezza — utile su tablet in
@@ -329,7 +347,7 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
         }
     }
 
-    val flat = remember(articoliVisibili, AppSettings.threadView, AppSettings.threadSort, expandedRoots, unreadOnly) {
+    val flat = remember(articoliVisibili, AppSettings.threadView, AppSettings.threadSort, AppSettings.seguiteInCima, expandedRoots, unreadOnly) {
         buildThreadList(
             articoliVisibili,
             unreadOnly = unreadOnly,
@@ -368,7 +386,7 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { SnackbarConAvvisi(snackbar) },
         topBar = {
             TopAppBar(
                 title = {
@@ -483,15 +501,41 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                                 },
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            IconButton(onClick = { riordinaGruppi = !riordinaGruppi }) {
-                                Icon(
-                                    Icons.Default.SwapVert,
-                                    contentDescription = stringResource(R.string.groups_reorder_toggle),
-                                    tint = if (riordinaGruppi) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                            // 1.6.3 (Dave Royal): sul suo schermo qui ci stanno due
+                            // icone. Riordina entra nel ⋮ insieme a «Segna letti tutti
+                            // i gruppi»; mentre si riordina, al posto del ⋮ c'e' la sua
+                            // icona accesa, che chiude il riordino con un tocco.
+                            if (riordinaGruppi) {
+                                IconButton(onClick = { riordinaGruppi = false }) {
+                                    Icon(
+                                        Icons.Default.SwapVert,
+                                        contentDescription = stringResource(R.string.groups_reorder_toggle),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            } else {
+                                Box {
+                                    IconButton(onClick = { menuGruppi = true }) {
+                                        Icon(
+                                            Icons.Default.MoreVert,
+                                            contentDescription = stringResource(R.string.menu_more),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    DropdownMenu(expanded = menuGruppi, onDismissRequest = { menuGruppi = false }) {
+                                        VoceSegnaLettiTutti { menuGruppi = false; dialogoTuttiLetti = true }
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.groups_reorder_toggle)) },
+                                            leadingIcon = { Icon(Icons.Default.SwapVert, contentDescription = null) },
+                                            onClick = { menuGruppi = false; riordinaGruppi = true },
+                                        )
+                                    }
+                                }
                             }
                         }
+                    }
+                    if (dialogoTuttiLetti) {
+                        DialogoSegnaLettiTutti(repo, servers) { dialogoTuttiLetti = false }
                     }
                     if (pickServersDialogPannello) {
                         AlertDialog(
@@ -606,7 +650,7 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                                     else MaterialTheme.colorScheme.surface,
                                 ),
                                 modifier = Modifier.combinedClickable(
-                                    onClick = { selectedGroupId = g.id },
+                                    onClick = { lasciaGruppoPannelli(g.id) },
                                     onLongClick = { daDisiscrivere = g },
                                 ),
                             )
@@ -738,8 +782,6 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                             AzioneSegnaTuttoLetto(
                                 repo = repo,
                                 groupId = selectedGroupId,
-                                scope = scope,
-                                snackbar = snackbar,
                             )
                             // 1.4.4 (Dave Royal): il Box E' L'ANCORA. Senza, DropdownMenu si
                             // aggancia al nodo GENITORE (Popup usa parentLayoutCoordinates),
@@ -1247,7 +1289,7 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                                                     ctx, ctx.getString(R.string.art_avanti_gruppo, esito.nome), android.widget.Toast.LENGTH_SHORT,
                                                 ).show()
                                                 articoloInArrivo = esito.articoloId
-                                                selectedGroupId = esito.gruppoId
+                                                lasciaGruppoPannelli(esito.gruppoId)
                                             }
                                         }
                                     } finally {
@@ -1979,9 +2021,8 @@ private fun ThreePaneThreadRow(
                 // beta13 (Marco): nell'albero, ora+data piena al posto
                 // dell'indirizzo e-mail. Mostro il solo NOME dell'autore
                 // (senza <email>) e data+ora insieme (formatThreadDateTime).
-                "${authorDisplayName(article.fromField)}" +
-                    (if (article.score != 0) "  ·  score ${article.score}" else "") +
-                    "  ·  ${formatThreadDateTime(article.dateEpoch)}",
+                // 1.6.3 / 190 (BIG Umberto): vedi testoAutoreData in ThreadFlatten.
+                testoAutoreData(item, article),
                 style = MaterialTheme.typography.bodySmall.ridotto(scala),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

@@ -26,7 +26,7 @@ object ReleaseNotes {
      * corretto. Ad ogni bump di versione in build.gradle.kts, aggiornare
      * SEMPRE anche questa riga e le [sections] sotto.
      */
-    const val VERSION = "1.6.2"
+    const val VERSION = "1.6.3"
 
     /**
      * Novità della versione corrente, in blocchi titolo → righe.
@@ -39,7 +39,18 @@ object ReleaseNotes {
      * strings.xml (tutte e tre le cartelle).
      */
     val sections: List<Pair<Int, List<Int>>> = listOf(
-        // 1.6.2 (treno aperto il 9 novembre 2026, versionCode 189). Chiavi rn_v162_*
+        // 1.6.3 (treno aperto l'11 novembre 2026, versionCode 190). Chiavi rn_v163_*
+        // verificate libere nelle tre cartelle.
+        //  - l1  segna letto all'uscita anche nei pannelli, avviso con ANNULLA (Dave Royal)
+        //  - l2  segna letti tutti i gruppi (Dave Royal)
+        //  - l3  (12/11) seguite di nuovo sempre in cima, scelta in Aspetto; data
+        //        dell'ultimo nella riga raggruppata (BIG Umberto, Cercaparole)
+        R.string.rn_v163_title to listOf(
+            R.string.rn_v163_l3,
+            R.string.rn_v163_l1,
+            R.string.rn_v163_l2,
+        ),
+        // 1.6.2 (versionCode 189, pubblicata il 9 novembre 2026). Chiavi rn_v162_*
         // verificate libere nelle tre cartelle.
         //  - l1  ultimo errore operativo in Manutenzione, log NNTP a 1500 righe (HAL)
         //  - l2  data e ora a scelta + segnaposto dell'introduzione (BillH, Dave

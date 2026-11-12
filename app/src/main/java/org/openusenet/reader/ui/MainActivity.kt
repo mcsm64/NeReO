@@ -242,6 +242,9 @@ fun AppNav(repo: NewsRepository, nav: NavHostController = rememberNavController(
      * subito, senza riavviare. I menu a tendina hanno un'animazione propria di
      * Material, brevissima, che qui non si tocca.
      */
+    // 1.6.3: l'host degli avvisi che restano cambiando schermata (AzioneSegnaTuttoLetto.kt).
+    val avvisiApp = org.openusenet.reader.ui.screens.rememberAvvisiApp()
+    androidx.compose.runtime.CompositionLocalProvider(org.openusenet.reader.ui.screens.LocalAvvisi provides avvisiApp) {
     NavHost(
         navController = nav,
         startDestination = Routes.GROUPS,
@@ -367,6 +370,7 @@ fun AppNav(repo: NewsRepository, nav: NavHostController = rememberNavController(
             val gid = backStack.arguments?.getString("groupId")?.toLongOrNull()
             DraftsScreen(repo, nav, groupId = gid)
         }
+    }
     }
 }
 

@@ -2527,6 +2527,15 @@ class NewsRepository(
      * cancellerebbe anche le letture fatte davvero prima del tocco. Con la
      * fotografia si ripristina lo stato esatto di un istante prima.
      */
+    /**
+     * 1.6.3 (Dave Royal): «Segna letti tutti i gruppi» dei server scelti. Per
+     * ogni gruppo la stessa [markAllRead], e gli id che erano da leggere, per
+     * l'ANNULLA gruppo per gruppo.
+     */
+    suspend fun markAllReadServers(serverIds: Collection<Long>): Map<Long, List<Long>> =
+        serverIds.flatMap { db.groupDao().subscribedOnceForServer(it) }
+            .associate { it.id to markAllRead(it.id) }
+
     suspend fun markAllRead(groupId: Long): List<Long> {
         val wereUnread = db.articleDao().unreadIds(groupId)
         // 1.4.1: passa da [segnaLetti] invece di `markAllRead` del DAO, cosi'

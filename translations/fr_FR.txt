@@ -1701,6 +1701,21 @@ common_undo_upper =
 # en: Mark all as read
 common_mark_all_read =
 
+# en: Mark all groups read…
+mark_all_groups_read =
+
+# en: Mark all groups read
+mark_all_groups_title =
+
+# en: Every message in every group becomes read. You can undo right after.
+mark_all_groups_one =
+
+# en: Every message in the groups of the chosen servers becomes read. You can undo right after.
+mark_all_groups_servers =
+
+# en: Mark read
+mark_all_groups_confirm =
+
 # en: Sync
 tl_sync =
 
@@ -2294,6 +2309,18 @@ app_enfasi =
 
 # en: On screen only, as in MesNews: *word* in bold, /word/ in italics, _word_ underlined. The marks disappear, but copying, quotes, search and filters keep them. Never inside links and signatures.
 app_enfasi_note =
+
+# en: Followed threads
+app_seguite_titolo =
+
+# en: Always at the top
+app_seguite_sempre =
+
+# en: At the top only with unread messages
+app_seguite_non_letti =
+
+# en: last %s
+tl_ultimo =
 
 # en: Date and time
 app_dataora_section =
@@ -3049,6 +3076,18 @@ rn_v155_l7 =
 
 # en: New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the "newest first" orders it also notices a reply inside the thread that is already at the top. With the "oldest first" orders, where new messages are at the bottom, you stay where you were. In the panel view too.
 rn_v155_l8 =
+
+# en: New in 1.6.3
+rn_v163_title =
+
+# en: Mark all read when leaving the group: in panes view it now really works. If the option is on, moving to another group marks the one you leave as read; before, in panes view this did not happen, so you may now see groups marked read where they were not. When leaving a group, also with the Next button, a notice says how many messages were marked read and lets you undo, even from the new group. Reported by Dave Royal.
+rn_v163_l1 =
+
+# en: Mark all groups read: in the menu of the groups column in panes view, where Reorder groups now lives too, and in the main menu on the phone. With more than one server you choose which; right after, you can undo. Requested by Dave Royal.
+rn_v163_l2 =
+
+# en: Followed threads are back at the top, always, as before 1.6.2. If you preferred the 1.6.2 way (at the top only with unread messages), choose it in Appearance. When sorting by most recent message, the thread row in the grouped view now shows the date of the last message («last …»), the one that decides the order. Thanks to BIG Umberto and Cercaparole.
+rn_v163_l3 =
 
 # en: New in 1.6.2
 rn_v162_title =

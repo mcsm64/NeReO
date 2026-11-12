@@ -6,9 +6,9 @@ Scritto da zero in Kotlin + Jetpack Compose. Nasce dal MOD 17 di *Newsreader* di
 
 Il package interno resta `org.openusenet.reader` — invariato di proposito, per non rompere gli aggiornamenti già installati.
 
-**Versione 1.6.2** (versionCode 189) — 9 novembre 2026
+**Versione 1.6.3** (versionCode 190) — 12 novembre 2026
 
-## Funzioni (1.6.2)
+## Funzioni (1.6.3)
 
 - Multi-server NNTP con SSL/TLS implicito **o STARTTLS** (RFC 3977 + RFC 4643 + RFC 4642) e autenticazione, con **verifica del nome host sul certificato** (RFC 6125) e fallback automatico IPv6/IPv4; CAPABILITIES letto e loggato alla connessione; riuso della connessione durante la lettura di un thread; **allarme se un server che offriva STARTTLS smette di annunciarlo** (RFC 4642 §5)
 - Ricerca e sottoscrizione gruppi, sync incrementale delle headline con `OVER` e ripiego automatico su `XOVER` per i server che non riconoscono `OVER` (es. Astraweb)
@@ -22,6 +22,15 @@ Il package interno resta `org.openusenet.reader` — invariato di proposito, per
 - Backup e ripristino della configurazione, con cifratura opzionale
 - Material 3, tema chiaro/scuro/di sistema, dynamic color, tinte e dimensioni del testo, layout a pannelli per schermi larghi
 - Interfaccia in italiano e inglese, con **interruttore lingua dentro l'app** (Aspetto → Lingua) oltre alla voce di sistema su Android 13+
+
+## Novità della 1.6.3
+
+> Segnalazioni e richiesta di Dave Royal; la regressione delle seguite segnalata da BIG Umberto.
+
+- **Le seguite tornano sempre in cima** *(BIG Umberto, 12/11, con 4 screenshot; Cercaparole)*. La 1.6.2 le teneva in cima solo con non letti (`orderedRoots`), e chi ne segue molte se le ritrovava sparse. Le due richieste si escludono: ora è una scelta in Aspetto, `seguite_in_cima` (`SEMPRE` predefinito, come fino alla 1.6.1 / 186; `CON_NON_LETTI`, il modo della 1.6.2), nel backup da sola. Le guardie della 1.6.1 (`novitaInCima`, `indiceDiRipristino`, lo swipe) restano. Nella vista raggruppata, ordinando per messaggio più recente, la riga mostra la data che decide l'ordine, «ultimo …» (`dataDellaRiga`, `ThreadItem.ultimaData`); la data mostrata non era cambiata dalla 1.5.4. Il testo «autore · data» dei due elenchi è ora una funzione sola (`testoAutoreData`). 11 test nuovi
+
+- **«Segna tutto letto uscendo dal gruppo» anche nei pannelli.** Toccando un altro gruppo in colonna 1, o con Avanti, il gruppo lasciato viene segnato letto: nei pannelli non era mai stato collegato. Chi ha l'opzione accesa ora vede gruppi segnati letti dove prima non succedeva. All'uscita, anche dal telefono e con Avanti, lo stesso avviso con ANNULLA di «Segna tutto letto», che resta valido anche dal gruppo nuovo
+- **Segna letti tutti i gruppi.** Nel menu ⋮ della colonna dei gruppi nei pannelli (dove ora sta anche «Riordina i gruppi») e nel menu principale al telefono. Con più server si scelgono quelli da segnare; subito dopo si può annullare
 
 ## Novità della 1.6.2
 

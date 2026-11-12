@@ -417,6 +417,22 @@ fun AppearanceScreen(nav: NavHostController) {
                 )
                 Text(stringResource(R.string.app_mark_read_exit), modifier = Modifier.padding(start = 12.dp))
             }
+            // 1.6.3 / 190 (BIG Umberto contro Cercaparole): dove stanno le
+            // discussioni seguite. Predefinito «sempre in cima», come fino alla 1.6.1.
+            Text(
+                stringResource(R.string.app_seguite_titolo),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 2.dp),
+            )
+            SceltaUnica(
+                listOf(
+                    "SEMPRE" to stringResource(R.string.app_seguite_sempre),
+                    "CON_NON_LETTI" to stringResource(R.string.app_seguite_non_letti),
+                ),
+                scelto = AppSettings.seguiteInCima,
+                onScegli = { AppSettings.seguiteInCima = it; AppSettings.save() },
+            )
+
             // 1.6.2 / 189 (BillH, Dave Royal, Kerr-Mudd John, Sn!pe su Usenet):
             // DATA E ORA. Tre scelte, predefinite identiche a prima. Le forme
             // stanno in text/DataOra; qui solo le scelte.

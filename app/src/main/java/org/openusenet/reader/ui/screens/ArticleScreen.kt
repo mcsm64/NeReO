@@ -200,6 +200,7 @@ fun ArticleScreen(
     // selettore a spunte.
     var diagnostica by remember { mutableStateOf("") }
     val ctx = LocalContext.current
+    val avvisi = LocalAvvisi.current
     // 1.3.3: appunti per l'azione "copia" della barra (vedi barActions).
     val appunti = rememberAppunti() // 1.3.5: unico punto, vedi ui/Appunti.kt
     val avvisoCopia = stringResource(R.string.art_copy_done)
@@ -259,7 +260,7 @@ fun ArticleScreen(
     // faceva nulla. Il raggruppamento e' un fatto di PRESENTAZIONE della lista;
     // dentro l'articolo la sequenza di lettura e' quella dell'albero completo.
     val navView = vistaDiNavigazione()
-    val flat = remember(groupArticles, navView, AppSettings.threadSort) {
+    val flat = remember(groupArticles, navView, AppSettings.threadSort, AppSettings.seguiteInCima) {
         buildThreadList(groupArticles, unreadOnly = false, view = navView)
     }
     val position = flat.indexOfFirst { it.article.id == currentId }
@@ -299,7 +300,7 @@ fun ArticleScreen(
     val ricostruisci = ricostruisciDaLettura(repo, article)
 
     // albero completo del gruppo: base per la navigazione fra messaggi e discussioni
-    val tree = remember(groupArticles, AppSettings.threadSort) {
+    val tree = remember(groupArticles, AppSettings.threadSort, AppSettings.seguiteInCima) {
         buildThreadList(groupArticles, unreadOnly = false, view = ThreadViews.TREE)
     }
     // discussione corrente (per il dialogo "Albero della conversazione")
@@ -372,7 +373,7 @@ fun ArticleScreen(
                         nav.previousBackStackEntry
                             ?.takeIf { it.destination.route == Routes.THREADS_PATTERN }
                             ?.let { DiscussioniAperte.clear(it.id) }
-                        groupId?.let { applicaUscitaGruppo(repo, it) }
+                        groupId?.let { offriAnnullaLetti(repo, ctx, avvisi, mapOf(it to applicaUscitaGruppo(repo, it))) }
                         nav.navigate(Routes.threads(esito.gruppoId)) { popUpTo(Routes.GROUPS) }
                         nav.navigate(Routes.article(esito.articoloId))
                     }
@@ -498,7 +499,7 @@ fun ArticleScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { SnackbarConAvvisi(snackbar) },
         topBar = {
             TopAppBar(
                 title = {

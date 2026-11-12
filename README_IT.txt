@@ -1,8 +1,18 @@
 ======================================================================
- NeReO 1.6.2 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.3 - Ne(ws) Re(ader) O(pen-source)
  Newsreader Usenet (NNTP) solo testo per Android
- NeReO 1.6.2 (versionCode 189) - By MCSM - 2026/11/09
+ NeReO 1.6.3 (versionCode 190) - By MCSM - 2026/11/12
 ======================================================================
+ ***  VERSIONE 1.6.3  ***
+
+ Segnalazioni e richiesta di Dave Royal; le seguite da BIG Umberto.
+
+  * LE DISCUSSIONI SEGUITE TORNANO SEMPRE IN CIMA, come fino alla 1.6.1. Chi preferisce il modo della 1.6.2 (in cima solo con messaggi non letti) lo sceglie in Aspetto. Ordinando per messaggio piu' recente, la riga della discussione nella vista raggruppata mostra la data dell'ultimo messaggio ("ultimo ..."), quella che decide l'ordine. Grazie a BIG Umberto e Cercaparole.
+
+  * SEGNA TUTTO LETTO USCENDO DAL GRUPPO, ANCHE NEI PANNELLI. Toccando un altro gruppo nella colonna dei gruppi, o con il tasto Avanti, il gruppo che lasci viene segnato letto se l'opzione e' accesa. Nei pannelli prima non succedeva: chi ha l'opzione accesa ora vede gruppi segnati letti dove prima non lo erano. Uscendo da un gruppo, anche al telefono e con Avanti, un avviso dice quanti messaggi sono stati segnati letti e permette di annullare, anche quando sei gia' nel gruppo nuovo.
+
+  * SEGNA LETTI TUTTI I GRUPPI. Nel menu a tre puntini della colonna dei gruppi nei pannelli, dove ora sta anche Riordina i gruppi, e nel menu principale al telefono. Con piu' server scegli quali; subito dopo puoi annullare.
+
  ***  VERSIONE 1.6.2  ***
 
  Proposta di HAL; data e ora dalla discussione su Usenet di BillH, Dave Royal, Kerr-Mudd John e Sn!pe.

@@ -160,6 +160,7 @@ fun GroupsScreen(repo: NewsRepository, nav: NavHostController) {
     // 1.4.4: lo stato del menu dell'icona globale non sta piu' qui — vive
     // dentro AzioneAggiorna, insieme al menu che lo usa.
     var pickServersDialog by remember { mutableStateOf(false) } // "scegli i server"
+    var dialogoTuttiLetti by remember { mutableStateOf(false) } // 1.6.3, Dave Royal
     var selectedServerIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var serverHeaderMenuFor by remember { mutableStateOf<Long?>(null) } // menu sull'intestazione
     var pickGroupsForServer by remember { mutableStateOf<Long?>(null) } // "scegli i gruppi" (di questo server)
@@ -216,6 +217,9 @@ fun GroupsScreen(repo: NewsRepository, nav: NavHostController) {
                             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.menu_more))
                         }
                         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                            // 1.6.3 (Dave Royal): la stessa voce del menu della colonna
+                            // dei gruppi nei pannelli. Vedi AzioneSegnaTuttoLetto.kt.
+                            VoceSegnaLettiTutti { menu = false; dialogoTuttiLetti = true }
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.menu_servers)) },
                                 leadingIcon = { Icon(Icons.Default.Dns, contentDescription = null) },
@@ -279,7 +283,7 @@ fun GroupsScreen(repo: NewsRepository, nav: NavHostController) {
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { SnackbarConAvvisi(snackbar) },
         floatingActionButton = {
             // beta16 (Roxy): FAB dentro l'area sicura in landscape (vedi
             // ServersScreen per il dettaglio della causa edge-to-edge).
@@ -593,6 +597,9 @@ fun GroupsScreen(repo: NewsRepository, nav: NavHostController) {
     // multipla di server, un giro solo (1.6.1) — niente "dedup" fra server che
     // condividono un gruppo (scelta deliberata, vedi
     // NeReO_feature_refresh_selettivo.md).
+    if (dialogoTuttiLetti) {
+        DialogoSegnaLettiTutti(repo, servers) { dialogoTuttiLetti = false }
+    }
     if (pickServersDialog) {
         AlertDialog(
             onDismissRequest = { pickServersDialog = false },

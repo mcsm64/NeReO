@@ -120,6 +120,15 @@ object AppSettings {
      * ora. Nomi di [org.openusenet.reader.text.OrdineData], [Orologio] e
      * [FusoOrario]; predefiniti identici a prima. Vedi text/DataOra.kt.
      */
+    /**
+     * 1.6.3 / 190 (BIG Umberto contro Cercaparole: le due richieste si
+     * escludono). "SEMPRE" = le seguite sempre in cima, come fino alla 1.6.1 /
+     * 186 (predefinito); "CON_NON_LETTI" = in cima solo con messaggi non letti,
+     * il modo della 1.6.2. Vedi orderedRoots.
+     */
+    var seguiteInCima by mutableStateOf("SEMPRE")
+    fun seguiteSoloConNonLetti(): Boolean = seguiteInCima == "CON_NON_LETTI"
+
     var formatoData by mutableStateOf("GMA")
     var formatoOra by mutableStateOf("H24")
     var fusoOrario by mutableStateOf("TELEFONO")
@@ -984,6 +993,7 @@ object AppSettings {
         reflowText = prefs.getBoolean("reflow_text", false)
         faccineEmoji = prefs.getBoolean("faccine_emoji", true)
         enfasiTesto = prefs.getBoolean("enfasi_testo", true)
+        seguiteInCima = prefs.getString("seguite_in_cima", "SEMPRE") ?: "SEMPRE"
         formatoData = prefs.getString("formato_data", "GMA") ?: "GMA"
         formatoOra = prefs.getString("formato_ora", "H24") ?: "H24"
         fusoOrario = prefs.getString("fuso_orario", "TELEFONO") ?: "TELEFONO"
@@ -1134,6 +1144,7 @@ object AppSettings {
             .putBoolean("reflow_text", reflowText)
             .putBoolean("faccine_emoji", faccineEmoji)
             .putBoolean("enfasi_testo", enfasiTesto)
+            .putString("seguite_in_cima", seguiteInCima)
             .putString("formato_data", formatoData)
             .putString("formato_ora", formatoOra)
             .putString("fuso_orario", fusoOrario)

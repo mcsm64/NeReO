@@ -72,9 +72,14 @@ suspend fun esitoAvanti(
  * contrassegnati si cancellano davvero e, se l'opzione e' attiva, il resto si
  * segna letto. Era dentro `leaveGroup` di ThreadListScreen; ora lo usa anche
  * Avanti, che dal gruppo esce senza passare dall'elenco.
+ *
+ * 1.6.3 (Dave Royal): la usano anche i pannelli, che non l'avevano mai chiamata,
+ * e restituisce gli id segnati letti: chi la chiama li passa a
+ * [offriAnnullaLetti], cosi' l'uscita ha lo stesso avviso con ANNULLA di
+ * «Segna tutto letto».
  */
-suspend fun applicaUscitaGruppo(repo: NewsRepository, groupId: Long) {
+suspend fun applicaUscitaGruppo(repo: NewsRepository, groupId: Long): List<Long> {
     val daCancellare = PendingDeletions.drain(groupId)
     if (daCancellare.isNotEmpty()) repo.deleteLocal(daCancellare)
-    if (AppSettings.markReadOnExit) repo.markAllRead(groupId)
+    return if (AppSettings.markReadOnExit) repo.markAllRead(groupId) else emptyList()
 }

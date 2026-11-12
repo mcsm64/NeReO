@@ -13,6 +13,7 @@ import org.openusenet.reader.data.Article
 import org.openusenet.reader.ui.screens.ImprontaLista
 import org.openusenet.reader.ui.screens.ThreadItem
 import org.openusenet.reader.ui.screens.ThreadScrollMemory
+import org.openusenet.reader.ui.screens.dataDellaRiga
 import org.openusenet.reader.ui.screens.idNonLettoNelGruppo
 import org.openusenet.reader.ui.screens.indiceDiRipristino
 import org.openusenet.reader.ui.screens.novitaInCima
@@ -44,8 +45,18 @@ class OrdinamentoSeguiteTest {
         watched = seguita,
     )
 
-    private fun ordine(articoli: List<Article>, sort: String, soloNonLetti: Boolean = false): List<String> =
-        orderedRoots(articoli, soloNonLetti, sort).first
+    /**
+     * 1.6.3 / 190: [seguiteSoloConNonLetti] e' la scelta di Aspetto. I test della
+     * 1.6.1 qui sotto provano il modo di Cercaparole (true); quelli di BIG Umberto,
+     * in fondo, il predefinito «sempre in cima» (false).
+     */
+    private fun ordine(
+        articoli: List<Article>,
+        sort: String,
+        soloNonLetti: Boolean = false,
+        seguiteSoloConNonLetti: Boolean = true,
+    ): List<String> =
+        orderedRoots(articoli, soloNonLetti, sort, seguiteSoloConNonLetti).first
             .map { it.flatten().first().second.messageId.removeSurrounding("<", "@x>") }
 
     @Test
@@ -177,5 +188,102 @@ class OrdinamentoSeguiteTest {
             ThreadItem(depth = 0, article = art("sotto", 1), threadStart = true),
         )
         assertEquals(3L, idNonLettoNelGruppo(lista, 1))
+    }
+
+    // --- 1.6.3 / 190 (BIG Umberto): «sempre in cima», il predefinito ---
+
+    private fun sempre(a: List<Article>, sort: String, soloNonLetti: Boolean = false) =
+        ordine(a, sort, soloNonLetti, seguiteSoloConNonLetti = false)
+
+    @Test
+    fun `il predefinito e' sempre in cima`() {
+        assertEquals("SEMPRE", AppSettings.seguiteInCima)
+        assertFalse(AppSettings.seguiteSoloConNonLetti())
+    }
+
+    @Test
+    fun `sempre in cima - la seguita tutta letta sta in cima, in tutti gli ordinamenti`() {
+        val a = listOf(art("vecchia", 1), art("seguita", 2, seguita = true), art("nuova", 3))
+        assertEquals(listOf("seguita", "nuova", "vecchia"), sempre(a, "activity_desc"))
+        assertEquals(listOf("seguita", "nuova", "vecchia"), sempre(a, "opened_desc"))
+        assertEquals(listOf("seguita", "vecchia", "nuova"), sempre(a, "activity_asc"))
+        assertEquals(listOf("seguita", "vecchia", "nuova"), sempre(a, "opened_asc"))
+    }
+
+    @Test
+    fun `sempre in cima - lette e da leggere insieme, fra loro per data`() {
+        val a = listOf(
+            art("letta", 1, seguita = true),
+            art("da_leggere", 2, seguita = true, letto = false),
+            art("altra", 3),
+        )
+        assertEquals(listOf("da_leggere", "letta", "altra"), sempre(a, "activity_desc"))
+        assertEquals(listOf("letta", "da_leggere", "altra"), sempre(a, "activity_asc"))
+    }
+
+    @Test
+    fun `sempre in cima - seguita da una risposta, non dalla radice`() {
+        val a = listOf(
+            art("radice", 1),
+            art("risposta", 2, seguita = true, padre = "radice"),
+            art("nuova", 4),
+        )
+        assertEquals(listOf("radice", "nuova"), sempre(a, "activity_desc"))
+    }
+
+    @Test
+    fun `sempre in cima - con solo non letti la seguita letta resta nascosta`() {
+        val a = listOf(art("seguita", 1, seguita = true), art("altra", 2, letto = false))
+        assertEquals(listOf("altra"), sempre(a, "activity_desc", soloNonLetti = true))
+    }
+
+    @Test
+    fun `nessuna seguita - i due modi danno lo stesso ordine`() {
+        val a = listOf(art("uno", 1, letto = false), art("due", 2), art("tre", 3, letto = false))
+        for (s in listOf("activity_desc", "activity_asc", "opened_desc", "opened_asc")) {
+            assertEquals(s, ordine(a, s), sempre(a, s))
+        }
+    }
+
+    // --- 1.6.3 / 190 (BIG Umberto): la data della riga ---
+
+    private fun riga(aperta: Long, ultima: Long, totale: Int, radice: Boolean = true) = ThreadItem(
+        depth = 0, article = art("r", aperta), threadStart = true,
+        isRoot = radice, total = totale, ultimaData = ultima,
+    )
+
+    @Test
+    fun `per attivita' la riga della discussione mostra l'ultimo`() {
+        assertEquals(500L to true, dataDellaRiga(riga(100, 500, 8), "activity_desc"))
+        assertEquals(500L to true, dataDellaRiga(riga(100, 500, 8), "activity_asc"))
+    }
+
+    @Test
+    fun `per apertura la riga mostra il primo`() {
+        assertEquals(100L to false, dataDellaRiga(riga(100, 500, 8), "opened_desc"))
+        assertEquals(100L to false, dataDellaRiga(riga(100, 500, 8), "opened_asc"))
+    }
+
+    @Test
+    fun `un messaggio solo, o ultimo uguale al primo, nessun ultimo`() {
+        assertEquals(100L to false, dataDellaRiga(riga(100, 100, 1), "activity_desc"))
+        assertEquals(100L to false, dataDellaRiga(riga(100, 100, 3), "activity_desc"))
+    }
+
+    @Test
+    fun `nell'albero ogni riga ha la sua data`() {
+        // treeList non riempie total ne' ultimaData: la riga e' un messaggio
+        assertEquals(100L to false, dataDellaRiga(riga(100, 0, 0), "activity_desc"))
+        assertEquals(100L to false, dataDellaRiga(riga(100, 500, 8, radice = false), "activity_desc"))
+    }
+
+    @Test
+    fun `il caso dello screenshot - Riscaldamento sopra Inaugurazione`() {
+        // aperta il 10/11 21:14, ultima risposta dopo l'11/11 21:05: la riga lo dice
+        val dieci = 1_762_805_640L   // 10/11 21:14 (circa)
+        val undici = 1_762_891_500L  // 11/11 21:05 (circa)
+        val (quando, ultimo) = dataDellaRiga(riga(dieci, undici + 600, 8), "activity_desc")
+        assertTrue(ultimo)
+        assertTrue(quando > undici)
     }
 }
