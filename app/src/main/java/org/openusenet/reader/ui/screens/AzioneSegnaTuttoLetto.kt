@@ -76,6 +76,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.openusenet.reader.ui.icone.Undo
+import kotlinx.coroutines.withTimeoutOrNull
 import org.openusenet.reader.R
 import org.openusenet.reader.data.NewsRepository
 import org.openusenet.reader.data.Server
@@ -89,7 +91,18 @@ import org.openusenet.reader.data.Server
  * passa all'elenco dei gruppi o, con Avanti, al gruppo nuovo, e l'ANNULLA vale
  * per il gruppo lasciato. Le schermate lo mostrano con [SnackbarConAvvisi].
  */
-class AvvisiApp(val host: SnackbarHostState, val scope: CoroutineScope)
+class AvvisiApp(val host: SnackbarHostState, val scope: CoroutineScope) {
+    /**
+     * 1.6.4 (Roxy): l'ultima operazione «segnati letti» ancora annullabile, gruppo
+     * per gruppo. Il pulsante dello snackbar con frecce e OK non si raggiunge:
+     * la stessa operazione si annulla anche dal menu ⋮ ([VoceAnnullaLetti]),
+     * finche' non ne arriva un'altra o si chiude l'app.
+     */
+    var annullabile by mutableStateOf<Map<Long, List<Long>>?>(null)
+}
+
+/** 1.6.4 (Marco): quanto resta a video l'avviso. Le durate di Material sono 4 o 10 s. */
+private const val DURATA_AVVISO_MS = 5_000L
 
 val LocalAvvisi = staticCompositionLocalOf<AvvisiApp> { error("AvvisiApp non fornito: manca in AppNav") }
 
@@ -122,17 +135,47 @@ fun offriAnnullaLetti(
     val cambiati = soloCambiati(segnati)
     val totale = totaleSegnati(cambiati)
     if (totale == 0) return
+    avvisi.annullabile = cambiati
     avvisi.scope.launch {
         avvisi.host.currentSnackbarData?.dismiss()
-        val esito = avvisi.host.showSnackbar(
-            message = ctx.getString(R.string.common_marked_read, totale),
-            actionLabel = ctx.getString(R.string.common_undo_upper),
-            duration = SnackbarDuration.Long,
-        )
-        if (esito == SnackbarResult.ActionPerformed) {
-            cambiati.forEach { (gruppo, ids) -> repo.setReadBulk(ids, false, gruppo) }
+        // 1.6.4: 5 secondi e la ✕ per chiuderlo prima. Scaduto il tempo,
+        // withTimeoutOrNull annulla showSnackbar, che toglie l'avviso.
+        val esito = withTimeoutOrNull(DURATA_AVVISO_MS) {
+            avvisi.host.showSnackbar(
+                message = ctx.getString(R.string.common_marked_read, totale),
+                actionLabel = ctx.getString(R.string.common_undo_upper),
+                withDismissAction = true,
+                duration = SnackbarDuration.Indefinite,
+            )
         }
+        if (esito == SnackbarResult.ActionPerformed) annullaLetti(repo, avvisi)
     }
+}
+
+/** Rimette non letti quelli dell'ultima operazione. Una volta sola. */
+fun annullaLetti(repo: NewsRepository, avvisi: AvvisiApp) {
+    val segnati = avvisi.annullabile ?: return
+    avvisi.annullabile = null
+    avvisi.host.currentSnackbarData?.dismiss()
+    avvisi.scope.launch {
+        segnati.forEach { (gruppo, ids) -> repo.setReadBulk(ids, false, gruppo) }
+    }
+}
+
+/**
+ * 1.6.4 (Roxy): l'ANNULLA raggiungibile con frecce e OK. Compare nel menu ⋮
+ * (colonna dei gruppi nei pannelli, menu principale al telefono) solo finche'
+ * c'e' qualcosa da annullare.
+ */
+@Composable
+fun VoceAnnullaLetti(repo: NewsRepository, onFatto: () -> Unit) {
+    val avvisi = LocalAvvisi.current
+    val segnati = avvisi.annullabile ?: return
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.undo_marked_read_menu, totaleSegnati(segnati))) },
+        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null) },
+        onClick = { annullaLetti(repo, avvisi); onFatto() },
+    )
 }
 
 /**

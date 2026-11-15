@@ -94,6 +94,8 @@
     <string name="app_quote_threshold">Switch to numbers beyond level…</string>
     <string name="app_quote_levels_count">%1$d levels</string>
     <string name="app_mark_read_exit">Mark all read when leaving the group</string>
+    <string name="app_apri_in_fondo">With oldest first, open at the most recent</string>
+    <string name="app_apri_in_fondo_note">Only with the oldest-first orders. The group opens at the bottom, on the most recent messages, and follows new ones while it updates. Coming back with nothing new, you are where you left off.</string>
     <string name="app_bars_section">Reading bar</string>
     <string name="app_bars_customize">Customize reading bar</string>
     <string name="app_bars_note">Choose which icons to show in the bottom bar of the reading screen, and their order.</string>
@@ -626,8 +628,11 @@
     <string name="common_showing_unread">Showing unread only</string>
     <string name="tl_showing_all">Showing all</string>
     <string name="common_marked_read">%1$d messages marked as read</string>
+    <string name="undo_marked_read_menu">Undo: %1$d messages marked read</string>
     <string name="common_undo_upper">UNDO</string>
     <string name="common_mark_all_read">Mark all as read</string>
+    <string name="share_choose_group">Where do you want to post?</string>
+    <string name="share_no_groups">You are not subscribed to any group yet.</string>
     <string name="mark_all_groups_read">Mark all groups read…</string>
     <string name="mark_all_groups_title">Mark all groups read</string>
     <string name="mark_all_groups_one">Every message in every group becomes read. You can undo right after.</string>
@@ -1114,6 +1119,10 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">X-Faces are shown. The classic black-and-white Usenet face (the X-Face header, sent by MesNews and many traditional newsreaders) now appears next to the author\'s name, where until now only the colour Face did. Tap it to enlarge it: it stays sharp, square by square. Order: Face first, then X-Face, then the coloured initials. NeReO shows X-Faces but does not send them.</string>
     <string name="rn_v155_l8">New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the \"newest first\" orders it also notices a reply inside the thread that is already at the top. With the \"oldest first\" orders, where new messages are at the bottom, you stay where you were. In the panel view too.</string>
+    <string name="rn_v164_title">New in 1.6.4</string>
+    <string name="rn_v164_l1">With oldest first, open at the most recent: a new option in Appearance. With an oldest-first order the group opens at the bottom, on the most recent messages, and follows new ones while it updates. In the threaded views the bottom row is the most recent thread. Requested by Jeff.</string>
+    <string name="rn_v164_l2">Share to NeReO: from another app (a browser, Feedly, YouTube…) choose NeReO in the Share menu, then the group. A new message opens with the title as subject, the link on a line of its own and the cursor just below it, ready for your comment. The last group you shared to is at the top. NeReO uses what the other app sends: it does not download the page. Requested by Halv Skjaldson.</string>
+    <string name="rn_v164_l3">The notice \"N messages marked read\" now stays 5 seconds and closes with the ✕. UNDO is also in the ⋮ menu (groups column in panes view, main menu on the phone) until the next marking, so it can be reached with a keyboard or a remote. Reported by Roxy.</string>
     <string name="rn_v163_title">New in 1.6.3</string>
     <string name="rn_v163_l1">Mark all read when leaving the group: in panes view it now really works. If the option is on, moving to another group marks the one you leave as read; before, in panes view this did not happen, so you may now see groups marked read where they were not. When leaving a group, also with the Next button, a notice says how many messages were marked read and lets you undo, even from the new group. Reported by Dave Royal.</string>
     <string name="rn_v163_l2">Mark all groups read: in the menu of the groups column in panes view, where Reorder groups now lives too, and in the main menu on the phone. With more than one server you choose which; right after, you can undo. Requested by Dave Royal.</string>

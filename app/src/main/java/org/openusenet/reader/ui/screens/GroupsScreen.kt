@@ -219,6 +219,7 @@ fun GroupsScreen(repo: NewsRepository, nav: NavHostController) {
                         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                             // 1.6.3 (Dave Royal): la stessa voce del menu della colonna
                             // dei gruppi nei pannelli. Vedi AzioneSegnaTuttoLetto.kt.
+                            VoceAnnullaLetti(repo) { menu = false }
                             VoceSegnaLettiTutti { menu = false; dialogoTuttiLetti = true }
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.menu_servers)) },

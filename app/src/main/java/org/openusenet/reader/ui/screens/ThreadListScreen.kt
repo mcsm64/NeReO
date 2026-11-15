@@ -301,7 +301,7 @@ fun ThreadListScreen(
     }
     // 1.5.5 / 173: primo della lista e id piu' alto, per riconoscere le novita'.
     val impronta = remember(items, articoliVisibili) {
-        improntaLista(items.firstOrNull()?.article?.id, articoliVisibili.map { it.id })
+        improntaLista(items.firstOrNull()?.article?.id, articoliVisibili.map { it.id }, items.lastOrNull()?.article?.id)
     }
 
     // Ripristino (beta14 best-of-both): appena la lista ha contenuto, decido.
@@ -325,21 +325,24 @@ fun ThreadListScreen(
          */
         if (evidenziaArticolo != null) { posizioneRipristinata = true; return@LaunchedEffect }
         val improntaOra = impronta
-        ThreadScrollMemory.get(groupId)?.let { ancora ->
-            val ciSonoNovita = improntaOra != null && novitaInCima(
-                view == ThreadViews.SEQUENTIAL, AppSettings.threadSort, ancora.impronta, improntaOra,
-            )
-            if (!ciSonoNovita) {
-                // nessun articolo nuovo in cima → riprendi da dove eri
-                // se il messaggio non c'è più (cancellato, filtrato, scaduto) si
-                // resta in cima: meglio un punto noto che uno arbitrario. Idem
-                // se era la prima riga ed è sceso (1.6.1: seguita appena letta).
-                indiceDiRipristino(ancora, items.map { it.article.id })?.let {
-                    listState.scrollToItem(it, ancora.offset)
-                }
-            }
-            // se ci sono novità non faccio nulla: la lista è già in cima (0,0),
-            // dove i nuovi articoli sono visibili
+        // 1.6.4 (Jeff): con un ordine dal piu' vecchio e l'opzione accesa le
+        // novita' stanno in fondo, e li' si apre. Vedi partenzaInFondo.
+        val inFondo = partenzaInFondo(AppSettings.threadSort, AppSettings.apriInFondo)
+        val vistaSeq = view == ThreadViews.SEQUENTIAL
+        val ancora = ThreadScrollMemory.get(groupId)
+        val ciSonoNovita = ancora != null && improntaOra != null && (
+            if (inFondo) novitaInFondo(vistaSeq, AppSettings.threadSort, ancora.impronta, improntaOra)
+            else novitaInCima(vistaSeq, AppSettings.threadSort, ancora.impronta, improntaOra)
+        )
+        // nessun articolo nuovo → riprendi da dove eri. Se il messaggio non c'è
+        // più (cancellato, filtrato, scaduto) si resta in cima: meglio un punto
+        // noto che uno arbitrario. Idem se era la prima riga ed è sceso (1.6.1:
+        // seguita appena letta). Con novità, o senza posizione, la lista resta in
+        // cima (0,0) dove i nuovi sono visibili; con [inFondo] va in fondo.
+        val ripristino = if (ancora != null && !ciSonoNovita) indiceDiRipristino(ancora, items.map { it.article.id }) else null
+        when {
+            ripristino != null -> listState.scrollToItem(ripristino, ancora?.offset ?: 0)
+            inFondo -> listState.scrollToItem(items.lastIndex)
         }
         posizioneRipristinata = true
     }
@@ -355,6 +358,8 @@ fun ThreadListScreen(
         impronta = impronta,
         vistaSequenziale = view == ThreadViews.SEQUENTIAL,
         ordinamento = AppSettings.threadSort,
+        inFondo = partenzaInFondo(AppSettings.threadSort, AppSettings.apriInFondo),
+        ultimoIndice = items.lastIndex,
     )
 
     /*

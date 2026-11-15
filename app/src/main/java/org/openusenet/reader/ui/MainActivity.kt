@@ -129,10 +129,14 @@ class MainActivity : ComponentActivity() {
         // processo sopravvive alla chiusura, alla riapertura risultava "già
         // fatto" e il sync automatico di tutti i gruppi non partiva più.
         AppSettings.syncOnStartDone = false
+        // 1.6.4 (Halv): aperta da «Condividi» per scrivere un messaggio, non
+        // per leggere: niente aggiornamento di tutti i gruppi all'avvio.
+        val condiviso = condivisoDa(intent)
+        if (condiviso != null) AppSettings.syncOnStartDone = true
         val repo = (application as App).repository
         setContent {
             OpenUsenetTheme {
-                AppNav(repo)
+                AppNav(repo, condiviso = condiviso)
             }
         }
     }
@@ -204,7 +208,11 @@ object Routes {
 private const val ULTIMO_LETTO = "ultimo_letto"
 
 @Composable
-fun AppNav(repo: NewsRepository, nav: NavHostController = rememberNavController()) {
+fun AppNav(
+    repo: NewsRepository,
+    nav: NavHostController = rememberNavController(),
+    condiviso: org.openusenet.reader.text.Condiviso? = null,
+) {
     val ctx = LocalContext.current
     // controllo automatico dei nuovi messaggi mentre l'app è aperta
     LaunchedEffect(AppSettings.autoCheckMinutes) {
@@ -245,6 +253,8 @@ fun AppNav(repo: NewsRepository, nav: NavHostController = rememberNavController(
     // 1.6.3: l'host degli avvisi che restano cambiando schermata (AzioneSegnaTuttoLetto.kt).
     val avvisiApp = org.openusenet.reader.ui.screens.rememberAvvisiApp()
     androidx.compose.runtime.CompositionLocalProvider(org.openusenet.reader.ui.screens.LocalAvvisi provides avvisiApp) {
+    // 1.6.4 (Halv): «Condividi → NeReO». Vedi ui/Condivisione.kt.
+    if (condiviso != null) GestoreCondivisione(repo, nav, condiviso)
     NavHost(
         navController = nav,
         startDestination = Routes.GROUPS,

@@ -1,8 +1,18 @@
 ======================================================================
- NeReO 1.6.3 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.4 - Ne(ws) Re(ader) O(pen-source)
  Newsreader Usenet (NNTP) solo testo per Android
- NeReO 1.6.3 (versionCode 190) - By MCSM - 2026/11/12
+ NeReO 1.6.4 (versionCode 191) - By MCSM - 2026/11/15
 ======================================================================
+ ***  VERSIONE 1.6.4  ***
+
+ Richieste di Jeff e di Halv Skjaldson; prova di Roxy.
+
+  * CON L'ORDINE DAL PIU' VECCHIO, APRI SUI PIU' RECENTI. Nuova opzione in Aspetto, spenta di default. Con un ordine dal piu' vecchio il gruppo si apre in fondo, sui messaggi piu' recenti, e segue quelli nuovi mentre si aggiorna. Tornando senza novita' riprendi da dove eri. Nelle viste ad albero l'ultima riga e' la discussione piu' recente.
+
+  * CONDIVIDI VERSO NEREO. Da un'altra app (browser, Feedly, YouTube...) scegli NeReO nel menu Condividi e poi il gruppo; l'ultimo usato e' in cima. Si apre un messaggio nuovo col titolo come oggetto, il link intero su una riga da solo e il cursore subito sotto, pronto per il tuo commento. NeReO usa cio' che manda l'altra app e non scarica la pagina.
+
+  * ANNULLA RAGGIUNGIBILE DA TASTIERA E TELECOMANDO. L'avviso "N messaggi segnati come letti" ora dura 5 secondi e si chiude con la X. ANNULLA c'e' anche nel menu a tre puntini (colonna dei gruppi nei pannelli, menu principale al telefono) fino al prossimo segna letti: con le frecce il pulsante dell'avviso non si raggiungeva.
+
  ***  VERSIONE 1.6.3  ***
 
  Segnalazioni e richiesta di Dave Royal; le seguite da BIG Umberto.

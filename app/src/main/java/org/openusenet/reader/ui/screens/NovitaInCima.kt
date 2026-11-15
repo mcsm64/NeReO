@@ -35,13 +35,16 @@ package org.openusenet.reader.ui.screens
  *
  * Kotlin puro, nessun import: si prova da solo con kotlinc.
  */
-data class ImprontaLista(val primoId: Long, val ultimoId: Long)
+data class ImprontaLista(val primoId: Long, val ultimoId: Long, val ultimaRigaId: Long = 0)
 
-/** L'impronta di una lista: `null` se la lista e' vuota (niente da confrontare). */
-fun improntaLista(primoId: Long?, ids: Iterable<Long>): ImprontaLista? {
+/**
+ * L'impronta di una lista: `null` se la lista e' vuota (niente da confrontare).
+ * [ultimaRigaId]: l'ultima riga, per le novita' in fondo (1.6.4, Jeff).
+ */
+fun improntaLista(primoId: Long?, ids: Iterable<Long>, ultimaRigaId: Long? = null): ImprontaLista? {
     if (primoId == null) return null
     val massimo = ids.maxOrNull() ?: return null
-    return ImprontaLista(primoId, massimo)
+    return ImprontaLista(primoId, massimo, ultimaRigaId ?: 0)
 }
 
 fun novitaInCima(
@@ -53,4 +56,30 @@ fun novitaInCima(
     ordinamento.endsWith("_asc") -> false
     vistaSequenziale || ordinamento == "activity_desc" -> ora.ultimoId > prima.ultimoId
     else -> ora.primoId != prima.primoId && ora.ultimoId > prima.ultimoId
+}
+
+/*
+ * 1.6.4 (Jeff, mail del 12/11) — IL FONDO, PER CHI LEGGE DAL PIU' VECCHIO.
+ *
+ * Jeff ordina dal piu' vecchio, come in Thunderbird, e vuole aprire il gruppo
+ * in fondo, sui piu' recenti. Con gli ordini «_asc» le novita' stanno li', e
+ * [novitaInCima] risponde sempre no. Con l'opzione `apriInFondo` (Aspetto,
+ * spenta di default) si specchia la regola della cima:
+ *  - vista sequenziale e «activity_asc»: ogni messaggio nuovo porta in fondo la
+ *    sua riga → conta l'id piu' alto;
+ *  - «opened_asc» ad albero o raggruppata: in fondo scende solo una discussione
+ *    NUOVA → deve cambiare anche l'ultima riga.
+ */
+fun partenzaInFondo(ordinamento: String, apriInFondo: Boolean): Boolean =
+    apriInFondo && ordinamento.endsWith("_asc")
+
+fun novitaInFondo(
+    vistaSequenziale: Boolean,
+    ordinamento: String,
+    prima: ImprontaLista,
+    ora: ImprontaLista,
+): Boolean = when {
+    !ordinamento.endsWith("_asc") -> false
+    vistaSequenziale || ordinamento == "activity_asc" -> ora.ultimoId > prima.ultimoId
+    else -> ora.ultimaRigaId != prima.ultimaRigaId && ora.ultimoId > prima.ultimoId
 }

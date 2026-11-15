@@ -523,6 +523,7 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                                         )
                                     }
                                     DropdownMenu(expanded = menuGruppi, onDismissRequest = { menuGruppi = false }) {
+                                        VoceAnnullaLetti(repo) { menuGruppi = false }
                                         VoceSegnaLettiTutti { menuGruppi = false; dialogoTuttiLetti = true }
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.groups_reorder_toggle)) },
@@ -958,7 +959,7 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                         // la lista, si va in cima a mostrarle. Stessa logica del
                         // telefono, stesso file: SorveglianzaNovita.kt.
                         val improntaPannello = remember(flat, articoliVisibili) {
-                            improntaLista(flat.firstOrNull()?.article?.id, articoliVisibili.map { it.id })
+                            improntaLista(flat.firstOrNull()?.article?.id, articoliVisibili.map { it.id }, flat.lastOrNull()?.article?.id)
                         }
                         InCimaSeArrivanoNovita(
                             listState = listaAlbero,
@@ -968,6 +969,11 @@ fun ThreePaneHome(repo: NewsRepository, nav: NavHostController) {
                             vistaSequenziale = AppSettings.threadView == ThreadViews.SEQUENTIAL,
                             ordinamento = AppSettings.threadSort,
                             spegni = selectedArticleId != null,
+                            // 1.6.4 (Jeff): qui non c'e' una posizione da
+                            // riprendere, quindi si parte gia' dal fondo.
+                            inFondo = partenzaInFondo(AppSettings.threadSort, AppSettings.apriInFondo),
+                            ultimoIndice = flat.lastIndex,
+                            saltaInFondoSubito = true,
                         )
                         val fermaInCima by remember {
                             derivedStateOf {

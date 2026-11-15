@@ -1,8 +1,18 @@
 ======================================================================
- NeReO 1.6.3 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.4 - Ne(ws) Re(ader) O(pen-source)
  Text-only Usenet (NNTP) newsreader for Android
- NeReO 1.6.3 (versionCode 190) - By MCSM - 2026/11/12
+ NeReO 1.6.4 (versionCode 191) - By MCSM - 2026/11/15
 ======================================================================
+ ***  VERSION 1.6.4  ***
+
+ Requested by Jeff and Halv Skjaldson; tested by Roxy.
+
+  * WITH OLDEST FIRST, OPEN AT THE MOST RECENT. New option in Appearance, off by default. With an oldest-first order the group opens at the bottom, on the most recent messages, and follows new ones while it updates. Coming back with nothing new, you are where you left off. In the threaded views the bottom row is the most recent thread.
+
+  * SHARE TO NEREO. From another app (browser, Feedly, YouTube...) choose NeReO in the Share menu, then the group; the last one you used is at the top. A new message opens with the title as subject, the whole link on a line of its own and the cursor just below it, ready for your comment. NeReO uses what the other app sends and does not download the page.
+
+  * UNDO WITHIN REACH OF KEYBOARD AND REMOTE. The notice "N messages marked read" now stays 5 seconds and closes with the X. UNDO is also in the three-dot menu (groups column in panes view, main menu on the phone) until the next marking: with the arrow keys the button in the notice could not be reached.
+
  ***  VERSION 1.6.3  ***
 
  Reports and request by Dave Royal; followed threads by BIG Umberto.

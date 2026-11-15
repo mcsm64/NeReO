@@ -6,9 +6,9 @@ Scritto da zero in Kotlin + Jetpack Compose. Nasce dal MOD 17 di *Newsreader* di
 
 Il package interno resta `org.openusenet.reader` — invariato di proposito, per non rompere gli aggiornamenti già installati.
 
-**Versione 1.6.3** (versionCode 190) — 12 novembre 2026
+**Versione 1.6.4** (versionCode 191) — 15 novembre 2026
 
-## Funzioni (1.6.3)
+## Funzioni (1.6.4)
 
 - Multi-server NNTP con SSL/TLS implicito **o STARTTLS** (RFC 3977 + RFC 4643 + RFC 4642) e autenticazione, con **verifica del nome host sul certificato** (RFC 6125) e fallback automatico IPv6/IPv4; CAPABILITIES letto e loggato alla connessione; riuso della connessione durante la lettura di un thread; **allarme se un server che offriva STARTTLS smette di annunciarlo** (RFC 4642 §5)
 - Ricerca e sottoscrizione gruppi, sync incrementale delle headline con `OVER` e ripiego automatico su `XOVER` per i server che non riconoscono `OVER` (es. Astraweb)
@@ -22,6 +22,14 @@ Il package interno resta `org.openusenet.reader` — invariato di proposito, per
 - Backup e ripristino della configurazione, con cifratura opzionale
 - Material 3, tema chiaro/scuro/di sistema, dynamic color, tinte e dimensioni del testo, layout a pannelli per schermi larghi
 - Interfaccia in italiano e inglese, con **interruttore lingua dentro l'app** (Aspetto → Lingua) oltre alla voce di sistema su Android 13+
+
+## Novità della 1.6.4
+
+> Richieste di Jeff e di Halv Skjaldson; prova di Roxy.
+
+- **Con l'ordine dal più vecchio, apri sui più recenti.** Opzione in Aspetto, spenta di default: con un ordine dal più vecchio il gruppo si apre in fondo, sui messaggi più recenti, e segue quelli nuovi mentre si aggiorna; tornando senza novità riprendi da dove eri. Nelle viste ad albero l'ultima riga è la discussione più recente
+- **Condividi verso NeReO.** Da un'altra app (browser, Feedly, YouTube…) scegli NeReO nel menu Condividi e poi il gruppo, con l'ultimo usato in cima: si apre un messaggio nuovo col titolo come oggetto, il link intero su una riga da solo e il cursore subito sotto. NeReO usa ciò che manda l'altra app e non scarica la pagina
+- **ANNULLA raggiungibile da tastiera e telecomando.** L'avviso «N messaggi segnati come letti» dura 5 secondi e si chiude con la ✕; ANNULLA c'è anche nel menu ⋮ (colonna dei gruppi nei pannelli, menu principale al telefono) fino al prossimo segna letti
 
 ## Novità della 1.6.3
 

@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 
 /**
@@ -50,7 +51,14 @@ fun InCimaSeArrivanoNovita(
     vistaSequenziale: Boolean,
     ordinamento: String,
     spegni: Boolean = false,
+    // 1.6.4 (Jeff): con [inFondo] le novita' si cercano in fondo e si scorre a
+    // [ultimoIndice]. [saltaInFondoSubito]: alla prima impronta si va gia' in
+    // fondo; lo usano i pannelli, che non hanno una posizione da riprendere.
+    inFondo: Boolean = false,
+    ultimoIndice: Int = -1,
+    saltaInFondoSubito: Boolean = false,
 ) {
+    val fondo by rememberUpdatedState(ultimoIndice)
     var riferimento by remember(chiave) { mutableStateOf<ImprontaLista?>(null) }
     var sorveglia by remember(chiave) { mutableStateOf(true) }
     // Solo dopo che c'e' un riferimento: cambiando gruppo nei pannelli il
@@ -69,9 +77,15 @@ fun InCimaSeArrivanoNovita(
         val rif = riferimento
         if (rif == null) {
             riferimento = impronta
+            if (inFondo && saltaInFondoSubito && fondo >= 0) listState.scrollToItem(fondo)
             return@LaunchedEffect
         }
-        if (novitaInCima(vistaSequenziale, ordinamento, rif, impronta)) {
+        if (inFondo) {
+            if (novitaInFondo(vistaSequenziale, ordinamento, rif, impronta) && fondo >= 0) {
+                sorveglia = false
+                listState.scrollToItem(fondo)
+            }
+        } else if (novitaInCima(vistaSequenziale, ordinamento, rif, impronta)) {
             sorveglia = false
             listState.scrollToItem(0)
         }

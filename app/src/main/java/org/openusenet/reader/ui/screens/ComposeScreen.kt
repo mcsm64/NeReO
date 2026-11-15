@@ -88,6 +88,7 @@ import org.openusenet.reader.ui.rememberAppunti
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
@@ -181,6 +182,9 @@ fun ComposeScreen(
     var groupName by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
     var ready by remember { mutableStateOf(false) }
+    // 1.6.4 (Halv): arrivando da «Condividi» il cursore e' gia' sotto il link.
+    var daCondivisione by remember { mutableStateOf(false) }
+    val fuocoCorpo = remember { androidx.compose.ui.focus.FocusRequester() }
 
     // prefill iniziale
     LaunchedEffect(groupId, replyToArticleId, supersedeArticleId, draftId) {
@@ -284,7 +288,24 @@ fun ComposeScreen(
             // 1.5.4: «Cita e rispondi» dal menu di selezione (ui/Citazione.kt)
             citazioneScelta = parent?.let { CitazioneInAttesa.prendi(it.id) },
         )
+        // 1.6.4 (Halv): da «Condividi», oggetto e testo condiviso sopra la firma,
+        // cursore sulla riga sotto il link. Solo per un messaggio nuovo.
+        if (replyToArticleId == null) {
+            targetGroupId?.let { org.openusenet.reader.ui.CondivisioneInArrivo.prendi(it) }?.let { c ->
+                if (subject.isBlank()) subject = c.oggetto
+                val resto = bodyField.text.trimStart('\n')
+                val testo = c.corpo + if (resto.isEmpty()) "" else "\n\n" + resto
+                bodyField = TextFieldValue(testo, TextRange(c.corpo.length))
+                daCondivisione = true
+            }
+        }
         ready = true
+    }
+    LaunchedEffect(ready, daCondivisione) {
+        if (ready && daCondivisione) {
+            withFrameNanos { }
+            runCatching { fuocoCorpo.requestFocus() }
+        }
     }
 
     val canSend = !sending && ready && fromName.isNotBlank() && fromEmail.contains("@") &&
@@ -865,6 +886,7 @@ fun ComposeScreen(
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .focusRequester(fuocoCorpo)
                     // 1.4.9 (§K1) — IL MINIMO ADESSO E' UN MINIMO.
                     //
                     // PERCHE' ESISTE. Un utente su Samsung J6 (720x1480, 5,6",

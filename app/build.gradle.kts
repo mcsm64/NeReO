@@ -2129,8 +2129,11 @@ android {
         // regressione della 1.6.2. Le seguite tornano sempre in cima (scelta in
         // Aspetto, «solo con non letti» per chi preferisce il modo di Cercaparole);
         // la riga raggruppata, ordinando per attivita', mostra la data dell'ultimo.
-        versionCode = 190
-        versionName = "1.6.3"
+        // versionCode 191 (12 novembre 2026) - versionName 1.6.4, deciso da Marco.
+        // La 1.6.3 e' pubblica. Jeff: con l'ordine dal piu'
+        // vecchio il gruppo si apre sui piu' recenti (opzione in Aspetto).
+        versionCode = 191
+        versionName = "1.6.4"
     }
 
     buildTypes {

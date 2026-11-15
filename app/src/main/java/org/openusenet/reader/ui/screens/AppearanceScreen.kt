@@ -417,6 +417,20 @@ fun AppearanceScreen(nav: NavHostController) {
                 )
                 Text(stringResource(R.string.app_mark_read_exit), modifier = Modifier.padding(start = 12.dp))
             }
+            // 1.6.4 (Jeff): aprire sui piu' recenti quando l'ordine e' dal piu' vecchio.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                Switch(
+                    checked = AppSettings.apriInFondo,
+                    onCheckedChange = { AppSettings.apriInFondo = it; AppSettings.save() },
+                )
+                Text(stringResource(R.string.app_apri_in_fondo), modifier = Modifier.padding(start = 12.dp))
+            }
+            Text(
+                stringResource(R.string.app_apri_in_fondo_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp, top = 2.dp),
+            )
             // 1.6.3 / 190 (BIG Umberto contro Cercaparole): dove stanno le
             // discussioni seguite. Predefinito «sempre in cima», come fino alla 1.6.1.
             Text(

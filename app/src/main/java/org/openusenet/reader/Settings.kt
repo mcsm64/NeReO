@@ -364,6 +364,12 @@ object AppSettings {
     /** Segna tutto come letto uscendo dal gruppo. */
     var markReadOnExit by mutableStateOf(false)
 
+    /** 1.6.4 (Jeff): con un ordine dal piu' vecchio, il gruppo si apre in fondo. Vedi partenzaInFondo. */
+    var apriInFondo by mutableStateOf(false)
+
+    /** 1.6.4 (Halv): il gruppo dell'ultima condivisione, in cima alla scelta. 0 = nessuno. */
+    var ultimoGruppoCondivisione by mutableStateOf(0L)
+
     /**
      * beta18 (richiesta di un tester via Marco): mostra "Albero della
      * conversazione" ANCHE nella barra in basso di ArticleScreen, oltre che in
@@ -1024,6 +1030,8 @@ object AppSettings {
         // 1.4.9 (§J3-C1): vuota = cartella non ancora scelta, o permesso perso.
         cartellaConserva = prefs.getString("cartella_conserva", "") ?: ""
         markReadOnExit = prefs.getBoolean("mark_read_on_exit", false)
+        apriInFondo = prefs.getBoolean("apri_in_fondo", false)
+        ultimoGruppoCondivisione = prefs.getLong("ultimo_gruppo_condivisione", 0L)
         alberoInBasso = prefs.getBoolean("albero_in_basso", false)
         // 1.3 (B): se non è mai stato salvato un ordine, semina da alberoInBasso
         // (migrazione silenziosa — vedi commento sulla dichiarazione).
@@ -1168,6 +1176,8 @@ object AppSettings {
             .putBoolean("rotaie_albero", rotaieAlbero)
             .putString("cartella_conserva", cartellaConserva)
             .putBoolean("mark_read_on_exit", markReadOnExit)
+            .putBoolean("apri_in_fondo", apriInFondo)
+            .putLong("ultimo_gruppo_condivisione", ultimoGruppoCondivisione)
             .putBoolean("albero_in_basso", alberoInBasso)
             .putString("article_bar_order", articleBarOrder.joinToString(","))
             .putString("article_bar_hidden", articleBarHidden.joinToString(","))
