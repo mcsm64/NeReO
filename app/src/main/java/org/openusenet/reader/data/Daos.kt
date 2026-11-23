@@ -306,6 +306,17 @@ interface ArticleDao {
     @Query("SELECT id FROM articles WHERE groupId = :groupId AND read = 1")
     suspend fun readIds(groupId: Long): List<Long>
 
+    /** 1.6.5 / 194 (BIG Umberto): quanti di questi id NON sono nascosti dai filtri. */
+    @Query("SELECT COUNT(*) FROM articles WHERE id IN (:ids) AND hidden = 0")
+    suspend fun quantiVisibili(ids: List<Long>): Int
+
+    /**
+     * 1.6.5 / 194 (BIG Umberto): fra questi Message-ID, quelli che hanno gia' una
+     * copia letta, in qualunque gruppo e su qualunque server.
+     */
+    @Query("SELECT DISTINCT messageId FROM articles WHERE read = 1 AND messageId IN (:messageIds)")
+    suspend fun messageIdGiaLetti(messageIds: List<String>): List<String>
+
     @Query("UPDATE articles SET read = 0 WHERE groupId = :groupId")
     suspend fun markAllUnread(groupId: Long)
 

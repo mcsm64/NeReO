@@ -241,7 +241,14 @@ fun ServersScreen(repo: NewsRepository, nav: NavHostController) {
             initial = editing,
             identities = identities,
             onDismiss = { showDialog = false },
-            onSave = { s -> scope.launch { repo.saveServer(s) }; showDialog = false },
+            onSave = { s, proxy ->
+                scope.launch {
+                    // upsert su un server esistente non ridà l'id: si usa quello noto
+                    val nuovo = repo.saveServer(s)
+                    org.openusenet.reader.AppSettings.salvaProxy(if (s.id != 0L) s.id else nuovo, proxy)
+                }
+                showDialog = false
+            },
         )
     }
 
@@ -287,7 +294,7 @@ private fun ServerDialog(
     initial: Server?,
     identities: List<Identity>,
     onDismiss: () -> Unit,
-    onSave: (Server) -> Unit,
+    onSave: (Server, Triple<Boolean, String, Int>) -> Unit,
 ) {
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var host by remember { mutableStateOf(initial?.host ?: "") }
@@ -302,6 +309,11 @@ private fun ServerDialog(
     var identityMenu by remember { mutableStateOf(false) }
     var startTls by remember { mutableStateOf(initial?.startTls ?: false) }
     var authOverride by remember { mutableStateOf(initial?.authOverrideNonCifrata) }
+    // 1.6.5 / 193: proxy SOCKS5 (Tor, Nym), spento di default. Vedi nntp/Socks5.kt.
+    val proxySalvato = remember { org.openusenet.reader.AppSettings.proxyImpostato(initial?.id ?: -1L) }
+    var proxyOn by remember { mutableStateOf(proxySalvato.first) }
+    var proxyHost by remember { mutableStateOf(proxySalvato.second) }
+    var proxyPort by remember { mutableStateOf(proxySalvato.third.toString()) }
 
     fun salva() {
         onSave(
@@ -328,7 +340,12 @@ private fun ServerDialog(
                 identityId = identityId,
                 startTls = startTls,
                 authOverrideNonCifrata = authOverride,
-            )
+            ),
+            Triple(
+                proxyOn,
+                proxyHost.trim(),
+                proxyPort.toIntOrNull() ?: org.openusenet.reader.AppSettings.PROXY_PORTA_PREDEFINITA,
+            ),
         )
     }
 
@@ -503,6 +520,38 @@ private fun ServerDialog(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                        }
+                    }
+                    // 1.6.5 / 193: proxy SOCKS5, per Orbot/Tor o Nym. Solo se acceso.
+                    Row {
+                        Checkbox(checked = proxyOn, onCheckedChange = { proxyOn = it })
+                        Column(Modifier.padding(top = 10.dp)) {
+                            Text(stringResource(R.string.srv_proxy))
+                            Text(
+                                stringResource(R.string.srv_proxy_note),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    if (proxyOn) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = proxyHost,
+                                onValueChange = { proxyHost = it },
+                                label = { Text(stringResource(R.string.srv_proxy_host)) },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
+                                modifier = Modifier.weight(1f),
+                            )
+                            OutlinedTextField(
+                                value = proxyPort,
+                                onValueChange = { v -> proxyPort = v.filter { it.isDigit() }.take(5) },
+                                label = { Text(stringResource(R.string.srv_proxy_port)) },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(0.5f),
+                            )
                         }
                     }
                     OutlinedTextField(value = user, onValueChange = { user = it }, label = { Text(stringResource(R.string.srv_user)) }, singleLine = true, keyboardOptions = KeyboardOptions(autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth())

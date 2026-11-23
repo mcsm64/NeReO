@@ -6,9 +6,9 @@ Scritto da zero in Kotlin + Jetpack Compose. Nasce dal MOD 17 di *Newsreader* di
 
 Il package interno resta `org.openusenet.reader` — invariato di proposito, per non rompere gli aggiornamenti già installati.
 
-**Versione 1.6.4** (versionCode 191) — 15 novembre 2026
+**Versione 1.6.5** (versionCode 195) — 23 novembre 2026
 
-## Funzioni (1.6.4)
+## Funzioni (1.6.5)
 
 - Multi-server NNTP con SSL/TLS implicito **o STARTTLS** (RFC 3977 + RFC 4643 + RFC 4642) e autenticazione, con **verifica del nome host sul certificato** (RFC 6125) e fallback automatico IPv6/IPv4; CAPABILITIES letto e loggato alla connessione; riuso della connessione durante la lettura di un thread; **allarme se un server che offriva STARTTLS smette di annunciarlo** (RFC 4642 §5)
 - Ricerca e sottoscrizione gruppi, sync incrementale delle headline con `OVER` e ripiego automatico su `XOVER` per i server che non riconoscono `OVER` (es. Astraweb)
@@ -22,6 +22,19 @@ Il package interno resta `org.openusenet.reader` — invariato di proposito, per
 - Backup e ripristino della configurazione, con cifratura opzionale
 - Material 3, tema chiaro/scuro/di sistema, dynamic color, tinte e dimensioni del testo, layout a pannelli per schermi larghi
 - Interfaccia in italiano e inglese, con **interruttore lingua dentro l'app** (Aspetto → Lingua) oltre alla voce di sistema su Android 13+
+
+## Novità della 1.6.5
+
+> Segnalazioni di BIG Umberto e con un log del 20/11; collaudo di Dave Royal; proxy chiesto da un utente.
+
+- **Il letto segue il Message-ID anche quando il messaggio arriva** *(BIG Umberto, 20-21/11, con tre screenshot e un log)*. Rossi isolati fra i verdi in discussioni di giorni prima, anche nello stesso gruppo su due server: un messaggio letto su paganini arrivava giorni dopo su corradoroberto e nasceva non letto. Ora nel sync (`elaboraLottoOverview`) un messaggio nasce letto se una sua copia è già letta (`messageIdGiaLetti`, `ereditaLetto` in `data/LettoEreditato.kt`), solo con «il letto segue il Message-ID» acceso; vale anche per la riga vera che sostituisce un ricostruito (letta prima di `togliRicostruiti`). E l'avviso «N segnati come letti» conta i soli visibili (`quantiVisibili`), come il pallino: i nascosti dai filtri si segnano e si annullano lo stesso. 3 test nuovi
+- **La stella delle seguite anche quando è seguita una risposta** *(BIG Umberto, collaudo della 194, 22/11)*. Discussioni lette e vecchie restavano in cima senza stella: erano seguite da una risposta, e il seguito vale per Message-ID su tutti i server. La stella della riga ora usa lo stesso criterio dell'ordinamento (`ThreadItem.contieneSeguito`, `mostraStella`), anche nei pannelli, dove la riga non l'aveva. Il testo dell'impostazione del letto per Message-ID nomina anche lo stesso gruppo su un altro server. 1 test nuovo
+- **La riga della discussione torna alla data del primo messaggio; il titolo nella vista continua** *(Dave Royal, 19/11)*. Tolta la forma «ultimo …» della 1.6.3 (`dataDellaRiga`, `ThreadItem.ultimaData`, `tl_ultimo`): nessun altro lettore cambia quella data, e una discussione si ritrova per la data d'apertura. Nella vista continua dei pannelli l'oggetto (`titoloDiscussione`) sta su una riga fissa sopra la lista, `bodySmall`, verde (`readStateColor(read, sfondo)`). 1 test nuovo
+
+- **Messaggi che il server non trova per Message-ID.** Dopo un 430 NeReO riprova una volta per numero dell'articolo e accetta la risposta solo se il Message-ID coincide: alcuni server INN li trovano solo così. Se falliscono entrambi, dice che il server non trova il messaggio invece di «probabilmente scaduto», e lo dice nella lingua dell'app
+- **Condividi: link fra `<>` e oggetto solo per le pagine.** Ogni link va fra parentesi angolari, così chi cita a 80 colonne non lo spezza; un testo selezionato senza link lascia l'oggetto vuoto e va tutto nel corpo
+- **Il proprio post subito dopo l'invio.** Alcuni server (Astraweb) lo rendono visibile qualche secondo dopo il 240: NeReO ora riaggiorna dopo 2, 5 e 10 secondi, anche nei gruppi del crosspost, e si ferma al primo arrivo
+- **Proxy SOCKS5 per server (Orbot/Tor, Nym).** Nelle impostazioni del server, spento di default: chi non lo accende non vede differenze. Il nome del server lo risolve il proxy, non il telefono; TLS e verifica del certificato restano quelli di sempre. Il controllo aggiornamenti non passa dal proxy (per tutto dentro Tor: Orbot in modalità VPN)
 
 ## Novità della 1.6.4
 

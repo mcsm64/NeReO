@@ -1,8 +1,26 @@
 ======================================================================
- NeReO 1.6.4 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.5 - Ne(ws) Re(ader) O(pen-source)
  Text-only Usenet (NNTP) newsreader for Android
- NeReO 1.6.4 (versionCode 191) - By MCSM - 2026/11/15
+ NeReO 1.6.5 (versionCode 195) - By MCSM - 2026/11/23
 ======================================================================
+ ***  VERSION 1.6.5  ***
+
+ Reported by BIG Umberto and with a log of 20/11; tested by Dave Royal; proxy requested by a user.
+
+  * READ STAYS READ. A message you already read in another group, or in the same group on another server, now arrives already read when it reaches the other copy late: before, it came in unread, alone among the read ones. And "N messages marked read" counts only those you can see, like the group badge. Reported by BIG Umberto.
+
+  * THE STAR OF WATCHED THREADS. The star shows on the thread row whenever the thread contains a watched message, not only when its first post is watched, and now in panes view too: before, a thread watched from a reply went to the top without a star. Watching follows the Message-ID: a thread watched on one server is watched on the others too. Reported by BIG Umberto.
+
+  * THE FIRST MESSAGE'S DATE, AND THE TITLE IN CONTINUOUS VIEW. The thread row shows the date of its first message again, always: the "last ..." date of 1.6.3 is gone. In the continuous view in panes the thread title is on a small green line at the top of the reading column. Reported by Dave Royal.
+
+  * MESSAGES THE SERVER CANNOT FIND BY MESSAGE-ID. If the server answers 430, NeReO tries once more by article number and accepts the answer only if it really is the same message: some INN servers find them only that way. If both fail, NeReO says the server cannot find the message, instead of "probably expired", and says it in the language of the app.
+
+  * SHARE: LINKS BETWEEN <> AND A SUBJECT ONLY FOR PAGES. Every link goes between angle brackets, so a reader quoting at 80 columns does not break it. Sharing selected text without a link leaves the subject empty and puts all the text in the body.
+
+  * YOUR OWN POST RIGHT AFTER SENDING. Some servers (Astraweb) make it visible in the group a few seconds after confirming the post. NeReO now updates again after 2, 5 and 10 seconds, also in the crossposted groups, and stops as soon as something arrives.
+
+  * SOCKS5 PROXY PER SERVER (ORBOT/TOR, NYM). In the server settings, off by default: if you do not turn it on, nothing changes. The server name is resolved by the proxy, not by the phone; TLS and certificate checks stay as always, and waiting times are longer. The update check does not go through the proxy: to keep everything inside Tor use Orbot in VPN mode, or set the check to never.
+
  ***  VERSION 1.6.4  ***
 
  Requested by Jeff and Halv Skjaldson; tested by Roxy.

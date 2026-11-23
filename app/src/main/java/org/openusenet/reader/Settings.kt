@@ -17,6 +17,49 @@ import org.openusenet.reader.nntp.NntpLog
 object AppSettings {
     private lateinit var prefs: SharedPreferences
 
+    /*
+     * 1.6.5 / 193 — PROXY SOCKS5 PER SERVER, spento di default. In un file a parte
+     * («proxy»), fuori dal backup generico delle preferenze: le chiavi portano
+     * l'id del server, che fra due installazioni cambia. Il backup le porta per
+     * host:porta, insieme al server (BackupManager).
+     */
+    private lateinit var proxyPrefs: SharedPreferences
+
+    /** Il proxy del server, o null se non e' acceso: allora tutto come prima. */
+    fun proxyPer(serverId: Long): org.openusenet.reader.nntp.ProxySocks? {
+        if (!::proxyPrefs.isInitialized || !proxyPrefs.getBoolean("attivo_$serverId", false)) return null
+        val host = proxyPrefs.getString("host_$serverId", null)?.trim().orEmpty().ifEmpty { PROXY_HOST_PREDEFINITO }
+        val porta = proxyPrefs.getInt("porta_$serverId", PROXY_PORTA_PREDEFINITA)
+        return org.openusenet.reader.nntp.ProxySocks(host, porta)
+    }
+
+    /** I valori salvati anche col proxy spento, per ritrovarli nel dialogo. */
+    fun proxyImpostato(serverId: Long): Triple<Boolean, String, Int> {
+        if (!::proxyPrefs.isInitialized) return Triple(false, PROXY_HOST_PREDEFINITO, PROXY_PORTA_PREDEFINITA)
+        return Triple(
+            proxyPrefs.getBoolean("attivo_$serverId", false),
+            proxyPrefs.getString("host_$serverId", null) ?: PROXY_HOST_PREDEFINITO,
+            proxyPrefs.getInt("porta_$serverId", PROXY_PORTA_PREDEFINITA),
+        )
+    }
+
+    /** [attivo] false spegne il proxy; null cancella tutto (server eliminato). */
+    fun salvaProxy(serverId: Long, valori: Triple<Boolean, String, Int>?) {
+        if (!::proxyPrefs.isInitialized) return
+        val ed = proxyPrefs.edit()
+        if (valori == null) {
+            ed.remove("attivo_$serverId").remove("host_$serverId").remove("porta_$serverId")
+        } else {
+            ed.putBoolean("attivo_$serverId", valori.first)
+                .putString("host_$serverId", valori.second.trim().ifEmpty { PROXY_HOST_PREDEFINITO })
+                .putInt("porta_$serverId", valori.third.coerceIn(1, 65535))
+        }
+        ed.apply()
+    }
+
+    const val PROXY_HOST_PREDEFINITO = "127.0.0.1"
+    const val PROXY_PORTA_PREDEFINITA = 9050
+
     /** "system" | "light" | "dark" */
     var themeMode by mutableStateOf("system")
 
@@ -970,6 +1013,7 @@ object AppSettings {
      */
     fun init(context: Context) {
         prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        proxyPrefs = context.getSharedPreferences("proxy", Context.MODE_PRIVATE)
         try {
             caricaPreferenze()
         } catch (_: ClassCastException) {

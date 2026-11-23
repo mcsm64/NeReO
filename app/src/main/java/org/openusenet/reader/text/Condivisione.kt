@@ -14,6 +14,9 @@ package org.openusenet.reader.text
  *
  * Android passa un oggetto (EXTRA_SUBJECT, non sempre) e un testo (EXTRA_TEXT).
  * Cosa ci sia dentro lo decide l'app che condivide. Qui la regola, in Kotlin puro:
+ *  - 1.6.5 (Dave Royal): l'oggetto si riempie solo se il contenuto ha un link,
+ *    cioe' si condivide una pagina; un testo selezionato lascia l'oggetto vuoto
+ *    e va tutto nel corpo. Ogni link va fra `<>`;
  *  - l'oggetto diventa una riga sola;
  *  - ogni link va su una riga da sola, intero (l'invio non spezza le parole
  *    piu' lunghe del limite: vedi WrapBody), senza il punto o la virgola che
@@ -26,15 +29,23 @@ package org.openusenet.reader.text
 
 data class Condiviso(val oggetto: String, val corpo: String)
 
-private val LINK = Regex("""https?://\S+""")
+private val LINK = Regex("""https?://[^\s<>]+""")
+private val LINK_FRA_PARENTESI = Regex("""<(https?://[^\s<>]+)>""")
 private const val CODA_DEL_LINK = ".,;:!?"
 
 /** Il corpo finisce con un a capo: il cursore va sulla riga sotto il link. */
 fun testoCondiviso(oggetto: String?, testo: String?): Condiviso {
-    var ogg = oggetto.orEmpty().replace(Regex("\\s+"), " ").trim()
-    val separato = testo.orEmpty().replace("\r\n", "\n").replace(LINK) { m ->
+    // 1.6.5 (Dave Royal, collaudo del 16/11): un link gia' fra <> si libera
+    // prima, cosi' non si raddoppia; senza link (testo selezionato) niente
+    // oggetto, nemmeno quello mandato dall'app («Share via»), come fa K-9 Mail.
+    val grezzo = testo.orEmpty().replace("\r\n", "\n").replace(LINK_FRA_PARENTESI) { it.groupValues[1] }
+    val conLink = LINK.containsMatchIn(grezzo)
+    var ogg = if (conLink) oggetto.orEmpty().replace(Regex("\\s+"), " ").trim() else ""
+    // 1.6.5 (Dave): ogni link fra <> (RFC 3986, appendice C): chi cita a 80
+    // colonne non lo spezza.
+    val separato = grezzo.replace(LINK) { m ->
         val link = m.value.trimEnd { it in CODA_DEL_LINK }
-        "\n" + link + "\n" + m.value.substring(link.length)
+        "\n<" + link + ">\n" + m.value.substring(link.length)
     }
     val righe = ArrayList<String>()
     for (r in separato.split('\n').map { it.trim() }) {
@@ -43,10 +54,10 @@ fun testoCondiviso(oggetto: String?, testo: String?): Condiviso {
         if (r.isEmpty() && (righe.isEmpty() || righe.last().isEmpty())) continue
         righe.add(r)
     }
-    if (ogg.isEmpty()) {
-        val i = righe.indexOfFirst { it.isNotEmpty() && !LINK.matches(it) }
+    if (ogg.isEmpty() && conLink) {
+        val i = righe.indexOfFirst { it.isNotEmpty() && !it.startsWith("<http") }
         if (i >= 0) { ogg = righe[i]; righe.removeAt(i) }
-    } else {
+    } else if (ogg.isNotEmpty()) {
         val i = righe.indexOfFirst { it == ogg }
         if (i >= 0) righe.removeAt(i)
     }

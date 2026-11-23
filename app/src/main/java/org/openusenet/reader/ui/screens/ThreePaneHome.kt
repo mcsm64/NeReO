@@ -1952,6 +1952,15 @@ private fun ThreePaneThreadRow(
         }
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // 1.6.5 / 195 (BIG Umberto): la stella delle seguite, come sul
+                // telefono; nei pannelli la riga non l'aveva mai avuta.
+                if (mostraStella(item)) {
+                    Icon(
+                        Icons.Default.Star, contentDescription = stringResource(R.string.tl_watched),
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                }
                 // beta14 (Big Umberto): marca le discussioni con un mio post
                 if (item.isRoot && item.hasMyPost) {
                     // beta20 (Bingo3331): con risposte presenti, omino+contatore
@@ -2027,8 +2036,8 @@ private fun ThreePaneThreadRow(
                 // beta13 (Marco): nell'albero, ora+data piena al posto
                 // dell'indirizzo e-mail. Mostro il solo NOME dell'autore
                 // (senza <email>) e data+ora insieme (formatThreadDateTime).
-                // 1.6.3 / 190 (BIG Umberto): vedi testoAutoreData in ThreadFlatten.
-                testoAutoreData(item, article),
+                // 1.6.3: vedi testoAutoreData in ThreadFlatten (1.6.5 / 194: sempre la data del messaggio).
+                testoAutoreData(article),
                 style = MaterialTheme.typography.bodySmall.ridotto(scala),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -2168,11 +2177,28 @@ private fun ArticlePane(
                 if (ids.isNotEmpty()) repo.setReadBulk(ids, true, gidThread)
             }
         }
+        // 1.6.5 / 194 (Dave Royal, 19/11): il titolo della discussione, fisso sopra
+        // la lista. Ogni post mostra solo autore e data, e con «solo non letti» la
+        // discussione non e' piu' evidenziata in colonna 2: senza questa riga il
+        // titolo non si vedeva da nessuna parte. Piccolo come la riga dei gruppi,
+        // nel verde dei titoli letti (scelto sullo sfondo di lettura), come chiesto.
+        Column(Modifier.fillMaxSize().background(readBg)) {
+        val titolo = titoloDiscussione(threadArticles)
+        if (titolo.isNotEmpty()) {
+            Text(
+                titolo,
+                style = MaterialTheme.typography.bodySmall,
+                color = readStateColor(true, readBg),
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 2.dp),
+            )
+        }
         LazyColumn(
             state = listState,
             modifier = Modifier
-                .fillMaxSize()
-                .background(readBg)
+                .weight(1f)
+                .fillMaxWidth()
                 .padding(horizontal = 16.dp),
         ) {
             itemsIndexed(threadArticles, key = { _, post -> post.id }) { index, post ->
@@ -2193,6 +2219,7 @@ private fun ArticlePane(
                 }
             }
         }
+        } // Column del titolo (1.6.5 / 194)
         return
     }
     ArticlePaneSingolo(repo, articleId, threadArticles, onReply, onSelect, navigazione)
@@ -2478,6 +2505,7 @@ private fun ArticlePaneSingolo(
     /** 1.4.6 (§B4): vedi ArticlePane. Arriva da ThreePaneHome e va alla barra. */
     navigazione: NavigazioneMessaggi,
 ) {
+    val ctxPannello = LocalContext.current // 1.6.5: testo tradotto dell'articolo mancante
     if (articleId == null) return
     var article by remember(articleId) { mutableStateOf<Article?>(null) }
     var body by remember(articleId) { mutableStateOf<String?>(null) }
@@ -2524,7 +2552,7 @@ private fun ArticlePaneSingolo(
         } catch (e: CancellationException) {
             throw e
         } catch (e: org.openusenet.reader.data.ArticoloMancanteException) {
-            error = e.message
+            error = org.openusenet.reader.data.testoArticoloMancante(ctxPannello, e)
             mancanteId = e.articleId
         } catch (e: Exception) {
             error = e.message

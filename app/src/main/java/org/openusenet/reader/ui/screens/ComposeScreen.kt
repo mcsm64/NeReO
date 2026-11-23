@@ -488,8 +488,12 @@ fun ComposeScreen(
                 // comparsa; quando l'articolo arriva, la lista (Flow da Room) si
                 // aggiorna da sola.
                 Toast.makeText(ctx, ctx.getString(R.string.cmp_sent), Toast.LENGTH_SHORT).show()
+                // 1.6.5 / 193: non una volta sola. Astraweb, dopo il 240, puo'
+                // non avere ancora alzato il numero del gruppo: si riprova per
+                // qualche secondo, anche sui gruppi del crosspost (DopoInvio.kt).
+                val dove = destinazioni
                 (ctx.applicationContext as? App)?.appScope?.launch {
-                    runCatching { repo.syncGroup(gid) }
+                    runCatching { repo.aggiornaDopoInvio(gid, dove) }
                 }
                 nav.indietroSicuro()
             }.onFailure {

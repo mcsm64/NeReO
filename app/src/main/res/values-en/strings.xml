@@ -203,6 +203,10 @@
     <!-- 1.2.9 (voce E, roadmap NNTP): STARTTLS + override per-server -->
     <string name="srv_starttls">STARTTLS (upgrade to encrypted after connecting)</string>
     <string name="srv_starttls_note">For servers that stay on a plaintext port (usually 119) but offer an upgrade to TLS right after connecting — RFC 4642. Ignored if SSL/TLS above is already enabled.</string>
+    <string name="srv_proxy">Use a SOCKS5 proxy (Tor, Nym)</string>
+    <string name="srv_proxy_note">Off by default. For Orbot (Tor) the proxy is 127.0.0.1, port 9050. The server name goes to the proxy, not to the phone\'s DNS. Slower: NeReO waits longer. Alternatively, use Orbot in VPN mode.</string>
+    <string name="srv_proxy_host">Proxy address</string>
+    <string name="srv_proxy_port">Port</string>
     <string name="srv_auth_override">Plaintext authentication on this server</string>
     <string name="srv_auth_override_global">Use the global setting (Maintenance → Security)</string>
     <string name="srv_auth_override_allow">Always allow, even without encryption</string>
@@ -462,7 +466,7 @@
     <string name="tl_group_identity">Identity for this group</string>
     <string name="tl_group_identity_tip">Name, address, signature and everything else you post with in this group. The group introduction above, if set, still wins.</string>
     <string name="tl_group_identity_inherit">Same as the server</string>
-    <string name="mnt_letto_messageid">A crossposted message read in one group counts as read in the others</string>
+    <string name="mnt_letto_messageid">A message read in one place counts as read in its other copies: crossposts in other groups, and the same group on another server</string>
     <string name="art_reload">Reload message</string>
     <string name="tls_title">TLS identity</string>
     <string name="tls_none">No identity recorded for this server yet. One is recorded by itself the first time NeReO connects over TLS.</string>
@@ -693,6 +697,7 @@
     <string name="tl_cancel_result_note">A withdrawal normally acts only on the server you posted to: the other servers are only being asked, and \"still there\" is the usual answer from them. To make a correction visible everywhere, use \"Supersede\" instead.</string>
     <string name="tl_cancel_confirm">Withdraw</string>
     <string name="art_missing_remove">Remove the local copy</string>
+    <string name="art_missing_server">The server cannot find this message (%1$d): it may have expired or been withdrawn by its author. Only the summary line downloaded earlier is left in the list.</string>
     <string name="tl_delete_local_copy">Delete local copy</string>
     <string name="tl_select_multiple">Select multiple messages…</string>
     <string name="common_download_bodies_title">Download all bodies</string>
@@ -1074,7 +1079,6 @@
     <string name="app_seguite_titolo">Followed threads</string>
     <string name="app_seguite_sempre">Always at the top</string>
     <string name="app_seguite_non_letti">At the top only with unread messages</string>
-    <string name="tl_ultimo">last %s</string>
     <string name="app_dataora_section">Date and time</string>
     <string name="app_dataora_formato">Date format</string>
     <string name="app_dataora_gma">DD/MM/YY (07/11/26)</string>
@@ -1119,6 +1123,14 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">X-Faces are shown. The classic black-and-white Usenet face (the X-Face header, sent by MesNews and many traditional newsreaders) now appears next to the author\'s name, where until now only the colour Face did. Tap it to enlarge it: it stays sharp, square by square. Order: Face first, then X-Face, then the coloured initials. NeReO shows X-Faces but does not send them.</string>
     <string name="rn_v155_l8">New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the \"newest first\" orders it also notices a reply inside the thread that is already at the top. With the \"oldest first\" orders, where new messages are at the bottom, you stay where you were. In the panel view too.</string>
+    <string name="rn_v165_title">New in 1.6.5</string>
+    <string name="rn_v165_l1">Messages the server cannot find by Message-ID: NeReO now tries once more by article number, and accepts the answer only if it is really the same message. Some servers (INN) find the message only by number. When neither works, NeReO says the server cannot find it, instead of \'probably expired\'. Reported by BIG Umberto.</string>
+    <string name="rn_v165_l2">Share to NeReO: links now go between &lt;&gt;, so a reader quoting at 80 columns does not break them. Sharing selected text without a link leaves the subject empty and puts all the text in the body. Tested by Dave Royal.</string>
+    <string name="rn_v165_l3">Your own post right after sending: some servers (Astraweb) take a few seconds to make it visible in the group. NeReO now updates again after 2, 5 and 10 seconds, also in the crossposted groups, and stops as soon as something arrives. Reported with a log.</string>
+    <string name="rn_v165_l4">SOCKS5 proxy per server, to use NeReO with Orbot/Tor or Nym: in the server settings, off by default. The server name is resolved by the proxy, not by the phone; TLS and certificate checks work as before. The update check does not go through the proxy: to keep everything inside Tor use Orbot in VPN mode, or set the check to never. Requested by a user.</string>
+    <string name="rn_v165_l5">The thread row shows the date of its first message again, always, as in other newsreaders: the «last …» date of 1.6.3 is gone. In the continuous view in panes, the thread title is now on a small green line at the top of the reading column, and stays there while you scroll. Reported by Dave Royal.</string>
+    <string name="rn_v165_l6">Read stays read: a message you already read in another group, or on another server with the same group, now arrives already read when it reaches the other copy late. Before, it came in unread, alone among the read ones. And «N messages marked read» now counts only the messages you can see, like the group badge, not those hidden by filters. Reported by BIG Umberto.</string>
+    <string name="rn_v165_l7">Watched threads: the star now shows on the thread row whenever the thread contains a watched message, not only when the first post is watched, and in the panes too. Before, a thread watched from a reply went to the top without a star. Watching follows the Message-ID, so a thread watched on one server is watched on the others too.</string>
     <string name="rn_v164_title">New in 1.6.4</string>
     <string name="rn_v164_l1">With oldest first, open at the most recent: a new option in Appearance. With an oldest-first order the group opens at the bottom, on the most recent messages, and follows new ones while it updates. In the threaded views the bottom row is the most recent thread. Requested by Jeff.</string>
     <string name="rn_v164_l2">Share to NeReO: from another app (a browser, Feedly, YouTube…) choose NeReO in the Share menu, then the group. A new message opens with the title as subject, the link on a line of its own and the cursor just below it, ready for your comment. The last group you shared to is at the top. NeReO uses what the other app sends: it does not download the page. Requested by Halv Skjaldson.</string>

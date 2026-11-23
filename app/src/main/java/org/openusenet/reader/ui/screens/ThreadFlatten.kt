@@ -263,46 +263,42 @@ data class ThreadItem(
      */
     val repliesToMe: Int = 0,
     /**
-     * 1.6.3 / 190 (BIG Umberto): data del messaggio piu' recente della
-     * discussione. Solo sulle righe radice della vista raggruppata, 0 altrove.
+     * 1.6.5 / 195 (BIG Umberto, 22/11): true se nella discussione c'e' almeno
+     * un messaggio seguito (solo sulle righe radice). E' lo stesso criterio
+     * con cui [orderedRoots] la porta in cima: prima la stella guardava solo
+     * il primo messaggio, e una discussione seguita da una risposta saliva in
+     * cima senza stella.
      */
-    val ultimaData: Long = 0L,
+    val contieneSeguito: Boolean = false,
 )
 
-/**
- * 1.6.3 / 190 (BIG Umberto, 12/11) — QUALE DATA MOSTRA LA RIGA.
- *
- * Ordinando per messaggio piu' recente, la riga di una discussione intera
- * mostrava la data del PRIMO messaggio: «Riscaldamento 10/11 21:14» sopra
- * «Inaugurazione 11/11 21:05» sembrava un errore d'ordine. Ora, in quel caso,
- * la riga mostra la data che decide l'ordine, e lo dice («ultimo»), perche'
- * l'autore resta quello che ha aperto la discussione.
- *
- * Solo sulle righe che rappresentano l'intera discussione (vista raggruppata,
- * `total > 1`); nell'albero ogni riga e' un messaggio e la sua data e' la sua.
- * Per apertura la data che decide e' gia' quella mostrata. Restituisce la data
- * e se e' quella dell'ultimo messaggio.
- */
-fun dataDellaRiga(item: ThreadItem, sort: String): Pair<Long, Boolean> =
-    if (item.isRoot && item.total > 1 && !sort.startsWith("opened") && item.ultimaData > item.article.dateEpoch) {
-        item.ultimaData to true
-    } else {
-        item.article.dateEpoch to false
-    }
+/** 1.6.5 / 195: la stella della riga, una regola sola per telefono e pannelli. */
+fun mostraStella(item: ThreadItem): Boolean =
+    item.article.watched || (item.isRoot && item.contieneSeguito)
 
 /**
  * 1.6.3 / 190: «autore · score · data» della riga, UNA volta per telefono e
  * pannelli (prima due copie identiche in ThreadListScreen e ThreePaneHome).
+ *
+ * 1.6.5 / 194 (Dave Royal, 19/11): la data e' SEMPRE quella del messaggio della
+ * riga, cioe' del primo per una discussione chiusa. La 1.6.3 mostrava «ultimo …»
+ * ordinando per attivita'; Dave: nessun altro lettore lo fa (PH compreso), l'ordine
+ * porta gia' in cima le discussioni con risposte recenti, e una discussione la si
+ * ritrova settimane dopo per la data d'apertura. Nessuno l'aveva chiesto: tolto.
  */
-@androidx.compose.runtime.Composable
-fun testoAutoreData(item: ThreadItem, article: Article): String {
-    val (quando, ultimo) = dataDellaRiga(item, AppSettings.threadSort)
-    val data = formatThreadDateTime(quando)
-    return authorDisplayName(article.fromField) +
+fun testoAutoreData(article: Article): String =
+    authorDisplayName(article.fromField) +
         (if (article.score != 0) "  ·  score ${article.score}" else "") +
-        "  ·  " +
-        (if (ultimo) androidx.compose.ui.res.stringResource(org.openusenet.reader.R.string.tl_ultimo, data) else data)
-}
+        "  ·  " + formatThreadDateTime(article.dateEpoch)
+
+/**
+ * 1.6.5 / 194 (Dave Royal, 19/11): il titolo della discussione in cima alla vista
+ * continua dei pannelli, dove ogni post mostra solo autore e data. L'oggetto del
+ * primo messaggio, senza «Re:» (la stessa normalizzazione del threader). Limite
+ * dichiarato: un oggetto cambiato a meta' discussione qui non si vede.
+ */
+fun titoloDiscussione(articoli: List<Article>): String =
+    articoli.firstOrNull()?.let { org.openusenet.reader.thread.Threader.normalizeSubject(it.subject) }.orEmpty()
 
 /**
  * 1.3.2: le tre funzioni qui sotto sono l'UNICA implementazione di
@@ -606,6 +602,7 @@ private fun treeList(articles: List<Article>, unreadOnly: Boolean, sort: String)
         // scattava dentro uno piu' lungo (mario@tin.it in supermario@tin.it).
         val hasMyPost = rows.any { (_, a) -> AppSettings.eMioPost(a.fromField) }
         val risposteAMe = rows.count { (_, a) -> a.replyToMe }
+        val seguita = rows.any { (_, a) -> a.watched }
         visible.forEachIndexed { i, (depth, a) ->
             out.add(
                 ThreadItem(
@@ -617,6 +614,7 @@ private fun treeList(articles: List<Article>, unreadOnly: Boolean, sort: String)
                     isRoot = i == 0,
                     hasMyPost = if (i == 0) hasMyPost else false,
                     repliesToMe = if (i == 0) risposteAMe else 0,
+                    contieneSeguito = i == 0 && seguita,
                 )
             )
         }
@@ -683,8 +681,7 @@ private fun rootsList(
                 hasMyPost = members.any { m -> AppSettings.eMioPost(m.second.fromField) },
                 // beta18 (Bingo3331): quante risposte dirette ai miei post.
                 repliesToMe = nRisposteAMe,
-                // 1.6.3 / 190 (BIG Umberto): vedi dataDellaRiga.
-                ultimaData = members.maxOf { it.second.dateEpoch },
+                contieneSeguito = members.any { it.second.watched },
             )
         )
         if (isOpen) {

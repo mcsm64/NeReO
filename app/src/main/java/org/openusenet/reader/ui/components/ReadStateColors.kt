@@ -25,8 +25,15 @@ private val READ_DARK = Color(0xFF81C784)    // verde tenue su fondo scuro
 
 /** Colore del testo secondo lo stato di lettura, adattato al tema in uso. */
 @Composable
-fun readStateColor(read: Boolean): Color {
-    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+fun readStateColor(read: Boolean): Color = readStateColor(read, MaterialTheme.colorScheme.surface)
+
+/**
+ * 1.6.5 / 194: lo stesso colore, scelto sullo sfondo dato invece che sul tema.
+ * Serve al titolo della vista continua, che sta sullo sfondo di lettura: con
+ * una tinta di lettura scura su un tema chiaro il verde scuro non si leggerebbe.
+ */
+fun readStateColor(read: Boolean, sfondo: Color): Color {
+    val dark = sfondo.luminance() < 0.5f
     return when {
         read && dark -> READ_DARK
         read -> READ_LIGHT

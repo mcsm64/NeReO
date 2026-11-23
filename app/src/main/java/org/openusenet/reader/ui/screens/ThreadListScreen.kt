@@ -1584,7 +1584,7 @@ private fun ThreadRow(
         }
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (article.watched) {
+                if (mostraStella(item)) {
                     Icon(
                         Icons.Default.Star, contentDescription = stringResource(R.string.tl_watched),
                         tint = MaterialTheme.colorScheme.tertiary,
@@ -1645,8 +1645,8 @@ private fun ThreadRow(
                 // autore senza <email> + data e ora insieme al posto della sola
                 // data compatta. Stessa scelta applicata a entrambe le viste.
                 // 1.6.3 / 190 (BIG Umberto): in una funzione sola coi pannelli,
-                // con la data dell'ultimo quando e' quella che decide l'ordine.
-                testoAutoreData(item, article),
+                // (1.6.5 / 194: sempre la data del messaggio della riga, Dave Royal).
+                testoAutoreData(article),
                 style = MaterialTheme.typography.bodySmall,
                 textDecoration = if (marcato) TextDecoration.LineThrough else null,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -12,8 +12,11 @@ import org.junit.Test
 import org.openusenet.reader.data.Article
 import org.openusenet.reader.ui.screens.ImprontaLista
 import org.openusenet.reader.ui.screens.ThreadItem
+import org.openusenet.reader.ui.screens.ThreadViews
+import org.openusenet.reader.ui.screens.buildThreadList
+import org.openusenet.reader.ui.screens.mostraStella
 import org.openusenet.reader.ui.screens.ThreadScrollMemory
-import org.openusenet.reader.ui.screens.dataDellaRiga
+import org.openusenet.reader.ui.screens.titoloDiscussione
 import org.openusenet.reader.ui.screens.idNonLettoNelGruppo
 import org.openusenet.reader.ui.screens.indiceDiRipristino
 import org.openusenet.reader.ui.screens.novitaInCima
@@ -245,45 +248,37 @@ class OrdinamentoSeguiteTest {
         }
     }
 
-    // --- 1.6.3 / 190 (BIG Umberto): la data della riga ---
-
-    private fun riga(aperta: Long, ultima: Long, totale: Int, radice: Boolean = true) = ThreadItem(
-        depth = 0, article = art("r", aperta), threadStart = true,
-        isRoot = radice, total = totale, ultimaData = ultima,
-    )
+    // --- 1.6.5 / 194 (Dave Royal): il titolo della vista continua ---
 
     @Test
-    fun `per attivita' la riga della discussione mostra l'ultimo`() {
-        assertEquals(500L to true, dataDellaRiga(riga(100, 500, 8), "activity_desc"))
-        assertEquals(500L to true, dataDellaRiga(riga(100, 500, 8), "activity_asc"))
+    fun `titolo della vista continua - oggetto del primo, senza Re`() {
+        val a = listOf(
+            art("r", 1).copy(subject = "pugleaf.net is back"),
+            art("x", 2, padre = "r").copy(subject = "Re: pugleaf.net is back"),
+        )
+        assertEquals("pugleaf.net is back", titoloDiscussione(a))
+        assertEquals("pugleaf.net is back", titoloDiscussione(listOf(a[1])))
+        assertEquals("", titoloDiscussione(emptyList()))
     }
 
-    @Test
-    fun `per apertura la riga mostra il primo`() {
-        assertEquals(100L to false, dataDellaRiga(riga(100, 500, 8), "opened_desc"))
-        assertEquals(100L to false, dataDellaRiga(riga(100, 500, 8), "opened_asc"))
-    }
+    // --- 1.6.5 / 195 (BIG Umberto): la stella di una seguita da una risposta ---
 
     @Test
-    fun `un messaggio solo, o ultimo uguale al primo, nessun ultimo`() {
-        assertEquals(100L to false, dataDellaRiga(riga(100, 100, 1), "activity_desc"))
-        assertEquals(100L to false, dataDellaRiga(riga(100, 100, 3), "activity_desc"))
-    }
-
-    @Test
-    fun `nell'albero ogni riga ha la sua data`() {
-        // treeList non riempie total ne' ultimaData: la riga e' un messaggio
-        assertEquals(100L to false, dataDellaRiga(riga(100, 0, 0), "activity_desc"))
-        assertEquals(100L to false, dataDellaRiga(riga(100, 500, 8, radice = false), "activity_desc"))
-    }
-
-    @Test
-    fun `il caso dello screenshot - Riscaldamento sopra Inaugurazione`() {
-        // aperta il 10/11 21:14, ultima risposta dopo l'11/11 21:05: la riga lo dice
-        val dieci = 1_762_805_640L   // 10/11 21:14 (circa)
-        val undici = 1_762_891_500L  // 11/11 21:05 (circa)
-        val (quando, ultimo) = dataDellaRiga(riga(dieci, undici + 600, 8), "activity_desc")
-        assertTrue(ultimo)
-        assertTrue(quando > undici)
+    fun `stella sulla riga - seguita da una risposta, in raggruppata e albero`() {
+        val a = listOf(
+            art("radice", 1),
+            art("risposta", 2, seguita = true, padre = "radice"),
+            art("altra", 3),
+        )
+        for (vista in listOf(ThreadViews.ROOTS, ThreadViews.TREE)) {
+            val righe = buildThreadList(a, unreadOnly = false, view = vista, sort = "activity_desc")
+            val radice = righe.first { it.article.messageId == "<radice@x>" }
+            val altra = righe.first { it.article.messageId == "<altra@x>" }
+            assertTrue(vista, mostraStella(radice))
+            assertFalse(vista, mostraStella(altra))
+        }
+        // nell'albero la risposta seguita ha la sua stella, la radice la sua
+        val albero = buildThreadList(a, unreadOnly = false, view = ThreadViews.TREE, sort = "activity_desc")
+        assertTrue(mostraStella(albero.first { it.article.messageId == "<risposta@x>" }))
     }
 }

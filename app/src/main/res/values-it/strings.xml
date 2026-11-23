@@ -209,6 +209,10 @@
     <!-- 1.2.9 (voce E, roadmap NNTP): STARTTLS + override per-server -->
     <string name="srv_starttls">STARTTLS (passa a cifrato dopo la connessione)</string>
     <string name="srv_starttls_note">Per i server che restano su una porta in chiaro (di solito 119) ma offrono il passaggio a TLS subito dopo la connessione — RFC 4642. Ignorato se SSL/TLS qui sopra è già attivo.</string>
+    <string name="srv_proxy">Usa un proxy SOCKS5 (Tor, Nym)</string>
+    <string name="srv_proxy_note">Spento di default. Per Orbot (Tor) il proxy è 127.0.0.1, porta 9050. Il nome del server va al proxy, non al DNS del telefono. Più lento: NeReO aspetta di più. In alternativa, Orbot in modalità VPN.</string>
+    <string name="srv_proxy_host">Indirizzo del proxy</string>
+    <string name="srv_proxy_port">Porta</string>
     <string name="srv_auth_override">Autenticazione non cifrata su questo server</string>
     <string name="srv_auth_override_global">Usa l\'impostazione globale (Manutenzione → Sicurezza)</string>
     <string name="srv_auth_override_allow">Consenti sempre, anche senza cifratura</string>
@@ -468,7 +472,7 @@
     <string name="tl_group_identity">Identità per questo gruppo</string>
     <string name="tl_group_identity_tip">Nome, indirizzo, firma e tutto il resto con cui scrivi in questo gruppo. L\'introduzione del gruppo qui sopra, se c\'è, continua a vincere.</string>
     <string name="tl_group_identity_inherit">Come il server</string>
-    <string name="mnt_letto_messageid">Un messaggio crospostato letto in un gruppo risulta letto anche negli altri</string>
+    <string name="mnt_letto_messageid">Un messaggio letto in un punto risulta letto anche nelle sue altre copie: i crosspost in altri gruppi e lo stesso gruppo su un altro server</string>
     <string name="art_reload">Ricarica il messaggio</string>
     <string name="tls_title">Identita\' TLS</string>
     <string name="tls_none">Nessuna identita\' registrata per questo server. Se ne registra una da sola al primo collegamento cifrato.</string>
@@ -699,6 +703,7 @@
     <string name="tl_cancel_result_note">Il ritiro agisce, di norma, solo sul server su cui hai pubblicato: gli altri vengono soltanto interrogati, e «ancora presente» è la risposta abituale. Per far vedere una correzione dappertutto usa invece «Sostituisci».</string>
     <string name="tl_cancel_confirm">Ritira</string>
     <string name="art_missing_remove">Rimuovi la copia locale</string>
+    <string name="art_missing_server">Il server non trova questo messaggio (%1$d): può essere scaduto o ritirato dal suo autore. Nell\'elenco resta solo la riga di riepilogo scaricata in precedenza.</string>
     <string name="tl_delete_local_copy">Elimina la copia locale</string>
     <string name="tl_select_multiple">Seleziona più messaggi…</string>
     <string name="common_download_bodies_title">Scarica tutti i corpi</string>
@@ -1080,7 +1085,6 @@
     <string name="app_seguite_titolo">Discussioni seguite</string>
     <string name="app_seguite_sempre">Sempre in cima</string>
     <string name="app_seguite_non_letti">In cima solo con messaggi non letti</string>
-    <string name="tl_ultimo">ultimo %s</string>
     <string name="app_dataora_section">Data e ora</string>
     <string name="app_dataora_formato">Formato della data</string>
     <string name="app_dataora_gma">GG/MM/AA (07/11/26)</string>
@@ -1125,6 +1129,14 @@
     <!-- 1.4.10: manutenzione, nessuna voce chiesta da fuori. -->
     <string name="rn_v155_l7">Le X-Face si vedono. La classica faccina in bianco e nero di Usenet (l\'intestazione X-Face, mandata da MesNews e da molti lettori tradizionali) compare ora accanto al nome dell\'autore, dove finora compariva solo la Face a colori. Toccala per ingrandirla: resta nitida, a quadretti. L\'ordine è: prima la Face, poi la X-Face, poi le iniziali colorate. NeReO mostra le X-Face ma non le invia.</string>
     <string name="rn_v155_l8">I messaggi nuovi restano davvero in vista. La correzione della 1.5.4 funzionava solo quando NeReO ti aveva appena riportato dove eri rimasto: al primo ingresso nel gruppo dopo aver aperto l\'app, o quando la lista era già in cima, i messaggi che arrivavano con la sincronizzazione potevano ancora finire sopra il bordo dello schermo. Ora, ogni volta che apri un gruppo, se arrivano messaggi nuovi e non hai ancora spostato la lista col dito, sale in cima a mostrarli. Con gli ordinamenti \"dai più recenti\" si accorge anche di una risposta dentro la discussione che è già in cima. Con gli ordinamenti \"dai più vecchi\", dove i nuovi stanno in fondo, resti dove sei. Anche nella vista a pannelli.</string>
+    <string name="rn_v165_title">Novità della 1.6.5</string>
+    <string name="rn_v165_l1">Messaggi che il server non trova per Message-ID: ora NeReO riprova una volta per numero dell\'articolo, e accetta la risposta solo se è davvero lo stesso messaggio. Alcuni server (INN) li trovano solo per numero. Se non funziona nessuno dei due, NeReO dice che il server non trova il messaggio, invece di «probabilmente scaduto». Segnalato da BIG Umberto.</string>
+    <string name="rn_v165_l2">Condividi verso NeReO: i link ora vanno fra &lt;&gt;, così chi cita a 80 colonne non li spezza. Condividendo un testo selezionato senza link l\'oggetto resta vuoto e tutto il testo va nel corpo. Collaudo di Dave Royal.</string>
+    <string name="rn_v165_l3">Il proprio post subito dopo l\'invio: alcuni server (Astraweb) impiegano qualche secondo a renderlo visibile nel gruppo. Ora NeReO riaggiorna dopo 2, 5 e 10 secondi, anche nei gruppi del crosspost, e si ferma appena arriva qualcosa. Segnalato con un log.</string>
+    <string name="rn_v165_l4">Proxy SOCKS5 per server, per usare NeReO con Orbot/Tor o Nym: nelle impostazioni del server, spento di default. Il nome del server lo risolve il proxy, non il telefono; TLS e verifica del certificato funzionano come prima. Il controllo aggiornamenti non passa dal proxy: per tenere tutto dentro Tor usa Orbot in modalità VPN, o imposta il controllo su mai. Chiesto da un utente.</string>
+    <string name="rn_v165_l5">La riga della discussione mostra di nuovo, sempre, la data del primo messaggio, come negli altri lettori: la data «ultimo …» della 1.6.3 non c\'è più. Nella vista continua dei pannelli il titolo della discussione sta su una riga piccola e verde in cima alla colonna di lettura, e resta lì mentre scorri. Segnalato da Dave Royal.</string>
+    <string name="rn_v165_l6">Il letto resta letto: un messaggio già letto in un altro gruppo, o su un altro server con lo stesso gruppo, quando arriva in ritardo sull\'altra copia arriva già letto. Prima entrava non letto, da solo in mezzo ai letti. E «N messaggi segnati come letti» conta solo i messaggi che vedi, come il pallino del gruppo, non quelli nascosti dai filtri. Segnalato da BIG Umberto.</string>
+    <string name="rn_v165_l7">Discussioni seguite: la stella compare sulla riga della discussione quando dentro c\'è un messaggio seguito, non solo quando è seguito il primo, e ora anche nei pannelli. Prima una discussione seguita da una risposta saliva in cima senza stella. Il seguito segue il Message-ID: una discussione seguita su un server lo è anche sugli altri.</string>
     <string name="rn_v164_title">Novità della 1.6.4</string>
     <string name="rn_v164_l1">Con l\'ordine dal più vecchio, apri sui più recenti: nuova opzione in Aspetto. Con un ordine dal più vecchio il gruppo si apre in fondo, sui messaggi più recenti, e segue quelli nuovi mentre si aggiorna. Nelle viste ad albero l\'ultima riga è la discussione più recente. Chiesto da Jeff.</string>
     <string name="rn_v164_l2">Condividi verso NeReO: da un\'altra app (un browser, Feedly, YouTube…) scegli NeReO nel menu Condividi, poi il gruppo. Si apre un messaggio nuovo col titolo come oggetto, il link su una riga da solo e il cursore subito sotto, pronto per il tuo commento. L\'ultimo gruppo usato è in cima. NeReO usa ciò che manda l\'altra app: non scarica la pagina. Chiesto da Halv Skjaldson.</string>

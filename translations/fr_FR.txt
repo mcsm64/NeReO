@@ -537,6 +537,18 @@ srv_starttls =
 # en: For servers that stay on a plaintext port (usually 119) but offer an upgrade to TLS right after connecting — RFC 4642. Ignored if SSL/TLS above is already enabled.
 srv_starttls_note =
 
+# en: Use a SOCKS5 proxy (Tor, Nym)
+srv_proxy =
+
+# en: Off by default. For Orbot (Tor) the proxy is 127.0.0.1, port 9050. The server name goes to the proxy, not to the phone's DNS. Slower: NeReO waits longer. Alternatively, use Orbot in VPN mode.
+srv_proxy_note =
+
+# en: Proxy address
+srv_proxy_host =
+
+# en: Port
+srv_proxy_port =
+
 # en: Plaintext authentication on this server
 srv_auth_override =
 
@@ -1242,7 +1254,7 @@ tl_group_identity_tip =
 # en: Same as the server
 tl_group_identity_inherit =
 
-# en: A crossposted message read in one group counts as read in the others
+# en: A message read in one place counts as read in its other copies: crossposts in other groups, and the same group on another server
 mnt_letto_messageid =
 
 # en: Reload message
@@ -1896,6 +1908,9 @@ tl_cancel_confirm =
 # en: Remove the local copy
 art_missing_remove =
 
+# en: The server cannot find this message (%1$d): it may have expired or been withdrawn by its author. Only the summary line downloaded earlier is left in the list.
+art_missing_server =
+
 # en: Delete local copy
 tl_delete_local_copy =
 
@@ -2333,9 +2348,6 @@ app_seguite_sempre =
 
 # en: At the top only with unread messages
 app_seguite_non_letti =
-
-# en: last %s
-tl_ultimo =
 
 # en: Date and time
 app_dataora_section =
@@ -3091,6 +3103,30 @@ rn_v155_l7 =
 
 # en: New messages really stay in view now. The 1.5.4 fix worked only when NeReO had just taken you back to where you left off: on the first visit to a group after starting the app, or when the list was already at the top, the messages arriving with the sync could still end up above the edge of the screen. Now, every time you open a group, if new messages arrive and you have not yet moved the list with your finger, it goes to the top to show them. With the "newest first" orders it also notices a reply inside the thread that is already at the top. With the "oldest first" orders, where new messages are at the bottom, you stay where you were. In the panel view too.
 rn_v155_l8 =
+
+# en: New in 1.6.5
+rn_v165_title =
+
+# en: Messages the server cannot find by Message-ID: NeReO now tries once more by article number, and accepts the answer only if it is really the same message. Some servers (INN) find the message only by number. When neither works, NeReO says the server cannot find it, instead of 'probably expired'. Reported by BIG Umberto.
+rn_v165_l1 =
+
+# en: Share to NeReO: links now go between <>, so a reader quoting at 80 columns does not break them. Sharing selected text without a link leaves the subject empty and puts all the text in the body. Tested by Dave Royal.
+rn_v165_l2 =
+
+# en: Your own post right after sending: some servers (Astraweb) take a few seconds to make it visible in the group. NeReO now updates again after 2, 5 and 10 seconds, also in the crossposted groups, and stops as soon as something arrives. Reported with a log.
+rn_v165_l3 =
+
+# en: SOCKS5 proxy per server, to use NeReO with Orbot/Tor or Nym: in the server settings, off by default. The server name is resolved by the proxy, not by the phone; TLS and certificate checks work as before. The update check does not go through the proxy: to keep everything inside Tor use Orbot in VPN mode, or set the check to never. Requested by a user.
+rn_v165_l4 =
+
+# en: The thread row shows the date of its first message again, always, as in other newsreaders: the «last …» date of 1.6.3 is gone. In the continuous view in panes, the thread title is now on a small green line at the top of the reading column, and stays there while you scroll. Reported by Dave Royal.
+rn_v165_l5 =
+
+# en: Read stays read: a message you already read in another group, or on another server with the same group, now arrives already read when it reaches the other copy late. Before, it came in unread, alone among the read ones. And «N messages marked read» now counts only the messages you can see, like the group badge, not those hidden by filters. Reported by BIG Umberto.
+rn_v165_l6 =
+
+# en: Watched threads: the star now shows on the thread row whenever the thread contains a watched message, not only when the first post is watched, and in the panes too. Before, a thread watched from a reply went to the top without a star. Watching follows the Message-ID, so a thread watched on one server is watched on the others too.
+rn_v165_l7 =
 
 # en: New in 1.6.4
 rn_v164_title =

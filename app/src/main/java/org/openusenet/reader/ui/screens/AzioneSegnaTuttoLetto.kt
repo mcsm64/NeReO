@@ -99,6 +99,14 @@ class AvvisiApp(val host: SnackbarHostState, val scope: CoroutineScope) {
      * finche' non ne arriva un'altra o si chiude l'app.
      */
     var annullabile by mutableStateOf<Map<Long, List<Long>>?>(null)
+
+    /**
+     * 1.6.5 / 194 (BIG Umberto): quanti di [annullabile] si vedono. Il numero
+     * dell'avviso e del menu: «segna tutto letto» segna (e l'ANNULLA rimette)
+     * anche i nascosti dai filtri, ma contarli dava un numero piu' alto di
+     * quello del pallino del gruppo, che i nascosti non li conta.
+     */
+    var quantiVisibili by mutableStateOf(0)
 }
 
 /** 1.6.4 (Marco): quanto resta a video l'avviso. Le durate di Material sono 4 o 10 s. */
@@ -133,11 +141,16 @@ fun offriAnnullaLetti(
     segnati: Map<Long, List<Long>>,
 ) {
     val cambiati = soloCambiati(segnati)
-    val totale = totaleSegnati(cambiati)
-    if (totale == 0) return
+    if (totaleSegnati(cambiati) == 0) return
     avvisi.annullabile = cambiati
+    avvisi.quantiVisibili = 0
     avvisi.scope.launch {
+        // 1.6.5 / 194 (BIG Umberto): si contano i soli visibili, come il pallino.
+        val totale = repo.quantiVisibili(cambiati.values.flatten())
+        if (avvisi.annullabile === cambiati) avvisi.quantiVisibili = totale
         avvisi.host.currentSnackbarData?.dismiss()
+        // Solo nascosti: niente avviso (non c'e' niente da vedere tornare).
+        if (totale == 0) return@launch
         // 1.6.4: 5 secondi e la ✕ per chiuderlo prima. Scaduto il tempo,
         // withTimeoutOrNull annulla showSnackbar, che toglie l'avviso.
         val esito = withTimeoutOrNull(DURATA_AVVISO_MS) {
@@ -156,6 +169,7 @@ fun offriAnnullaLetti(
 fun annullaLetti(repo: NewsRepository, avvisi: AvvisiApp) {
     val segnati = avvisi.annullabile ?: return
     avvisi.annullabile = null
+    avvisi.quantiVisibili = 0
     avvisi.host.currentSnackbarData?.dismiss()
     avvisi.scope.launch {
         segnati.forEach { (gruppo, ids) -> repo.setReadBulk(ids, false, gruppo) }
@@ -170,9 +184,13 @@ fun annullaLetti(repo: NewsRepository, avvisi: AvvisiApp) {
 @Composable
 fun VoceAnnullaLetti(repo: NewsRepository, onFatto: () -> Unit) {
     val avvisi = LocalAvvisi.current
-    val segnati = avvisi.annullabile ?: return
+    if (avvisi.annullabile == null) return
+    // 1.6.5 / 194 (BIG Umberto): il numero dei visibili, come l'avviso; con soli
+    // nascosti la voce non compare.
+    val quanti = avvisi.quantiVisibili
+    if (quanti == 0) return
     DropdownMenuItem(
-        text = { Text(stringResource(R.string.undo_marked_read_menu, totaleSegnati(segnati))) },
+        text = { Text(stringResource(R.string.undo_marked_read_menu, quanti)) },
         leadingIcon = { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null) },
         onClick = { annullaLetti(repo, avvisi); onFatto() },
     )

@@ -222,6 +222,8 @@ class NntpClient(
      * pretesi. Vedi [FiduciaTls].
      */
     private val eccezioneScadenza: Boolean = false,
+    /** 1.6.5 / 193: proxy SOCKS5 del server, se l'utente l'ha acceso. null = come sempre. */
+    private val proxy: ProxySocks? = null,
     private val connectTimeoutMs: Int = 15_000,
     private val readTimeoutMs: Int = 30_000,
     private val charset: Charset = Charsets.UTF_8,
@@ -395,11 +397,14 @@ class NntpClient(
         // Eyeballs parallelo — rispetta l'architettura sincrona del client).
         // Timeout PER-TENTATIVO ridotto: con più indirizzi morti, l'utente non
         // deve aspettare connectTimeoutMs pieno moltiplicato per ognuno.
-        val indirizzi = InetAddress.getAllByName(host)
+        // 1.6.5 / 193: col proxy il nome del server va al proxy, che lo risolve
+        // lui. Il telefono non chiede il DNS: niente getAllByName. Vedi Socks5.kt.
+        val viaProxy: Socket? = proxy?.let { apriTramiteSocks(it, host, port, connectTimeoutMs) }
+        val indirizzi = if (viaProxy != null) emptyArray() else InetAddress.getAllByName(host)
         val perAttemptMs =
             if (indirizzi.size > 1) (connectTimeoutMs / indirizzi.size).coerceAtLeast(2000)
             else connectTimeoutMs
-        var plain: Socket? = null
+        var plain: Socket? = viaProxy
         var ultimoErrore: IOException? = null
         for (addr in indirizzi) {
             val tentativo = Socket()
@@ -491,7 +496,7 @@ class NntpClient(
         output = BufferedOutputStream(s.getOutputStream())
         val greeting = readResponse()
         if (greeting.code !in intArrayOf(200, 201)) {
-            throw NntpException(greeting.code, greeting.text)
+            throw NntpException(greeting.code, greeting.text + if (proxy != null) NOTA_SERVER_E_TOR else "")
         }
         serverGreeting = greeting.text
         postingAllowed = greeting.code == 200
@@ -953,7 +958,7 @@ class NntpClient(
     /** POST di un articolo già formattato (header + riga vuota + corpo). */
     fun post(rawArticleLines: List<String>) {
         val r = command("POST")
-        if (r.code != 340) throw NntpException(r.code, r.text)
+        if (r.code != 340) throw NntpException(r.code, r.text + if (proxy != null) NOTA_SERVER_E_TOR else "")
         val out = output ?: error("Not connected")
         for (line in rawArticleLines) {
             // dot-stuffing RFC 3977 §3.1.1
@@ -973,7 +978,7 @@ class NntpClient(
             NntpLog.diag("nessuna risposta dopo il punto finale dell'articolo (POST): ${e.message}")
             throw e
         }
-        if (res.code != 240) throw NntpException(res.code, res.text)
+        if (res.code != 240) throw NntpException(res.code, res.text + if (proxy != null) NOTA_SERVER_E_TOR else "")
     }
 
     fun quit() {

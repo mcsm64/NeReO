@@ -484,7 +484,7 @@ fun ArticleScreen(
             // 1.2.15 (voce B): l'articolo non è più sul server. Non è un guasto
             // da mostrare come tale: è una copia locale rimasta orfana, e
             // l'unica cosa sensata da offrire è toglierla di mezzo.
-            error = e.message
+            error = org.openusenet.reader.data.testoArticoloMancante(ctx, e)
             mancanteId = e.articleId
         } catch (e: Exception) {
             error = e.message

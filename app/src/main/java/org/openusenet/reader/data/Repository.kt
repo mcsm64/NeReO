@@ -33,6 +33,8 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import org.openusenet.reader.nntp.EsitoRicerca
 import org.openusenet.reader.nntp.cercaPerMessageId
+import org.openusenet.reader.nntp.scaricaArticolo
+import org.openusenet.reader.nntp.ProxySocks
 import org.openusenet.reader.thread.idDaCercare
 import org.openusenet.reader.thread.idNominati
 import org.openusenet.reader.filter.FollowupMode
@@ -220,19 +222,31 @@ data class EsitoRicostruzione(
 )
 
 /** 1.6: tetto di messaggi cercati per volta, e di giri (vedi ricostruisciDiscussione). */
+/** 1.6.5 / 193: tempi col proxy SOCKS5 (Tor, Nym). Previsione, da tarare col collaudo. */
+private const val TIMEOUT_CONNESSIONE_PROXY_MS = 60_000
+private const val TIMEOUT_LETTURA_PROXY_MS = 90_000
 private const val RICOSTRUZIONE_MAX_ARTICOLI = 100
 private const val RICOSTRUZIONE_MAX_GIRI = 3
 /** 1.6: ogni quanti messaggi si scrive: un Annulla non butta cio' che e' arrivato. */
 private const val RICOSTRUZIONE_LOTTO = 20
 
+/**
+ * Il server non trova l'articolo, ne' per Message-ID ne' per numero.
+ * 1.6.5 (BIG Umberto): il testo per l'utente sta nelle stringhe tradotte
+ * (`art_missing_server`, vedi [testoArticoloMancante]); prima era scritto qui in
+ * italiano, anche per chi usa l'app in inglese, e diceva «probabilmente scaduto»
+ * anche quando il server l'aveva ancora.
+ */
 class ArticoloMancanteException(
     val articleId: Long,
     val messageId: String,
-) : java.io.IOException(
-    "Questo messaggio non è più sul server: probabilmente è scaduto oppure è " +
-        "stato ritirato dal suo autore. Nell'elenco resta solo la riga di " +
-        "riepilogo scaricata in precedenza.",
-)
+    /** 430 (per Message-ID) o 423 (per numero). */
+    val codice: Int = 430,
+) : java.io.IOException("Article not found by the server ($codice): $messageId")
+
+/** Il testo dell'articolo mancante, nella lingua dell'app. */
+fun testoArticoloMancante(ctx: android.content.Context, e: ArticoloMancanteException): String =
+    ctx.getString(org.openusenet.reader.R.string.art_missing_server, e.codice)
 
 /**
  * 1.2.15 (voce C) — esito della verifica dopo un `cancel`.
@@ -695,6 +709,7 @@ class NewsRepository(
         db.availableGroupDao().clear(serverId)
         db.tlsPinDao().cancellaPerServer(serverId)
         db.serverDao().delete(serverId)
+        AppSettings.salvaProxy(serverId, null) // 1.6.5: il proxy era del server
     }
 
     // ------------------------------------------------------------- identità
@@ -822,6 +837,7 @@ class NewsRepository(
      * distinte.
      */
     private suspend fun nuovoClient(server: Server, readTimeoutMs: Int = 30_000): NntpClient {
+        val proxy = AppSettings.proxyPer(server.id)
         val pin = db.tlsPinDao().perServer(server.id)
         val approvato = pin
             ?.takeIf { it.state == TlsPinStato.TRUSTED && it.host == server.host && it.port == server.port }
@@ -832,7 +848,11 @@ class NewsRepository(
             consentiCertificatoNonVerificabile = AppSettings.consentiCertificatoNonVerificabile,
             pinApprovato = approvato,
             eccezioneScadenza = server.eccezioneScadenza,
-            readTimeoutMs = readTimeoutMs,
+            // 1.6.5 / 193: col proxy (Tor, Nym) i tempi sono piu' larghi: costruire
+            // un circuito puo' chiedere decine di secondi (previsione, da tarare).
+            connectTimeoutMs = if (proxy != null) TIMEOUT_CONNESSIONE_PROXY_MS else 15_000,
+            readTimeoutMs = if (proxy != null) maxOf(readTimeoutMs, TIMEOUT_LETTURA_PROXY_MS) else readTimeoutMs,
+            proxy = proxy,
         )
     }
 
@@ -1661,8 +1681,16 @@ class NewsRepository(
             } else a
         }
         // 1.6 (sondaggio sui gruppi): DOPO replyToMe, che e' una delle eccezioni.
-        val flagged = applicaDiscussioniIgnorate(conRisposteAMe)
+        val ignorate = applicaDiscussioniIgnorate(conRisposteAMe)
             .let { lista -> if (comeContesto) lista.map { it.copy(read = true) } else lista }
+        // 1.6.5 / 194 (BIG Umberto): una copia gia' letta altrove (un altro gruppo,
+        // un altro server, o la riga ricostruita che sta per essere tolta qui sotto)
+        // fa nascere letto anche questo. Vedi LettoEreditato.kt.
+        val flagged = if (!comeContesto && AppSettings.lettoSegueMessageId && ignorate.isNotEmpty()) {
+            val giaLetti = ignorate.map { it.messageId }.distinct().chunked(500)
+                .flatMap { db.articleDao().messageIdGiaLetti(it) }.toHashSet()
+            ereditaLetto(ignorate, giaLetti)
+        } else ignorate
         // (il totale su TUTTI i lotti lo somma il chiamante)
         ultimoLottoFiltrati = flagged.count { it.hidden }
         // 1.6: un messaggio ricostruito senza numero che ora arriva col numero vero
@@ -1993,7 +2021,7 @@ class NewsRepository(
                 val (client, riusata) = clientCorpiPer(server)
                 try {
                     client.group(group.name)
-                    val raw = client.article(article.messageId.ifEmpty { article.number.toString() })
+                    val raw = scaricaArticolo(client, article.messageId, article.number)
                     val (headers, bodyLines) = MimeUtil.splitArticleRaw(raw)
                     val text = MimeUtil.decodeTextBodyRaw(headers, bodyLines)
                     db.articleDao().setBody(article.id, text)
@@ -2035,9 +2063,12 @@ class NewsRepository(
                     // andato a buon fine — nostro o di qualcun altro — e
                     // merita un messaggio che lo dica, invece di un codice
                     // numerico che non significa niente per chi legge.
+                    // 1.6.5 (BIG Umberto): prima di arrivare qui scaricaArticolo ha gia'
+                    // riprovato per numero. «Non trova» e non «scaduto»: il server
+                    // puo' averlo ancora e non trovarlo per Message-ID.
                     if (e.code == 430 || e.code == 423) {
-                        NntpLog.diag("articolo non più sul server (${e.code}): ${article.messageId}")
-                        throw ArticoloMancanteException(article.id, article.messageId)
+                        NntpLog.diag("il server non trova l'articolo (${e.code}): ${article.messageId}")
+                        throw ArticoloMancanteException(article.id, article.messageId, e.code)
                     }
                     throw e
                 } catch (e: Exception) {
@@ -2119,7 +2150,7 @@ class NewsRepository(
                         // il lavoro in background senza che nessuno lo veda.
                         val (client, _) = clientCorpiPer(server)
                         client.group(group.name)
-                        val raw = client.article(figlio.messageId.ifEmpty { figlio.number.toString() })
+                        val raw = scaricaArticolo(client, figlio.messageId, figlio.number)
                         val (headers, bodyLines) = MimeUtil.splitArticleRaw(raw)
                         val text = MimeUtil.decodeTextBodyRaw(headers, bodyLines)
                         db.articleDao().setBody(figlio.id, text)
@@ -2152,7 +2183,7 @@ class NewsRepository(
             client.group(group.name)
             for (a in mancanti) {
                 runCatching {
-                    val raw = client.article(a.messageId.ifEmpty { a.number.toString() })
+                    val raw = scaricaArticolo(client, a.messageId, a.number)
                     val (headers, bodyLines) = MimeUtil.splitArticleRaw(raw)
                     db.articleDao().setBody(a.id, MimeUtil.decodeTextBodyRaw(headers, bodyLines))
                     salvaHeaderEFace(a.id, headers, raw)
@@ -2266,6 +2297,20 @@ class NewsRepository(
      * [syncGroupList] li raggruppa comunque per server, una connessione per
      * server come sempre.
      */
+    /**
+     * 1.6.5 / 193: dopo un invio riuscito, i gruppi di destinazione si
+     * riaggiornano finche' arriva qualcosa, per qualche secondo. Vedi DopoInvio.kt.
+     */
+    suspend fun aggiornaDopoInvio(groupId: Long, destinazioni: List<String>): Int = withContext(Dispatchers.IO) {
+        val partenza = db.groupDao().byId(groupId) ?: return@withContext 0
+        val gruppi = gruppiDaAggiornareDopoInvio(
+            partenza, db.groupDao().subscribedOnceForServer(partenza.serverId), destinazioni,
+        )
+        aggiornaFinoAdArrivo(
+            prima = { ms -> NntpLog.diag("dopo l'invio: niente di nuovo, riprovo fra ${ms / 1000} s") },
+        ) { syncGroups(gruppi, segnalaAuthNonCifrata = false) }
+    }
+
     suspend fun syncGroups(groupIds: List<Long>, segnalaAuthNonCifrata: Boolean = true): Int = withContext(Dispatchers.IO) {
         val gruppi = groupIds.mapNotNull { db.groupDao().byId(it) }
         syncGroupList(gruppi, segnalaAuthNonCifrata)
@@ -2535,6 +2580,11 @@ class NewsRepository(
     suspend fun markAllReadServers(serverIds: Collection<Long>): Map<Long, List<Long>> =
         serverIds.flatMap { db.groupDao().subscribedOnceForServer(it) }
             .associate { it.id to markAllRead(it.id) }
+
+    /** 1.6.5 / 194 (BIG Umberto): per il numero dell'avviso, i soli non nascosti. */
+    suspend fun quantiVisibili(ids: List<Long>): Int = withContext(Dispatchers.IO) {
+        ids.chunked(500).sumOf { db.articleDao().quantiVisibili(it) }
+    }
 
     suspend fun markAllRead(groupId: Long): List<Long> {
         val wereUnread = db.articleDao().unreadIds(groupId)

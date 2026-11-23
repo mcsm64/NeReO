@@ -26,7 +26,7 @@ object ReleaseNotes {
      * corretto. Ad ogni bump di versione in build.gradle.kts, aggiornare
      * SEMPRE anche questa riga e le [sections] sotto.
      */
-    const val VERSION = "1.6.4"
+    const val VERSION = "1.6.5"
 
     /**
      * Novità della versione corrente, in blocchi titolo → righe.
@@ -39,7 +39,24 @@ object ReleaseNotes {
      * strings.xml (tutte e tre le cartelle).
      */
     val sections: List<Pair<Int, List<Int>>> = listOf(
-        // 1.6.4 (treno aperto il 12 novembre 2026, versionCode 191, nome deciso da Marco).
+        // 1.6.5 (treno aperto il 18 novembre 2026, versionCode 192, nome deciso da Marco).
+        // Chiavi rn_v165_* verificate libere nelle tre cartelle.
+        //  - l1  l'articolo per numero dopo un 430 (BIG Umberto)
+        //  - l2  Condividi: link fra <>, oggetto solo con un link (Dave Royal)
+        //  - l3  ritentativi dopo l'invio, 2-5-10 s (193, segnalazione con log del 20/11)
+        //  - l4  proxy SOCKS5 per server, Orbot/Tor e Nym (193, richiesta di un utente)
+        //  - l5  (194) data del primo messaggio sempre; titolo nella vista continua (Dave Royal)
+        //  - l6  (194) letto ereditato dalle copie, avviso coi soli visibili (BIG Umberto)
+        R.string.rn_v165_title to listOf(
+            R.string.rn_v165_l6,
+            R.string.rn_v165_l7,
+            R.string.rn_v165_l5,
+            R.string.rn_v165_l1,
+            R.string.rn_v165_l2,
+            R.string.rn_v165_l3,
+            R.string.rn_v165_l4,
+        ),
+        // 1.6.4 (versionCode 191, pubblicata il 15 novembre 2026).
         // Chiavi rn_v164_* verificate libere nelle tre cartelle.
         //  - l1  con l'ordine dal piu' vecchio, apri sui piu' recenti (Jeff)
         //  - l2  Condividi verso NeReO (Halv Skjaldson)

@@ -2132,8 +2132,28 @@ android {
         // versionCode 191 (12 novembre 2026) - versionName 1.6.4, deciso da Marco.
         // La 1.6.3 e' pubblica. Jeff: con l'ordine dal piu'
         // vecchio il gruppo si apre sui piu' recenti (opzione in Aspetto).
-        versionCode = 191
-        versionName = "1.6.4"
+        // versionCode 192 (18 novembre 2026) - versionName 1.6.5, deciso da Marco.
+        // La 1.6.4 e' pubblica. BIG Umberto: l'articolo per
+        // numero dopo un 430. Dave Royal: Condividi con i link fra <>.
+        // versionCode 193 (20 novembre 2026) - versionName INVARIATO: la 192 e'
+        // firmata da Marco per le sue prove (18/11). Ritentativi dopo l'invio
+        // (2, 5, 10 s) per il proprio post che il server rende visibile tardi.
+        // Proxy SOCKS5 per server (Orbot/Tor, Nym), spento di default.
+        // versionCode 194 (21 novembre 2026) - versionName INVARIATO: la 193 e'
+        // firmata solo per le prove di Marco, non e' pubblica. Dave Royal: la riga
+        // della discussione torna a mostrare SEMPRE la data del primo messaggio
+        // (via «ultimo …» della 1.6.3). BIG Umberto: l'avviso «segnati letti» conta
+        // i soli visibili; un messaggio che arriva nasce letto se una sua copia,
+        // in un altro gruppo o server, e' gia' letta (il letto segue il Message-ID).
+        // versionCode 195 (23 novembre 2026) - versionName INVARIATO: la 194 e'
+        // firmata solo per le prove di Marco. BIG Umberto, collaudo della 194:
+        // discussioni lette in cima senza stella, perche' seguite da una risposta
+        // (il seguito vale per Message-ID su tutti i server). La stella compare
+        // sulla riga se la discussione contiene un messaggio seguito, anche nei
+        // pannelli (`mostraStella`); il testo dell'impostazione del letto per
+        // Message-ID nomina anche lo stesso gruppo su un altro server.
+        versionCode = 195
+        versionName = "1.6.5"
     }
 
     buildTypes {

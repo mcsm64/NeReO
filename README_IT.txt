@@ -1,8 +1,26 @@
 ======================================================================
- NeReO 1.6.4 - Ne(ws) Re(ader) O(pen-source)
+ NeReO 1.6.5 - Ne(ws) Re(ader) O(pen-source)
  Newsreader Usenet (NNTP) solo testo per Android
- NeReO 1.6.4 (versionCode 191) - By MCSM - 2026/11/15
+ NeReO 1.6.5 (versionCode 195) - By MCSM - 2026/11/23
 ======================================================================
+ ***  VERSIONE 1.6.5  ***
+
+ Segnalazioni di BIG Umberto e con un log del 20/11; collaudo di Dave Royal; proxy chiesto da un utente.
+
+  * IL LETTO RESTA LETTO. Un messaggio gia' letto in un altro gruppo, o sullo stesso gruppo di un altro server, quando arriva in ritardo sull'altra copia arriva gia' letto: prima entrava non letto, da solo in mezzo ai letti. E "N messaggi segnati come letti" conta solo quelli che vedi, come il pallino del gruppo. Segnalato da BIG Umberto.
+
+  * LA STELLA DELLE SEGUITE. La stella compare sulla riga della discussione quando dentro c'e' un messaggio seguito, non solo quando e' seguito il primo, e ora anche nei pannelli: prima una discussione seguita da una risposta saliva in cima senza stella. Il seguito segue il Message-ID: una discussione seguita su un server lo e' anche sugli altri. Segnalato da BIG Umberto.
+
+  * LA DATA DEL PRIMO MESSAGGIO E IL TITOLO NELLA VISTA CONTINUA. La riga della discussione mostra di nuovo, sempre, la data del primo messaggio: la data "ultimo ..." della 1.6.3 non c'e' piu'. Nella vista continua dei pannelli il titolo della discussione sta su una riga piccola e verde in cima alla colonna di lettura. Segnalato da Dave Royal.
+
+  * MESSAGGI CHE IL SERVER NON TROVA PER MESSAGE-ID. Se il server risponde 430, NeReO riprova una volta per numero dell'articolo e accetta la risposta solo se e' davvero lo stesso messaggio: alcuni server INN li trovano solo cosi'. Se falliscono entrambi, NeReO dice che il server non trova il messaggio, invece di "probabilmente scaduto", e lo dice nella lingua dell'app.
+
+  * CONDIVIDI: LINK FRA <> E OGGETTO SOLO PER LE PAGINE. Ogni link va fra parentesi angolari, cosi' chi cita a 80 colonne non lo spezza. Condividendo un testo selezionato senza link l'oggetto resta vuoto e tutto il testo va nel corpo.
+
+  * IL PROPRIO POST SUBITO DOPO L'INVIO. Alcuni server (Astraweb) lo rendono visibile nel gruppo qualche secondo dopo aver confermato l'invio. Ora NeReO riaggiorna dopo 2, 5 e 10 secondi, anche nei gruppi del crosspost, e si ferma appena arriva qualcosa.
+
+  * PROXY SOCKS5 PER SERVER (ORBOT/TOR, NYM). Nelle impostazioni del server, spento di default: se non lo accendi non cambia niente. Il nome del server lo risolve il proxy, non il telefono; TLS e verifica del certificato restano quelli di sempre, e i tempi di attesa sono piu' larghi. Il controllo aggiornamenti non passa dal proxy: per tenere tutto dentro Tor usa Orbot in modalita' VPN, o imposta il controllo su mai.
+
  ***  VERSIONE 1.6.4  ***
 
  Richieste di Jeff e di Halv Skjaldson; prova di Roxy.

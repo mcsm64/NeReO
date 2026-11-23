@@ -80,6 +80,12 @@ object BackupManager {
                 .put("authOverrideNonCifrata", (s.authOverrideNonCifrata as Any?) ?: JSONObject.NULL)
                 // 1.2.9 (multi-identità)
                 .put("identity_nickname", s.identityId?.let { identityNickById[it] } ?: JSONObject.NULL)
+            // 1.6.5 / 193: il proxy SOCKS5 del server, se impostato.
+            AppSettings.proxyImpostato(s.id).let { (acceso, host, porta) ->
+                if (acceso || host != AppSettings.PROXY_HOST_PREDEFINITO || porta != AppSettings.PROXY_PORTA_PREDEFINITA) {
+                    o.put("proxy_on", acceso).put("proxy_host", host).put("proxy_port", porta)
+                }
+            }
             if (includePasswords && !s.password.isNullOrEmpty()) o.put("password", s.password)
             servers.put(o)
         }
@@ -443,6 +449,18 @@ object BackupManager {
                     )
                 )
                 hostPortToId[key(host, port)] = id
+                // 1.6.5 / 193: il proxy torna ACCESO solo se e' sul telefono stesso
+                // (Orbot, Nym). Come per la cifratura (1.2.12): un file di backup
+                // non deve poter dirottare le connessioni verso un proxy altrui.
+                // Un proxy remoto torna con i suoi dati, ma spento.
+                if (o.has("proxy_host")) {
+                    val ph = pulisci(o.optString("proxy_host"), 253)
+                    val locale = ph in setOf("127.0.0.1", "localhost", "::1")
+                    AppSettings.salvaProxy(
+                        id,
+                        Triple(o.optBoolean("proxy_on", false) && locale, ph, o.optInt("proxy_port", AppSettings.PROXY_PORTA_PREDEFINITA).coerceIn(1, 65535)),
+                    )
+                }
                 nServers++
                 // 1.2.9 (multi-identità): l'assegnazione arriva DOPO restoreServer
                 // — serve l'id reale del server, e restoreServer la esclude di
